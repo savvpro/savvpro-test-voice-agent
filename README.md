@@ -1,3 +1,45 @@
+# Voice Agent Assessment
+
+Rule-based **restaurant table booking** voice assistant (Python brain + Next.js UI). Decisions use keywords and regex — no LLM at runtime.
+
+**Also see:** [DESIGN.md](./DESIGN.md) · [AI_USAGE.md](./AI_USAGE.md) · [TASK.md](./TASK.md)
+
+## Setup and run
+
+**Prerequisites:** Python 3.11+, Node.js 20+
+
+### Backend
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8001
+```
+
+Health: `http://localhost:8001/api/health`
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`. The dev server proxies `/api/*` to the backend (`BACKEND_URL`, default `http://localhost:8001`). Use Chrome/Edge for microphone support; toggle spoken replies in the sidebar.
+
+### Tests
+
+```bash
+cd backend && source .venv/bin/activate && pytest -q
+```
+
+Copy `backend/.env.example` and `frontend/.env.example` if you need custom ports or CORS.
+
+---
+
 # Step-by-Step Guide: How to Fork, Clone, and Submit Your Assessment
 
 **Repository:** https://github.com/savvpro/savvpro-test-voice-agent
