@@ -32,10 +32,19 @@ test("typed booking, contextual correction, real trace and receipt", async ({
     "Needs explicit confirmation",
   );
   await page.getByRole("button", { name: "Confirm appointment" }).click();
+  await page
+    .getByRole("button", { name: "View appointment", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Appointment confirmed", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".booking-detail")).toContainText("17:00");
+  await page
+    .getByRole("button", { name: "Voice receptionist", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Expand decision inspector", exact: true })
+    .click();
   await page.getByRole("button", { name: "View raw decision trace" }).click();
   await expect(page.locator(".raw-trace")).toContainText("commit.confirmed");
   await expect(page.locator(".raw-trace")).toContainText(
@@ -65,6 +74,9 @@ test("existing appointment can be rescheduled and cancelled through the UI", asy
   );
   await message(page, `cancel ${reference}`);
   await page.getByRole("button", { name: "Confirm cancellation" }).click();
+  await page
+    .getByRole("button", { name: "View appointment", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Appointment cancelled", exact: true }),
   ).toBeVisible();
@@ -104,6 +116,9 @@ test("uncertain network outcome retries the same request after a real commit", a
     page.getByRole("button", { name: "Retry same message" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Retry same message" }).click();
+  await page
+    .getByRole("button", { name: "View appointment", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Appointment confirmed", exact: true }),
   ).toBeVisible();
@@ -167,6 +182,9 @@ test("browser speech adapter submits a final transcript and stops recognition be
   await page.goto("/");
   await page.getByRole("button", { name: "Start microphone" }).click();
   await expect(page.getByRole("log")).toContainText("What are your prices?");
+  await page
+    .getByRole("button", { name: "Expand decision inspector", exact: true })
+    .click();
   await expect(page.locator(".rule-name")).toHaveText("business.question");
   const state = await page.evaluate(
     () =>

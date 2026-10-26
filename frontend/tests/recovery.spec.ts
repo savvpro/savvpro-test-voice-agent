@@ -104,6 +104,9 @@ test("lost commit response retries from memory when persistent storage fails", a
   });
   await page.getByRole("button", { name: "Confirm appointment" }).click();
   await page.getByRole("button", { name: "Retry same message" }).click();
+  await page
+    .getByRole("button", { name: "View appointment", exact: true })
+    .click();
   await expect(
     page.getByRole("region", { name: "Saved appointment", exact: true }),
   ).toContainText("confirmed");
@@ -124,6 +127,9 @@ test("abandoned changes cannot replace saved details in the appointment card", a
   );
   await message(page, "yes");
   await message(page, "reschedule it to November 3 2026 at 11 AM");
+  await page
+    .getByRole("button", { name: "View appointment", exact: true })
+    .click();
   const saved = page.getByRole("region", {
     name: "Saved appointment",
     exact: true,
@@ -134,7 +140,13 @@ test("abandoned changes cannot replace saved details in the appointment card", a
   await expect(
     page.getByRole("region", { name: "Proposed change", exact: true }),
   ).toContainText("2026-11-03 · 11:00");
+  await page
+    .getByRole("button", { name: "Voice receptionist", exact: true })
+    .click();
   await message(page, "end conversation");
+  await page
+    .getByRole("button", { name: "View appointment", exact: true })
+    .click();
   await expect(saved.locator(".booking-detail")).toContainText(
     "2026-11-02 · 10:00",
   );

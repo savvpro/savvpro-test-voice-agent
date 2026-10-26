@@ -34,9 +34,12 @@ for (const width of [360, 390, 768]) {
     if (width < 570) {
       const composer = await page.locator(".composer").boundingBox();
       expect(composer!.y + composer!.height).toBeLessThanOrEqual(844);
-      const column = await page.locator(".inspector-column").boundingBox();
-      const card = await page.locator(".booking-card").boundingBox();
-      expect(Math.abs(column!.width - card!.width)).toBeLessThan(2);
+      const workspace = await page.locator(".main-grid").boundingBox();
+      const chat = await page.locator(".conversation-panel").boundingBox();
+      expect(Math.abs(workspace!.width - chat!.width)).toBeLessThan(2);
+      await expect(
+        page.getByRole("complementary", { name: "Decision inspector" }),
+      ).toBeHidden();
     }
     expect(
       await page.evaluate(
@@ -78,11 +81,14 @@ test("available slots are keyboard-selectable and still require confirmation", a
   await expect(page.getByRole("log")).toContainText("What name should I use?");
   await message(page, "Casey Demo");
   await expect(
-    page.getByRole("region", { name: "Appointment draft", exact: true }),
-  ).toContainText("13:00");
-  await expect(
     page.getByRole("button", { name: "Confirm appointment" }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "View appointment", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Appointment draft", exact: true }),
+  ).toContainText("13:00");
   await expect(
     page.getByRole("region", { name: "Saved appointment", exact: true }),
   ).toHaveCount(0);
