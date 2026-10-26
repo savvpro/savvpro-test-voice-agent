@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.brain.calendar_dates import extract_dates
+from app.brain.clock_times import extract_clock
+from app.brain.services import extract_service
 from app.schemas import Entities, Intent
 
 
@@ -73,8 +75,9 @@ def recognize(text: str, active: bool = False) -> Recognition:
         actions.append(Intent.AVAILABILITY)
     booking_command = r"^(?:(?:yes|yeah|yep|okay|ok|sure|please)[,\s]+)*(?:book|schedule|reserve)\b"
     booking_request = rf"\b(?:to|can you|could you|please|let's|and) (?:book|schedule|reserve)\b|\b(?:make|arrange)\s+{BOOKING_OBJECT}\b"
-    service_request = r"\b(?:want|need|like|can i|could i)\s+(?:you to\s+|to\s+)?(?:(?:make|book|get|have|schedule|reserve)\s+)?(?:a|an)\s+(?:haircut|hair cut|beard trim|appointment)\b"
-    if re.search(booking_command, t) or re.search(booking_request, t) or re.search(service_request, t):
+    service_request = r"\b(?:want|need|like|can i|could i)\s+(?:you to\s+|to\s+)?(?:(?:make|book|get|have|schedule|reserve)\s+)?(?:a|an)\s+(?:haircut|hair cut|hair (?:and|plus) beard(?: appointment)?|beard trim|appointment)\b"
+    fit_request = r"^(?:(?:please|hi|hello) )?(?:can|could|would) you (?:please )?(?:fit|squeeze) me in\b"
+    if re.search(fit_request, t) or re.search(booking_command, t) or re.search(booking_request, t) or re.search(service_request, t):
         actions.append(Intent.CREATE)
     if len(set(actions)) > 1:
         return Recognition(Intent.UNKNOWN, "action.multiple_requests")
@@ -94,10 +97,6 @@ class Extraction:
     entities: Entities = field(default_factory=Entities)
     issues: dict[str, str] = field(default_factory=dict)
 
-
-NUMBERS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
-           "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12}
-NUMBER_PATTERN = "(?:" + "|".join(NUMBERS) + r"|\d{1,2})"
 
 
 def customer_name(text: str, *, expecting_name: bool) -> str | None:
@@ -185,20 +184,9 @@ def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting
     # value. Alternatives without a direction still trigger ambiguity below.
     if re.search(r"\b(?:change|move|reschedule|switch)\b", clean):
         clean = re.sub(r"\bfrom\s+.+?\s+to\s+", "to ", clean, count=1)
-    haircut = bool(re.search(r"\b(?:haircut|hair cut|classic cut|trim my hair)\b", clean))
-    beard = bool(re.search(r"\b(?:beard|beard trim)\b", clean))
-    if re.search(r"\b(?:combo|both)\b", clean) or (haircut and beard):
-        e.service = "combo"
-    elif haircut:
-        e.service = "haircut"
-    elif beard:
-        e.service = "beard"
-    if haircut and beard and re.search(r"\b(?:or|not|instead of|rather than)\b", clean):
-        e.service = None
-        issues["service"] = "Which one service should I use: haircut, beard trim, or the combination?"
-    if re.search(r"\b(?:color|colour|massage|nails|facial|dye|perm)\b", clean):
-        e.service = None
-        issues["service"] = "We offer haircuts, beard trims, or the combination. Which would you like?"
+    e.service, service_issue = extract_service(clean)
+    if service_issue:
+        issues["service"] = service_issue
 
     calendar = extract_dates(clean, now, expecting_date=expecting_date)
     dates, date_clean = calendar.values, calendar.remainder
@@ -207,61 +195,14 @@ def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting
     if len(dates) == 1:
         e.date = next(iter(dates))
 
-    periods = set(re.findall(r"\b(morning|afternoon|evening)\b", clean))
-    if len(periods) > 1:
-        issues["time"] = "I heard multiple parts of the day. Please give one time with AM or PM."
-    elif periods:
-        e.period = next(iter(periods))
-    # Convert spoken times before running one numeric grammar.
-    time_text = re.sub(r"\bhalf past (" + NUMBER_PATTERN + r")\b", lambda m: f"{NUMBERS.get(m[1], m[1])}:30", date_clean)
-    time_text = re.sub(r"\bquarter past (" + NUMBER_PATTERN + r")\b", lambda m: f"{NUMBERS.get(m[1], m[1])}:15", time_text)
-    time_text = re.sub(r"\b(" + NUMBER_PATTERN + r") (thirty|fifteen|forty five)\b",
-                       lambda m: f"{NUMBERS.get(m[1], m[1])}:{ {'thirty': '30', 'fifteen': '15', 'forty five': '45'}[m[2]]}", time_text)
-    for word, number in NUMBERS.items():
-        time_text = re.sub(rf"\b{word}\b", str(number), time_text)
-    time_text = time_text.replace("o'clock", "")
-    # Speech recognition commonly omits a colon: "five 30 PM" -> "5:30 PM".
-    # Never join alternatives such as "4 or 5 PM" or guess a missing digit.
-    time_text = re.sub(r"(?<![\w:/-])(\d{1,2})\s+(\d{2})(?![\w:/-])", r"\1:\2", time_text)
-    candidates: set[tuple[int, int, str]] = set()
-    for match in re.finditer(r"(?<![\w/-])(\d{1,2})(?::(\d{2}))?\s*(am|pm)?(?![\w/-])", time_text):
-        prefix = time_text[:match.start()]
-        has_context = bool(match[2] or match[3] or re.search(r"\b(?:at|to|make it|for|around|about|approximately|roughly)\s*$", prefix) or expecting_time or re.fullmatch(r"\s*\d{1,2}\s*(?:instead)?\s*", time_text))
-        if has_context:
-            candidates.add((int(match[1]), int(match[2] or 0), match[3] or ""))
-    times = set()
-    for hour, minute, suffix in candidates:
-        if minute > 59 or hour > 23 or (suffix and not 1 <= hour <= 12):
-            issues["time"] = "That time is invalid. Please use a time like 5:30 PM or 17:30."
-            continue
-        if suffix:
-            hour = hour % 12 + (12 if suffix == "pm" else 0)
-        elif e.period:
-            if not 1 <= hour <= 12:
-                issues["time"] = "Please give one time with AM or PM."
-                continue
-            hour = hour % 12 + (0 if e.period == "morning" else 12)
-        elif hour < 13 and hour != 0:
-            issues["time"] = "Is that AM or PM? Please say the full time, for example 5 PM."
-            continue
-        times.add(f"{hour:02d}:{minute:02d}")
-    if re.search(r"\bnoon\b", clean):
-        times.add("12:00")
-    if re.search(r"\bmidnight\b", clean):
-        times.add("00:00")
-    if len(times) > 1:
-        issues["time"] = "I heard more than one time. Please give one time with AM or PM."
-    elif times:
-        e.time = next(iter(times))
-        e.period = None
-    if not e.time and "time" not in issues and re.search(r"\b(?:at|around|about|approximately|roughly)\s+(?:\d|thirteen\b|fourteen\b|fifteen\b|sixteen\b|seventeen\b|eighteen\b|nineteen\b|twenty\b|thirty\b|forty\b|fifty\b)", time_text):
-        issues["time"] = "I couldn't interpret that time. Please say the full time, such as 4:30 PM."
-    if re.search(r"\b(?:at|to)\s+\d{1,2}:\d{1}(?!\d)", time_text):
-        issues["time"] = "Please give the complete time, for example 5:30 PM."
+    clock = extract_clock(clean, date_clean, expecting_time=expecting_time)
+    e.time, e.period = clock.time, clock.period
+    if clock.issue:
+        issues["time"] = clock.issue
 
     # Bare-name fallback requires a name context and no competing slot values.
     # An explicit name clause above survives issues in any other field.
-    if e.name is None and not (dates or candidates or e.service or e.reference or issues):
+    if e.name is None and not (dates or e.time or e.period or e.service or e.reference or issues):
         e.name = customer_name(text, expecting_name=expecting_name)
     for key in issues:
         setattr(e, key, None)

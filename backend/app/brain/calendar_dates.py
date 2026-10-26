@@ -108,6 +108,12 @@ def extract_dates(text: str, now: datetime, *, expecting_date: bool = False) -> 
             result.issue = CALENDAR_HELP
             mask(*match.span())
 
+    offsets = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7}
+    for match in re.finditer(r"\bin (one|two|three|four|five|six|seven|\d{1,3}) days?\b", result.remainder):
+        offset = int(offsets.get(match[1], match[1]))
+        result.values.add((now.date() + timedelta(days=offset)).isoformat())
+        mask(*match.span())
+
     explicit = set(result.values)
     relatives = (("day after tomorrow", 2), ("tomorrow", 1), ("today", 0), ("yesterday", -1))
     for phrase, offset in relatives:
@@ -130,4 +136,7 @@ def extract_dates(text: str, now: datetime, *, expecting_date: bool = False) -> 
         result.issue = "I heard more than one date. Please give one date for this appointment."
     if re.search(r"\b(?:next week|next month|weekend|sometime|later)\b", result.remainder) and not result.values:
         result.issue = "Which exact day? You can say tomorrow, a weekday, or a calendar date such as October 28 2026."
+    negated_day = rf"\b(?:not|except|anything but|no longer)\s+(?:on\s+)?(?:today|tomorrow|yesterday|next|{'|'.join(WEEKDAYS)}|{MONTH_PATTERN}|\d{{4}}|\d{{1,2}}(?:st|nd|rd|th)?\s+of\s+{MONTH_PATTERN})\b"
+    if result.values and re.search(negated_day, text):
+        result.issue = "Which date should I use instead? Please give one positive date."
     return result
