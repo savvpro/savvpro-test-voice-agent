@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en-PK">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#11130f" />
+    <meta name="description" content="REDELIVER helps people in Pakistan check a parcel, choose a new delivery time, or find a pickup point." />
+    <meta property="og:title" content="REDELIVER — Your next move after a missed delivery" />
+    <meta property="og:description" content="Try a clear voice-first parcel support demo for Pakistan." />
+    <title>REDELIVER — Your next move</title>
+    <script>
+      (() => {
+        const saved = localStorage.getItem('redeliver-theme');
+        const theme = saved || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

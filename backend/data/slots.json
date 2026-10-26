@@ -1,0 +1,10 @@
+{
+  "default_capacity": 3,
+  "pre_booked": [
+    {"day_offset": 1, "period": "morning", "booked": 3},
+    {"day_offset": 3, "period": "morning", "booked": 3},
+    {"day_offset": 3, "period": "afternoon", "booked": 3},
+    {"day_offset": 3, "period": "evening", "booked": 3},
+    {"day_offset": 5, "period": "evening", "booked": 2}
+  ]
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "point_id": "PP-001",
+    "name": "Islamabad I-8 Markaz Depot",
+    "address": "Shop 12, I-8 Markaz, Islamabad, Islamabad Capital Territory",
+    "selection_aliases": ["Islamabad", "I-8 Markaz", "I8 Markaz", "I-8", "Markaz"],
+    "open_days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    "open_hours": "08:00-18:00"
+  },
+  {
+    "point_id": "PP-002",
+    "name": "Lahore Gulberg Collection Hub",
+    "address": "Main Boulevard Gulberg, Gulberg III, Lahore, Punjab",
+    "selection_aliases": ["Lahore", "Gulberg", "Gulberg III", "Main Boulevard"],
+    "open_days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    "open_hours": "07:00-21:00"
+  },
+  {
+    "point_id": "PP-003",
+    "name": "Karachi Clifton Express Desk",
+    "address": "Shop 8, Block 5, Clifton, Karachi, Sindh",
+    "selection_aliases": ["Karachi", "Clifton", "Block 5"],
+    "open_days": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+    "open_hours": "09:00-17:30"
+  },
+  {
+    "point_id": "PP-004",
+    "name": "Peshawar University Road Collection Point",
+    "address": "Shop 21, University Road, Peshawar, Khyber Pakhtunkhwa",
+    "selection_aliases": ["Peshawar", "University Road"],
+    "open_days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    "open_hours": "08:30-17:00"
+  },
+  {
+    "point_id": "PP-005",
+    "name": "Rawalpindi Saddar Mini Depot",
+    "address": "Shop 6, Bank Road, Saddar, Rawalpindi, Punjab",
+    "selection_aliases": ["Rawalpindi", "Saddar", "Bank Road"],
+    "open_days": ["tuesday", "wednesday", "thursday", "friday", "saturday"],
+    "open_hours": "10:00-19:00"
+  }
+]

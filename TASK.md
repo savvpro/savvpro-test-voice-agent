@@ -30,6 +30,20 @@ Real callers are messy. Think about what can go wrong in your use case and make 
 - Frontend: React or Next.js. A simple page where someone can talk to the assistant and see what it decided.
 - Everything else is up to you. Use any framework, library, API or service you want, for speech to text, text to speech, audio, data, testing, or anything else. This does not include the brain: no big AI model for decisions (see the big rule above).
 
+### REDELIVER implementation boundary
+
+- Keep all application APIs, parcel data, verification, booking, cancellation,
+  and dialogue decisions in the Python backend.
+- The React frontend calls the backend API and renders its replies and decision
+  trace. It must not duplicate service or business logic.
+- Browser-native speech recognition and speech synthesis may provide the
+  microphone and spoken-reply interaction; recognized text still goes to the
+  backend for every assistant turn.
+- Localize the caller experience and fake delivery data for Pakistan, using
+  Pakistan Standard Time and Pakistani English speech settings where supported.
+- After an action completes, ask whether the caller needs anything else; end
+  the call only after the caller says no or explicitly says goodbye.
+
 ## 4. Your repo should include
 
 - `README.md`: how to set it up and run it.
