@@ -11,7 +11,14 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try { if (localStorage.getItem("voxdesk.theme") === "light") document.documentElement.dataset.theme = "light"; } catch {}`,
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
