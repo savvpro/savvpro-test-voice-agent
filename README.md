@@ -1,83 +1,115 @@
-# Step-by-Step Guide: How to Fork, Clone, and Submit Your Assessment
+# Maple Street Clinic Voice Agent
 
-**Repository:** https://github.com/savvpro/savvpro-test-voice-agent
+A phone-style voice assistant that **books, reschedules and cancels appointments** at a fictional clinic. The caller talks in the browser; speech is transcribed, a rule-based Python brain (no LLM) decides what to do, and the reply is spoken back. The page shows what the brain decided on every turn.
 
----
+The assessment brief is in [TASK.md](TASK.md). Design: [DESIGN.md](DESIGN.md). AI tooling: [AI_USAGE.md](AI_USAGE.md).
 
-## Step 1: Fork the Repository
-
-1. Go to the repository: https://github.com/savvpro/savvpro-test-voice-agent
-2. Click the **Fork** button in the top-right corner.
-3. This will create a copy of the repository in your GitHub account.
-
----
-
-## Step 2: Clone Your Fork
-
-1. Open your forked repository in your GitHub account.
-2. Click the green **Code** button and copy the URL.
-3. Run the following commands:
-
-```bash
-git clone https://github.com/your-username/savvpro-test-voice-agent.git
-cd savvpro-test-voice-agent
+```
+Caller speaks -> browser speech-to-text -> FastAPI brain (nlu -> dialogue -> responses) -> browser text-to-speech
 ```
 
----
+## Quick start
 
-## Step 3: Read the Task
-
-Open and read **TASK.md** carefully before writing any code.
-
-- TASK.md URL: https://github.com/savvpro/savvpro-test-voice-agent/blob/main/TASK.md
-
----
-
-## Step 4: Create a New Branch
-
-Branch pattern: `candidate-<your-github-username>`
+### Docker
 
 ```bash
-git checkout -b candidate-<your-github-username>
+docker compose up --build
 ```
 
-**Example:**
-```bash
-git checkout -b candidate-johndoe
-```
+Open http://localhost:8080. Data lives in the `clinic-data` volume (`docker compose down -v` resets it).
 
----
+### Local development
 
-## Step 5: Complete the Task
-
-Build the full application on your branch.
-
----
-
-## Step 6: Push Your Branch
+Backend (Python 3.11):
 
 ```bash
-git add .
-git commit -m "feat: complete voice-agent assessment"
-git push origin candidate-<your-github-username>
+cd backend
+python3.11 -m venv .venv                             # pyenv users: pyenv shell 3.11 first
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/uvicorn app.main:app --reload              # http://localhost:8000
 ```
 
----
+Frontend (second terminal):
 
-## Step 7: Create a Pull Request
+```bash
+cd frontend
+nvm use stable && npm install && npm run dev         # http://localhost:5173
+```
 
-1. Go to your **forked** repository on GitHub (`https://github.com/your-username/savvpro-test-voice-agent`).
-2. Click **Compare & pull request** (GitHub will show this banner after you push your branch).
-3. Ensure the following settings in the PR form:
-   - **Base repository:** `savvpro/savvpro-test-voice-agent` ← the original repo
-   - **Base branch:** `main`
-   - **Head repository:** `your-username/savvpro-test-voice-agent` ← your fork
-   - **Compare branch:** `candidate-<your-github-username>`
-4. Use the title: `feat: complete voice-agent assessment`
-5. Submit the pull request.
+### Browser support
 
-> 💡 **Tip:** If you don't see the banner, go to the original repo (`savvpro/savvpro-test-voice-agent`), click the **Pull requests** tab, then click **New pull request** → **compare across forks**.
+Voice needs **Chrome or Edge** (Web Speech API) and microphone permission; `localhost` counts as a secure context. Other browsers get the text box, which works the same way.
 
----
+The assistant's voice is picked automatically: the most natural en-US voice the browser has (Edge "Natural" voices > macOS Premium/Enhanced > "Google US English"). You can change it with the **Voice** dropdown; the choice is remembered. On macOS, better voices are a free download: System Settings → Accessibility → Spoken Content → System voice → Manage Voices → English (US) → e.g. *Ava (Premium)* or *Zoe (Premium)*, then reload the page.
 
-> ⚠️ **Important:** No submissions will be accepted after the deadline.
+## Demo script
+
+The database is seeded on first start with fake patients. Seed dates are relative to the day the server first starts: "day 1" is the first weekday after that day, "day 2" the weekday after that. Examples below assume you say real weekdays/dates; "tomorrow" works if day 1 is tomorrow.
+
+| Seeded appointment | Ref |
+|---|---|
+| John Carter, DOB 1985-07-12, Dr Patel, day 1 10:00 | `CLN-JC01` |
+| Emily Stone, DOB 1992-02-29, Dr Nguyen, day 1 14:00 | `CLN-ES01` |
+| Emily Stone, Dr Patel, day 2 11:00 | `CLN-ES02` |
+| Alex Morgan, DOB 1970-01-01, Dr Khan, day 1 15:00 and 15:30 | `CLN-AM01`, `CLN-AM02` |
+
+1. **Book, one sentence:** "Hi, I'd like to book with Dr Patel tomorrow at 2pm, my name is Sara Lee" -> "March 4 1990" -> "yes". You get a reference like `CLN-XXXX`, read out digit by digit.
+2. **Change your mind:** start a booking, reach the read-back, say "actually make it 3:30". The read-back repeats with the new time.
+3. **Slot taken:** "Book with Dr Khan on day 1 at 3pm" (his 15:00 and 15:30 are taken). The brain offers the 3 nearest free slots; say "the second one".
+4. **Cancel by ref:** "Cancel my appointment" -> "CLN-JC01" -> "yes".
+5. **Several matches:** "Cancel" -> "Emily Stone" -> "February 29 1992". Two appointments are listed; pick "the first one".
+6. **Reschedule:** "Reschedule" -> "CLN-ES02" -> "next Wednesday at 11" -> "yes" (same doctor, same reference).
+7. **Safety:** at a read-back say "no please don't book it": nothing is booked. Say "I'm having chest pain" at any time: it tells you to call 911 and ends the call.
+
+## Tests and lint
+
+```bash
+cd backend
+.venv/bin/pytest -q
+.venv/bin/ruff check . && .venv/bin/ruff format --check .
+.venv/bin/mypy app
+
+cd ../frontend
+npm test -- --run
+npm run lint
+npm run build
+```
+
+CI (`.github/workflows/ci.yml`) runs the same commands plus `docker compose build`.
+
+## Configuration
+
+Environment variables (see `.env.example`; no secrets):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `DATABASE_PATH` | `clinic.db` | SQLite file (`/data/clinic.db` in Docker) |
+| `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowed origins |
+| `CLINIC_TIMEZONE` | `America/New_York` | Used for "today", "tomorrow" and seeding |
+
+## API
+
+- `GET /api/health`
+- `POST /api/calls` (starts a call, returns the greeting) -> `{call_id, reply, decision, ended}`
+- `POST /api/calls/{call_id}/turns` with `{"text": "..."}` -> `{call_id, reply, decision, ended}`
+
+`decision` is `{intent, entities, state, action, slots}`.
+
+Calls idle for 30 minutes expire (404).
+
+## Project structure
+
+```
+backend/app/
+  clinic.py      doctors, specialties, hours
+  nlu.py         text -> intent + entities
+  parsing.py     date, time and DOB parsing (stdlib only)
+  dialogue.py    state machine and slot filling
+  responses.py   reply templates
+  scheduling.py  availability, booking, cancelling (SQLite)
+  db.py          schema, seed data
+  main.py        FastAPI app
+backend/tests/   unit, scenario and API tests
+frontend/src/    React + TypeScript UI, speech hook, API client
+docs/superpowers/  design spec and implementation plan
+```

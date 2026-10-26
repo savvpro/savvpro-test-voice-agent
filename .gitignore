@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.db
+node_modules/
+dist/
+.env
+.superpowers/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.claude/worktrees/

@@ -1,0 +1,9 @@
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
