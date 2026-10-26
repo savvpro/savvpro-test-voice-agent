@@ -81,3 +81,14 @@ There are **26 project commits at this cutoff**: the original 20, one usage-evid
 Sandbox socket and Node write restrictions required approved command retries. Those environment errors were not reported as successful installs/checks. No test results, token counts, screenshots or physical voice verification were invented.
 
 Executed checks and remaining verification limits are documented in [docs/PROGRESS.md](docs/PROGRESS.md). Browser UI screenshots under ignored test artifacts demonstrate UI rendering only, not AI token usage or physical speech verification.
+
+
+## Later UI refinement and rescheduling conversation
+
+The candidate requested a chat-focused UI with light/dark themes, voice controls in the composer, a separate Appointment view and an animated Inspector toggle. Visual iterations initially stayed uncommitted at the candidate's request. A navy palette was rejected; it was replaced with warm neutral surfaces inspired by the supplied reference. The candidate then explicitly authorized regular local commits: UI foundation `20f901d`, workspace `26b9e9d`, browser navigation checks `edc3330`, followed by rescheduling `03efb44` and conversation controls `6dd832b`. No push, PR or deployment occurred.
+
+The next real transcript exposed missed “change the timing for this appointment”, command-shaped “rescheduled” speech, a date-only question for a generic reschedule, compound denial and a polite closing. Added two 29-case suites, each initially reproducing 24 failures with five already passing. One new test first failed collection because it used Pytest's reserved `request` parameter; renaming fixed setup. The full suite caught an intermediate reset affecting legacy reference recovery; the reset now runs only for an explicit new action request. Final backend validation: **398 passed** with the existing upstream warning.
+
+Controls now use whole-utterance grammar with bounded repeated denial clauses and courtesy. Context can disambiguate a directional destination after a reschedule is already established; no fuzzy mapping makes “diamond” a booking object or treats a reported action as a new command. Plain thanks preserves the workflow, explicit “nothing else” closes it, and rejecting an absent proposal preserves the saved receipt. The full reported conversation verifies the original appointment is unchanged after discarding the move. Text/API tests do not establish physical speech recognition quality.
+
+The earlier authentic usage snapshots are historical cutoffs. This later UI work and conversation repair are excluded from their token totals; no later token count is inferred from time, commits or quota percentages.

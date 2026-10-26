@@ -1,6 +1,6 @@
 # Conversation validation matrix
 
-The deterministic brain needs more than examples that mirror reported transcripts. These contrast sets vary intent, exclusions, target scope and repair order. They were authored by the same coding agent; independent human evaluation is still pending. Current executed totals are **340 backend tests and 20 browser tests**; see [PROGRESS.md](PROGRESS.md) for environments and limits.
+The deterministic brain needs more than examples that mirror reported transcripts. These contrast sets vary intent, exclusions, target scope and repair order. They were authored by the same coding agent; independent human evaluation is still pending. Current executed totals are **398 backend tests and 20 browser tests**; see [PROGRESS.md](PROGRESS.md) for environments and limits.
 
 | Family | Contrasts / failure cases | Automated evidence |
 | --- | --- | --- |
@@ -10,10 +10,12 @@ The deterministic brain needs more than examples that mirror reported transcript
 | Complete time meaning | Quarter-to vs quarter-past; noon/midnight boundary; unsupported offsets/ranges; negated time must not become a positive hour | [test_language_contrasts.py](../backend/tests/test_language_contrasts.py) |
 | Date meaning | Negated dates, bounded day offsets, calendar values protected from clock extraction | [test_language_contrasts.py](../backend/tests/test_language_contrasts.py), [test_transcript_recovery.py](../backend/tests/test_transcript_recovery.py) |
 | Request families | Fit/squeeze me in, I need, I'd like, please book and can I get, each with single/combined services | [test_language_contrasts.py](../backend/tests/test_language_contrasts.py) |
+| Reschedule dialogue | Time/date-only requests, open date-or-time questions, contextual directional answers, bounded command repairs and negation | [test_reschedule_dialogue.py](../backend/tests/test_reschedule_dialogue.py) |
+| Natural controls | Compound back-outs, courtesy vs closing, repeated rejection with no pending request, unchanged calendar and the complete beard-booking transcript | [test_polite_controls.py](../backend/tests/test_polite_controls.py) |
 | Reported conversations | Availability handoff, repair prefixes, retained references, inline names, invalid dates and occupied slots | [test_spoken_conversations.py](../backend/tests/test_spoken_conversations.py), [test_transcript_recovery.py](../backend/tests/test_transcript_recovery.py), [test_customer_names.py](../backend/tests/test_customer_names.py) |
 | Browser failure recovery | Blocked reads/writes/removals, malformed cached request, lost committed response without storage, unreadable response, offline/retry indicators | [recovery.spec.ts](../frontend/tests/recovery.spec.ts) |
-| Authoritative appointment | Saved fields remain separate from a proposed move; abandoning a proposal preserves saved details | [recovery.spec.ts](../frontend/tests/recovery.spec.ts) |
-| Interaction and speech adapter | Keyboard focus, keyboard slot choice, 360/390/768px layouts, touch heights, replay/language and synthesis failure | [accessibility.spec.ts](../frontend/tests/accessibility.spec.ts) |
+| Authoritative appointment | Appointment view keeps saved fields separate from a proposed move; abandoning a proposal preserves saved details | [recovery.spec.ts](../frontend/tests/recovery.spec.ts) |
+| Interaction and speech adapter | Keyboard focus, keyboard slot choice with the Inspector closed, 360/390/768px layouts, touch heights, replay/language and synthesis failure | [accessibility.spec.ts](../frontend/tests/accessibility.spec.ts) |
 
 These cases complement existing API, persistence, concurrency, idempotency and calendar-boundary tests. Passing them does not prove arbitrary English, transcription accuracy, complete accessibility compliance or production security.
 

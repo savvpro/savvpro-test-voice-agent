@@ -4,7 +4,7 @@
 
 Northline Studio is a fictional single-chair barbershop. Appointment reception is bounded and realistic: identify a service, collect a day/time/name, check a calendar, request confirmation and persist the result. It exposes meaningful cases—duration overlaps, corrections, stale availability, ambiguous times, retries and cancellation—without external credentials or real customer records.
 
-Next.js owns the interface and browser audio. FastAPI/Pydantic validates HTTP contracts. `brain/language.py` orders intent rules and composes the service, calendar and clock grammars in `services.py`, `calendar_dates.py` and `clock_times.py`. `brain/engine.py` transitions structured context through a small `BookingPort` interface. `bookings.py` owns calendar rules/operations; `db.py` owns models/transactions. An injected clock and IANA timezone make behavior reproducible.
+Next.js owns the interface and browser audio. FastAPI/Pydantic validates HTTP contracts. `brain/language.py` orders intent rules and composes the control, service, calendar and clock grammars in `control_phrases.py`, `services.py`, `calendar_dates.py` and `clock_times.py`. `brain/engine.py` transitions structured context through a small `BookingPort` interface. `bookings.py` owns calendar rules/operations; `db.py` owns models/transactions. An injected clock and IANA timezone make behavior reproducible.
 
 ```mermaid
 flowchart LR
@@ -28,14 +28,14 @@ The backend is authoritative. State labels, extracted values, availability, refe
 
 Text is normalized for case, whitespace, apostrophes and AM/PM punctuation. Ordered rules handle:
 
-1. Exact end/repeat/denial/confirmation phrases.
+1. Whole-utterance end/repeat/denial/confirmation controls and courtesy acknowledgements.
 2. Negated action commands.
 3. Business questions, including informational “How do I cancel a booking?”
 4. Explicit cancellation, rescheduling, availability and creation patterns. Conflicting requested actions require clarification.
 5. Contextual corrections: “actually”, “make it”, “instead”, “I meant”.
 6. Active-task details or unknown-request recovery.
 
-Confirmation uses a full-utterance allowlist. “Yes, but make it Friday” cannot commit. “Read a book” is not a booking command. Denial discards pending changes. Rule matches have no confidence percentages because they are not calibrated probabilities.
+Confirmation uses a full-utterance allowlist. “Yes, but make it Friday” cannot commit. “Read a book” is not a booking command. Denial discards pending changes. `control_phrases.py` composes bounded denial clauses and optional courtesy, so “never mind, don't do it, revert the change” rejects the proposal without substring matching. “Nothing, thank you so much” ends the conversation; thanks alone preserves the current step. Rejecting when nothing is pending says so and keeps the saved receipt. Rule matches have no confidence percentages because they are not calibrated probabilities.
 
 ### Entity extraction
 
@@ -74,7 +74,7 @@ A correction overrides only its supplied fields. “Actually make it 5 PM” ret
 
 Ordinary request forms such as “make a booking”, “I want you to make a haircut”, “can you fit me in”, “could you squeeze me in”, and polite lead-ins are matched by explicit grammar rules. Contrast tests exercise the same request families with single and combined services. A directional correction (“change from 4 PM to 5 PM”) extracts its destination; two alternatives without that directional grammar still need clarification. Name answers strip a bounded set of leading fillers (“and”, “um”, “it's”) and trailing courtesy words, with the interpreted name shown in the confirmation summary.
 
-`last_booking_reference` remembers the most recently verified appointment within a session, separately from the pending proposal. Reschedule/cancel can reuse it; explicit references take priority and no other session is searched. Old persisted sessions can recover it from their own assistant-generated booking receipt, followed by database lookup; user-supplied receipt quotations are not trusted as session memory. A time-only reschedule keeps the date, and a date-only reschedule keeps the time, except when that field was explicitly rejected or is awaiting clarification. Stale versions still require fresh review. Draft-level “move it” and “cancel it” cannot target an older confirmed booking.
+`last_booking_reference` remembers the most recently verified appointment within a session, separately from the pending proposal. Reschedule/cancel can reuse it; explicit references take priority and no other session is searched. Old persisted sessions can recover it from their own assistant-generated booking receipt, followed by database lookup; user-supplied receipt quotations are not trusted as session memory. A time-only reschedule keeps the date, and a date-only reschedule keeps the time, except when that field was explicitly rejected or is specifically awaiting clarification. An open “new date or time” question accepts either and keeps the other saved value. A field-only request such as “change the timing for this appointment” clears any pending time and asks for its replacement; it cannot re-propose an earlier value. Within active rescheduling, a complete “from X to Y” answer supplies the destination even when surrounding speech is unclear. Outside that context, reported actions and garbled booking objects cannot start a change. Stale versions still require fresh review. Draft-level “move it” and “cancel it” cannot target an older confirmed booking.
 
 Operation scope is explicit. “Cancel that change” discards a reschedule proposal. “Cancel it” during a new booking discards that draft, even if a previous appointment is remembered. During rescheduling, the ambiguous pronoun clears pending authorization and asks whether to discard the change or cancel the confirmed appointment. An explicit reference or “cancel my confirmed appointment” selects the stored appointment, with its own confirmation. A subsequent bare “yes” cannot act on an abandoned proposal.
 
@@ -104,7 +104,9 @@ Reschedule/cancel carries the version loaded at proposal time. Commit rejects an
 
 Recognition is feature-detected (`SpeechRecognition`/`webkitSpeechRecognition`); final transcripts become turns, interim text is feedback only. Permission denial, missing microphone, no speech, network errors and unsupported browsers offer typed recovery. Recognition aborts before synthesis and typed sends; the mic is disabled during speech. There is no automatic listening restart. Cleanup stops both APIs. Muting, stopping audio and replaying the current reply are explicit controls. Users can select US, UK or Pakistan English; installed/browser voice support determines actual pronunciation. Synchronous synthesis failure clears the speaking state and leaves typing usable.
 
-The UI uses system fonts and code-native graphics, accessible names/focus, reduced-motion support, live conversation output, alerts and responsive layouts. Most labels use 12px text, the composer uses 16px text, and action controls have 44px minimum heights. Typed turns return focus to the composer. Compact mobile voice controls keep the composer visible; appointment details precede the Inspector below the conversation. Available starts are keyboard-selectable buttons that begin a proposal and still require confirmation.
+The UI uses system fonts, code-native graphics, accessible names/focus, reduced-motion support, live conversation output, alerts and responsive layouts. Message text uses 14px and the composer 16px; primary microphone, send and confirmation controls remain 44px high. Typed turns return focus to the composer. Voice controls share the chat bar, with language selection and listening guidance beneath the input.
+
+Chat occupies the workspace by default. A right-side arrow below New session animates the Inspector open/closed; collapsed content is inert and hidden from assistive technology. Desktop panels scroll independently; on narrow screens the Inspector opens over the chat. Appointment details have a separate sidebar view, also accessible from a mobile calendar button. Hidden views stay mounted so conversation state and unsent input survive navigation. Available starts stay inside the chat and still require confirmation. Warm neutral light/dark themes use a guarded browser preference; a small bootstrap applies the saved theme before hydration.
 
 `frontend/components/appointment-card.tsx` renders saved details from the authoritative appointment object and pending details in a separate proposed-change region. Ending or discarding a proposal cannot relabel the saved appointment as a draft. Connection indicators reflect the latest session/turn request outcome; they are not a continuous health monitor. The Inspector displays actual rule/explanation/state/next action; it does not simulate traces. Browser support is limited; [MDN documents platform constraints](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition).
 

@@ -20,7 +20,7 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 
 | Check | Actual result |
 | --- | --- |
-| `.venv/Scripts/python -m pytest` | **340 passed** after audit fixes, one upstream Starlette TestClient/httpx deprecation warning; no failures. Local Python 3.13.3. |
+| `.venv/Scripts/python -m pytest` | **398 passed** after the rescheduling and polite-control follow-up, one upstream Starlette TestClient/httpx deprecation warning; no failures. Local Python 3.13.3. |
 | `npm run build` in isolated frontend copy | Passed production compilation, type validation and static-page generation; Next.js 15.5.28. Preserved the running development build. |
 | `npm run typecheck` | Passed |
 | `npm run format:check` | Passed for frontend source, components, tests and configuration |
@@ -29,13 +29,31 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 | `npm audit --audit-level=high` | **0 vulnerabilities** after PostCSS 8.5.31 override |
 | `.venv/Scripts/python -m pip check` | No broken requirements |
 | `git diff --check` | Passed; Git emitted its normal Windows LF/CRLF notice |
-| Source/documentation credential-pattern scan | 58 text files scanned, no findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
+| Source/documentation credential-pattern scan | Tracked and untracked source/documentation text files scanned, no findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
 | Assessment preservation | `TASK.md` blob hash matches assessment baseline `1e8a7dc`; branch remains `candidate-TUAHASHAIKH` |
 | GitHub Actions | Configured for Python 3.11/3.13 and Node 22; YAML/job structure and action SHA pins checked locally. Remote execution remains pending publication. Python 3.11 was not tested locally. |
 
 Backend tests include actual state transitions, relative/spoken date/time parsing, uncertainty, corrections, service duration, opening/closing boundaries, explicit confirmations, conflicts, two independent application instances confirming concurrently, repeated request receipts, stale revisions/appointment versions, isolation, persistence after restart, UTC storage, configured business timezone, rollback after simulated commit failure, and prevention of partial rescheduling after caught validation errors.
 
 Browser tests cover typed booking/corrections and raw trace, rescheduling/cancellation, a lost response after a real commit followed by reload/retry, storage exceptions and corrupt data, same-tab retry without storage, saved/proposed separation, network status/recovery, unreadable responses, keyboard focus and selectable slots. Responsive checks cover 360/390/768 pixels and minimum control sizes. Speech API tests cover sequencing, permission denial, replay/language selection and synchronous synthesis failure. The production frontend and backend are real; speech APIs and explicit fault scenarios are mocked. Desktop/mobile screenshots were generated and inspected. Test servers were stopped by suite teardown.
+
+## UI refinement and latest spoken-conversation follow-up
+
+At the candidate's request, UI work stayed uncommitted during visual iteration and was then saved first in three focused local commits:
+
+| Commit | Change |
+| --- | --- |
+| `20f901d` | Warm neutral light/dark themes and responsive workspace styles |
+| `26b9e9d` | Pinned chat and voice controls, separate Appointment view, default-collapsed Inspector with a right-side animated toggle, two remaining conversation shortcuts |
+| `edc3330` | Existing browser flows updated to navigate Appointment and explicitly open the Inspector |
+| `03efb44` | Reschedule request families, field-specific questions and contextual destination handling |
+| `6dd832b` | Compound proposal rejection, polite endings, courtesy acknowledgements and truthful no-pending replies |
+
+The latest transcript exposed narrow “change the timing” matching, a generic reschedule question that only asked for a date, unhandled longer back-outs and a missed polite goodbye. Added **58 backend regressions**: 29 reschedule cases and 29 control/full-conversation cases. Each initial targeted run reproduced 24 failures with five cases already passing. An initial test collection error used Pytest's reserved `request` parameter name; it was renamed before those runs. The full suite also caught a legacy-reference recovery path being cleared by the new destination question; restricting that reset to explicit action requests fixed it.
+
+The complete supplied beard-booking conversation now retains its reference/date/name, accepts clear destination answers within the active reschedule, discards the proposed move on the longer back-out, and ends politely. The original 16:00 appointment remains unchanged. New sessions still need a reference; garbled words or reported past actions cannot start a reschedule by themselves. Every calendar write still requires a later explicit confirmation.
+
+The UI was checked with the existing 20 browser workflows plus an isolated navigation/animation check. Both themes and mobile layouts were visually inspected; targeted text-contrast checks passed. Temporary visual checks and screenshots remain ignored artifacts, not extra committed test cases or physical voice evidence. Backend/voice behavior was preserved during the UI work. UI and subsequent backend commits use their actual creation timestamps. Publication remains on hold.
 
 ## Strict-audit remediation
 

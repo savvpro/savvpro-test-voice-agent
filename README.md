@@ -102,16 +102,19 @@ The brain supports a bounded English grammar. Unclear details trigger a specific
 | Accept availability | “Yes, do it at 4:30 PM” retains the service/date and supplies the time. Clickable available starts also begin a draft. The complete proposal needs a separate confirmation. |
 | Repair details | “I already told you, 5 30 PM” or “change from 4 PM to 5 PM” updates the time and retains other fields. Invalid fields stay rejected until individually repaired. |
 | Give a name | Use a fictional name alone when asked, or “Use the name Alex Example”. Mark an inline name with “with/for the name …”; instruction words are removed. Names survive other field errors and occupied slots. |
-| Change a saved booking | “Move it to Friday at 5 PM” uses the session's last verified booking. A new session needs its reference. Unchanged fields are retained unless explicitly rejected. |
-| Discard a change | “Cancel that change” discards the proposal. During a new-booking draft, “cancel it” discards that draft. During rescheduling, “cancel it” asks which target you mean. |
+| Change a saved booking | “Change the timing for this appointment” asks for a new time and keeps the saved date. A general “reschedule the appointment” accepts a new date, time, or both. A new session needs its reference; rejected fields stay rejected. |
+| Discard a change | “Cancel that change” or “Never mind, don't do it, revert the change” discards the proposal. During a new-booking draft, “cancel it” discards that draft. During rescheduling, “cancel it” asks which target you mean. |
 | Cancel a saved booking | “Cancel my confirmed appointment” or “Cancel NL-XXXXXXXX” selects the stored appointment and requires confirmation. |
+| End politely | “Nothing, thank you so much” ends without applying pending changes. “Thank you” alone acknowledges you and preserves the current step. |
 | Ask for help/status | “Have you booked it?”, “Where can I find the booking reference?”, “Repeat”, “Start over” and “End the conversation” |
 
 Dates support relative days, weekdays, bounded “in two days”, `YYYY-MM-DD`, “28th of October 2026”, “October twenty-eighth 2026”, “2026 October 28”, and numeric `2026 10 28`, `2026 1028`, `20261028`. A named date without a year uses the current business year, with past-date validation. A bare weekday includes today; “next Monday” is strictly upcoming. Incomplete years, invalid dates, weekday/date mismatches and ambiguous numeric ordering need clarification. Years spoken entirely as words remain unsupported.
 
 Times support AM/PM, unambiguous 24-hour values, noon/midnight, “five thirty PM”, “half past four PM”, “quarter past four PM” and “quarter to five PM” (16:45). Bare 1–12 hours require AM/PM. Supply the full time when clarifying. Unsupported offsets/ranges (“twenty to five”, “between four and five”), malformed values (“around 40”), and negated times need an exact replacement. Negated dates also require clarification. The assistant does not guess what a garbled transcript meant; review the displayed interpretation before confirming.
 
-The appointment card separates the **saved appointment** from a **proposed change**. Discarding a proposal keeps the saved details visible. Keyboard focus returns to the message field after typed turns. **Listen again** replays the current reply; **Speech language** selects English (US, UK or Pakistan), subject to browser support. Tap the mic again for each turn. A storage warning means the live tab remains usable, but recovery after closing/reloading it may be unavailable.
+The chat fills the workspace by default. The arrow on the right, below **New session**, expands or collapses the Decision Inspector with a transition; reduced-motion preferences disable animation. **Appointment** in the sidebar opens the current draft or saved receipt, with proposed changes shown separately. On phones, the calendar icon opens that view. Switching views preserves the conversation and unsent input. Available starts stay in the chat even when the Inspector is closed.
+
+Microphone, spoken-reply toggle, **Listen again**, **Speech language** and stop-audio controls live in the chat bar. US, UK and Pakistan English depend on browser support. Tap the mic for each turn; typing restores focus to the input. The theme button switches between warm neutral light/dark palettes and remembers the preference when storage works. A storage warning means the live tab remains usable, but recovery after closing/reloading may be unavailable.
 
 Northline Studio opens **Monday–Saturday 10:00–19:00**, with one chair:
 
