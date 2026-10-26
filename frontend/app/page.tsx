@@ -26,7 +26,6 @@ import {
   Square,
   Volume2,
   VolumeX,
-  X,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import type { Business, Conversation, PendingTurn } from "@/lib/types";
@@ -34,6 +33,7 @@ import { useVoice } from "@/lib/use-voice";
 import { createSessionCache } from "@/lib/session-cache";
 import { AppointmentCard } from "@/components/appointment-card";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { StudioServices } from "@/components/studio-services";
 
 const labels: Record<string, string> = {
   haircut: "Classic Haircut",
@@ -57,10 +57,9 @@ export default function Home() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [speechLanguage, setSpeechLanguage] = useState("en-US");
   const [traceOpen, setTraceOpen] = useState(false);
-  const [showServices, setShowServices] = useState(false);
-  const [activeView, setActiveView] = useState<"voice" | "appointment">(
-    "voice",
-  );
+  const [activeView, setActiveView] = useState<
+    "voice" | "appointment" | "services"
+  >("voice");
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [navigationOpen, setNavigationOpen] = useState(false);
   const messageList = useRef<HTMLDivElement>(null);
@@ -311,11 +310,15 @@ export default function Home() {
           <span>Appointment</span>
         </button>
         <button
-          className="rail-button"
+          className={activeView === "services" ? "rail-active" : "rail-button"}
           title="Studio services"
-          onClick={() => setShowServices(!showServices)}
+          onClick={() => {
+            setActiveView("services");
+            if (window.matchMedia("(max-width: 850px)").matches)
+              setNavigationOpen(false);
+          }}
           aria-label="View studio services"
-          aria-expanded={showServices}
+          aria-current={activeView === "services" ? "page" : undefined}
         >
           <Scissors size={18} />
           <span>Studio services</span>
@@ -404,7 +407,9 @@ export default function Home() {
               <h1>
                 {activeView === "voice"
                   ? "Voice receptionist"
-                  : "Your appointment"}
+                  : activeView === "services"
+                    ? "Studio services"
+                    : "Your appointment"}
               </h1>
               <p>
                 {activeView === "voice" ? (
@@ -418,6 +423,12 @@ export default function Home() {
                       ? `${conversation.revision} turns`
                       : "Starting session"}
                   </>
+                ) : activeView === "services" ? (
+                  business ? (
+                    `${business.name} · ${business.hours} · ${business.timezone}`
+                  ) : (
+                    "Loading studio details…"
+                  )
                 ) : (
                   "Your draft and saved appointment, in one place."
                 )}
@@ -438,39 +449,12 @@ export default function Home() {
               aria-expanded={showingInspector}
               aria-controls="decision-inspector-panel"
               onClick={toggleInspector}
+              hidden={activeView === "services"}
             >
               <span>Decision inspector</span>
               <ChevronRight size={19} className="inspector-arrow" />
             </button>
           </section>
-
-          {showServices && (
-            <section className="service-banner" aria-label="Studio services">
-              <div>
-                <strong>Northline Studio</strong>
-                <p>
-                  {business?.hours} · {business?.timezone}
-                </p>
-              </div>
-              <div className="service-list">
-                {business?.services.map((s) => (
-                  <span key={s.id}>
-                    {s.name}
-                    <small>
-                      {s.minutes} min · PKR {s.price.toLocaleString()}
-                    </small>
-                  </span>
-                ))}
-              </div>
-              <button
-                className="icon-button"
-                aria-label="Close services"
-                onClick={() => setShowServices(false)}
-              >
-                <X size={16} />
-              </button>
-            </section>
-          )}
 
           <div
             className={`main-grid ${inspectorOpen ? "inspector-expanded" : "inspector-collapsed"}`}
@@ -970,6 +954,21 @@ export default function Home() {
               </p>
             </div>
           </section>
+          <StudioServices
+            business={business}
+            hidden={activeView !== "services"}
+            disabled={disabled}
+            onStart={() => {
+              setActiveView("voice");
+              requestAnimationFrame(() =>
+                messageInput.current?.focus({ preventScroll: true }),
+              );
+            }}
+            onBook={(service) => {
+              setActiveView("voice");
+              void submit(`Book ${service.name}`);
+            }}
+          />
           <footer>
             <span>
               <span className="synthetic-tag">
@@ -977,7 +976,7 @@ export default function Home() {
               </span>
               Built for conversations. Designed for clarity.
             </span>
-            <button onClick={() => setShowServices(!showServices)}>
+            <button onClick={() => setActiveView("services")}>
               Northline Studio <ChevronRight size={12} />
             </button>
           </footer>

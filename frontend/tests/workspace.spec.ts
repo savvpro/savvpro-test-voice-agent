@@ -17,6 +17,78 @@ async function open(page: Page) {
   if (await mute.isEnabled()) await mute.click();
 }
 
+for (const width of [390, 1440]) {
+  test(`services are a workspace page with safe booking handoff at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page);
+    const input = page.getByRole("textbox", { name: "Your message" });
+    await input.fill("Keep my unfinished message");
+    const rail = page.getByRole("complementary", { name: "Application" });
+    async function services() {
+      if (width < 570)
+        await page
+          .locator(".topbar")
+          .getByRole("button", { name: "Expand navigation", exact: true })
+          .click();
+      await rail
+        .getByRole("button", { name: "View studio services", exact: true })
+        .click();
+    }
+    await services();
+    const view = page.getByRole("region", {
+      name: "Studio services workspace",
+    });
+    await expect(view).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Studio services", exact: true }),
+    ).toBeVisible();
+    await expect(
+      rail.getByRole("button", { name: "View studio services" }),
+    ).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("log")).toBeHidden();
+    await expect(page.locator(".service-banner")).toHaveCount(0);
+    await expect(view.getByRole("button", { name: /^Book / })).toHaveCount(3);
+    await expect(
+      view.getByRole("region", { name: "Service catalog" }),
+    ).toContainText("PKR 1,800");
+    await expect(
+      view.getByRole("region", { name: "Service catalog" }),
+    ).toContainText("Save PKR 200");
+    await expect(
+      view.getByRole("region", { name: "Opening hours" }),
+    ).toContainText("Asia/Karachi");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({ path: `test-results/services-${width}-dark.png` });
+    await page.getByRole("button", { name: "Switch to light mode" }).click();
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `test-results/services-${width}-light.png` });
+    await view
+      .getByRole("button", { name: "Start a conversation", exact: true })
+      .click();
+    await expect(input).toHaveValue("Keep my unfinished message");
+    await expect(input).toBeFocused();
+    await services();
+    await view
+      .getByRole("button", { name: "Book Haircut + Beard", exact: true })
+      .click();
+    await expect(input).toBeEnabled();
+    await expect(page.getByRole("log")).toContainText("Haircut + Beard");
+    await expect(page.getByRole("log")).toContainText("Which date?");
+    await expect(
+      page.getByRole("region", { name: "Latest appointment receipt" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Confirm appointment", exact: true }),
+    ).toHaveCount(0);
+  });
+}
+
 for (const { width, suggestion, expectedReply } of [
   {
     width: 390,
