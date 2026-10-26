@@ -39,7 +39,7 @@ An assessment submission (see `TASK.md`): a voice assistant that does a real pho
 
 ```
 frontend/  React + TypeScript (Vite)   — mic, transcript, decision panel
-backend/   Python 3.12 + FastAPI       — brain + REST API + SQLite
+backend/   Python 3.11 + FastAPI       — brain + REST API + SQLite
 ```
 
 API:
@@ -84,7 +84,7 @@ One page: a call start/end button and a push-to-talk/auto-listen mic, a chat-sty
 
 ### Quality
 
-- Backend: `uv` for deps, `ruff` lint/format, `mypy`, `pytest` (NLU unit tests, dialogue scenario tests that script whole calls, API tests via FastAPI `TestClient`).
+- Backend: `pip` + `.venv` (pyenv 3.11) for deps, `ruff` lint/format, `mypy`, `pytest` (NLU unit tests, dialogue scenario tests that script whole calls, API tests via FastAPI `TestClient`).
 - Frontend: TypeScript strict, ESLint, `vitest` + Testing Library for the main component and API client.
 - CI: GitHub Actions running both suites on push/PR.
 - Docker: a backend image (uvicorn) and a frontend image (nginx serving the build, proxying `/api`). `docker compose up` runs everything.
