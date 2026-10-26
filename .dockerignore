@@ -1,0 +1,15 @@
+.git
+.venv
+**/node_modules
+frontend/dist
+.env*
+.neon
+*.db*
+.impeccable
+.firecrawl
+artifacts
+**/__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage

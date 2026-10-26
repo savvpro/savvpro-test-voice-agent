@@ -1,0 +1,15 @@
+:root {
+  color-scheme: dark;
+  --font: 'Manrope Variable', 'Segoe UI', sans-serif;
+  --canvas: #0b0d10;
+  --surface: #121519;
+  --raised: #1a1e23;
+  --ink: #f1ede4;
+  --muted: #a7abae;
+  --line: #303338;
+  --gold: #dfbd7d;
+  --gold-hover: #eccd96;
+  --gold-tint: #27241e;
+  --success: #a9c5af;
+  --danger: #e6a6a2;
+}

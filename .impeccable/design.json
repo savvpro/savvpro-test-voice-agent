@@ -1,0 +1,342 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T16:17:44.946623+00:00",
+  "title": "Design System: Bayline Service Reception",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Charcoal Canvas",
+        "canonical": "#0b0d10",
+        "tonalRamp": [
+          "oklch(15.00% 0.00719 258.37)",
+          "oklch(26.43% 0.00719 258.37)",
+          "oklch(37.86% 0.00719 258.37)",
+          "oklch(49.29% 0.00719 258.37)",
+          "oklch(60.71% 0.00719 258.37)",
+          "oklch(72.14% 0.00719 258.37)",
+          "oklch(83.57% 0.00719 258.37)",
+          "oklch(95.00% 0.00719 258.37)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Reception Surface",
+        "canonical": "#121519",
+        "tonalRamp": [
+          "oklch(15.00% 0.00936 255.63)",
+          "oklch(26.43% 0.00936 255.63)",
+          "oklch(37.86% 0.00936 255.63)",
+          "oklch(49.29% 0.00936 255.63)",
+          "oklch(60.71% 0.00936 255.63)",
+          "oklch(72.14% 0.00936 255.63)",
+          "oklch(83.57% 0.00936 255.63)",
+          "oklch(95.00% 0.00936 255.63)"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised Charcoal",
+        "canonical": "#1a1e23",
+        "tonalRamp": [
+          "oklch(15.00% 0.01137 254.06)",
+          "oklch(26.43% 0.01137 254.06)",
+          "oklch(37.86% 0.01137 254.06)",
+          "oklch(49.29% 0.01137 254.06)",
+          "oklch(60.71% 0.01137 254.06)",
+          "oklch(72.14% 0.01137 254.06)",
+          "oklch(83.57% 0.01137 254.06)",
+          "oklch(95.00% 0.01137 254.06)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm Ink",
+        "canonical": "#f1ede4",
+        "tonalRamp": [
+          "oklch(15.00% 0.01273 86.83)",
+          "oklch(26.43% 0.01273 86.83)",
+          "oklch(37.86% 0.01273 86.83)",
+          "oklch(49.29% 0.01273 86.83)",
+          "oklch(60.71% 0.01273 86.83)",
+          "oklch(72.14% 0.01273 86.83)",
+          "oklch(83.57% 0.01273 86.83)",
+          "oklch(95.00% 0.01273 86.83)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Quiet Gray",
+        "canonical": "#a7abae",
+        "tonalRamp": [
+          "oklch(15.00% 0.00628 239.85)",
+          "oklch(26.43% 0.00628 239.85)",
+          "oklch(37.86% 0.00628 239.85)",
+          "oklch(49.29% 0.00628 239.85)",
+          "oklch(60.71% 0.00628 239.85)",
+          "oklch(72.14% 0.00628 239.85)",
+          "oklch(83.57% 0.00628 239.85)",
+          "oklch(95.00% 0.00628 239.85)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Ruled Divider",
+        "canonical": "#303338",
+        "tonalRamp": [
+          "oklch(15.00% 0.00982 260.71)",
+          "oklch(26.43% 0.00982 260.71)",
+          "oklch(37.86% 0.00982 260.71)",
+          "oklch(49.29% 0.00982 260.71)",
+          "oklch(60.71% 0.00982 260.71)",
+          "oklch(72.14% 0.00982 260.71)",
+          "oklch(83.57% 0.00982 260.71)",
+          "oklch(95.00% 0.00982 260.71)"
+        ]
+      },
+      "gold": {
+        "role": "primary",
+        "displayName": "Warm Brass",
+        "canonical": "#dfbd7d",
+        "tonalRamp": [
+          "oklch(15.00% 0.09069 82.61)",
+          "oklch(26.43% 0.09069 82.61)",
+          "oklch(37.86% 0.09069 82.61)",
+          "oklch(49.29% 0.09069 82.61)",
+          "oklch(60.71% 0.09069 82.61)",
+          "oklch(72.14% 0.09069 82.61)",
+          "oklch(83.57% 0.09069 82.61)",
+          "oklch(95.00% 0.09069 82.61)"
+        ]
+      },
+      "gold-hover": {
+        "role": "primary",
+        "displayName": "Light Brass",
+        "canonical": "#eccd96",
+        "tonalRamp": [
+          "oklch(15.00% 0.07914 81.58)",
+          "oklch(26.43% 0.07914 81.58)",
+          "oklch(37.86% 0.07914 81.58)",
+          "oklch(49.29% 0.07914 81.58)",
+          "oklch(60.71% 0.07914 81.58)",
+          "oklch(72.14% 0.07914 81.58)",
+          "oklch(83.57% 0.07914 81.58)",
+          "oklch(95.00% 0.07914 81.58)"
+        ]
+      },
+      "gold-tint": {
+        "role": "primary",
+        "displayName": "Brass Tint",
+        "canonical": "#27241e",
+        "tonalRamp": [
+          "oklch(15.00% 0.01174 84.58)",
+          "oklch(26.43% 0.01174 84.58)",
+          "oklch(37.86% 0.01174 84.58)",
+          "oklch(49.29% 0.01174 84.58)",
+          "oklch(60.71% 0.01174 84.58)",
+          "oklch(72.14% 0.01174 84.58)",
+          "oklch(83.57% 0.01174 84.58)",
+          "oklch(95.00% 0.01174 84.58)"
+        ]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Confirmed Green",
+        "canonical": "#a9c5af",
+        "tonalRamp": [
+          "oklch(15.00% 0.04316 151.65)",
+          "oklch(26.43% 0.04316 151.65)",
+          "oklch(37.86% 0.04316 151.65)",
+          "oklch(49.29% 0.04316 151.65)",
+          "oklch(60.71% 0.04316 151.65)",
+          "oklch(72.14% 0.04316 151.65)",
+          "oklch(83.57% 0.04316 151.65)",
+          "oklch(95.00% 0.04316 151.65)"
+        ]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Danger Rose",
+        "canonical": "#e6a6a2",
+        "tonalRamp": [
+          "oklch(15.00% 0.07642 22.98)",
+          "oklch(26.43% 0.07642 22.98)",
+          "oklch(37.86% 0.07642 22.98)",
+          "oklch(49.29% 0.07642 22.98)",
+          "oklch(60.71% 0.07642 22.98)",
+          "oklch(72.14% 0.07642 22.98)",
+          "oklch(83.57% 0.07642 22.98)",
+          "oklch(95.00% 0.07642 22.98)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Task heading",
+        "purpose": "Responsive page entry heading."
+      },
+      "title": {
+        "displayName": "Section title",
+        "purpose": "Compact section hierarchy."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Base reading rhythm."
+      },
+      "control": {
+        "displayName": "Control label",
+        "purpose": "Primary, secondary, and text actions."
+      },
+      "conversation": {
+        "displayName": "Conversation",
+        "purpose": "Wrapped transcript text."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "control-transition",
+        "value": "background 0.18s, color 0.18s",
+        "purpose": "Enabled button hover feedback."
+      },
+      {
+        "name": "waveform",
+        "value": "0.85s ease-in-out infinite alternate",
+        "purpose": "Illustrative bars only while listening or speaking."
+      },
+      {
+        "name": "transcript-word-reveal",
+        "value": "180ms word fade; delay <=600ms; 100ms live recognition fade",
+        "purpose": "Reveal actual new response and recognition text; no delay for reduced motion or initial history."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation-duration: 0.01ms; animation-iteration-count: 1; transition-duration: 0.01ms",
+        "purpose": "Reduced-motion override; smooth page scrolling also disabled."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "1600px"
+      },
+      {
+        "name": "compact-desktop",
+        "value": "1120px"
+      },
+      {
+        "name": "stacked",
+        "value": "800px"
+      },
+      {
+        "name": "narrow",
+        "value": "440px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "description": "Brass emphasis for the next task action.",
+      "html": "<button class=\"ds-primary\">Start a call <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 12h14m-6-6 6 6-6 6\"/></svg></button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;border-radius:8px;padding:12px 19px;font-size:13px;font-weight:650;transition:background .18s,color .18s;font-family:var(--font,'Manrope Variable','Segoe UI',sans-serif);background:var(--gold,#dfbd7d);color:var(--canvas,#0b0d10);border:0}.ds-primary:hover{background:var(--gold-hover,#eccd96)}.ds-primary:focus-visible{outline:2px solid var(--gold,#dfbd7d);outline-offset:5px;}",
+      "refersTo": "button-primary"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "description": "Quiet appointment management.",
+      "html": "<button class=\"ds-secondary\">Reschedule</button>",
+      "css": ".ds-secondary{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;border-radius:8px;padding:12px 19px;font-size:13px;font-weight:650;transition:background .18s,color .18s;font-family:var(--font,'Manrope Variable','Segoe UI',sans-serif);background:var(--raised,#1a1e23);color:var(--ink,#f1ede4);border:1px solid var(--line,#303338)}.ds-secondary:hover{background:#252a30}.ds-secondary:focus-visible{outline:2px solid var(--gold,#dfbd7d);outline-offset:5px;}",
+      "refersTo": "button-secondary"
+    },
+    {
+      "name": "Text action",
+      "kind": "button",
+      "description": "Lower-emphasis alternate entry.",
+      "html": "<button class=\"ds-text\">Type instead</button>",
+      "css": ".ds-text{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;border-radius:8px;padding:12px 19px;font-size:13px;font-weight:650;transition:background .18s,color .18s;font-family:var(--font,'Manrope Variable','Segoe UI',sans-serif);padding:10px 3px;border:0;background:transparent;color:var(--muted,#a7abae)}.ds-text:hover{color:var(--ink,#f1ede4)}.ds-text:focus-visible{outline:2px solid var(--gold,#dfbd7d);outline-offset:5px;}",
+      "refersTo": "button-text"
+    },
+    {
+      "name": "Composer",
+      "kind": "input",
+      "description": "Dark input enclosure with brass focus and send action.",
+      "html": "<form class=\"ds-composer\"><input aria-label=\"Message reception\" placeholder=\"Type your request\"/><button aria-label=\"Send request\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 12h14m-6-6 6 6-6 6\"/></svg></button></form>",
+      "css": ".ds-composer{display:flex;gap:8px;background:var(--surface,#121519);border:1px solid #565047;border-radius:10px;padding:5px;font-family:var(--font,'Manrope Variable','Segoe UI',sans-serif);}.ds-composer:focus-within{border-color:var(--gold,#dfbd7d)}.ds-composer input{flex:1;min-width:0;min-height:44px;border:0;outline:0;background:transparent;color:var(--ink,#f1ede4);padding:10px 11px;font:inherit;font-size:13px}.ds-composer input::placeholder{color:var(--muted,#a7abae)}.ds-composer button{width:44px;height:44px;border:0;border-radius:7px;background:var(--gold,#dfbd7d);color:var(--canvas,#0b0d10)}.ds-composer button:hover{background:var(--gold-hover,#eccd96)}.ds-composer button:focus-visible{outline:2px solid var(--gold,#dfbd7d);outline-offset:5px;}",
+      "refersTo": "field-composer"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "description": "Persistent task destinations; active state uses brass.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main\"><a href=\"#reception\" aria-current=\"page\">Reception</a><a href=\"#appointments\">Your appointments</a></nav>",
+      "css": ".ds-nav{display:flex;gap:28px;background:var(--canvas,#0b0d10);font-family:var(--font,'Manrope Variable','Segoe UI',sans-serif);}.ds-nav a{display:flex;align-items:center;min-height:48px;padding:0 2px;border-bottom:2px solid transparent;text-decoration:none;color:var(--muted,#a7abae);font-size:13px}.ds-nav a[aria-current]{color:var(--gold,#dfbd7d);border-color:var(--gold,#dfbd7d)}.ds-nav a:hover{color:var(--ink,#f1ede4)}.ds-nav a:focus-visible{outline:2px solid var(--gold,#dfbd7d);outline-offset:5px;}"
+    },
+    {
+      "name": "Quick request",
+      "kind": "chip",
+      "description": "Ruled utterance button, not a filter pill.",
+      "html": "<button class=\"ds-request\"><span>Ask about opening hours</span><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 12h14m-6-6 6 6-6 6\"/></svg></button>",
+      "css": ".ds-request{display:flex;align-items:center;gap:18px;min-height:88px;padding:20px 18px;border:0;border-block:1px solid var(--line,#303338);background:var(--canvas,#0b0d10);color:var(--ink,#f1ede4);font-size:12px;text-align:left;font-family:var(--font,'Manrope Variable','Segoe UI',sans-serif);}.ds-request svg{color:var(--gold,#dfbd7d)}.ds-request:hover{background:var(--surface,#121519)}.ds-request:focus-visible{outline:2px solid var(--gold,#dfbd7d);outline-offset:5px;}"
+    },
+    {
+      "name": "Appointment review",
+      "kind": "card",
+      "description": "Neutral preview uses no invented booking facts.",
+      "html": "<section class=\"ds-review\"><h2>Your appointment</h2><p>To be selected</p><span>Review the details before confirming.</span></section>",
+      "css": ".ds-review{padding:25px;border:1px solid var(--line,#303338);border-radius:14px;background:var(--surface,#121519);color:var(--ink,#f1ede4);font-family:var(--font,'Manrope Variable','Segoe UI',sans-serif);}.ds-review h2{margin:0;padding-bottom:24px;border-bottom:1px solid var(--line,#303338);font-size:13px;font-weight:650}.ds-review p{margin:28px 0 7px;font-size:30px;font-weight:550;letter-spacing:-.035em;color:var(--gold,#dfbd7d)}.ds-review span{font-size:12px;color:var(--muted,#a7abae)}",
+      "refersTo": "panel-appointment"
+    },
+    {
+      "name": "Decision inspector",
+      "kind": "custom",
+      "description": "Native disclosure for actual deterministic evidence.",
+      "html": "<details class=\"ds-inspector\"><summary>How the assistant decided</summary><p>Send a request to see its actual decision trace.</p></details>",
+      "css": ".ds-inspector{border:1px solid var(--line,#303338);border-radius:12px;background:var(--surface,#121519);color:var(--ink,#f1ede4);font-family:var(--font,'Manrope Variable','Segoe UI',sans-serif);}.ds-inspector summary{cursor:pointer;min-height:80px;padding:18px 23px;font-size:13px}.ds-inspector summary:hover{background:var(--raised,#1a1e23)}.ds-inspector summary:focus-visible{outline:2px solid var(--gold,#dfbd7d);outline-offset:5px;}.ds-inspector p{margin:0;padding:25px;border-top:1px solid var(--line,#303338);font-size:12px;color:var(--muted,#a7abae)}",
+      "refersTo": "panel-inspector"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Brass Service Reception",
+    "overview": "Bayline is an operational reception desk expressed in matte charcoal, warm brass, and precise ruled details. The user-requested black-and-gold world supersedes the earlier white/slate/blue theme while retaining the approved reception composition. Its premium character comes from restrained contrast, self-hosted Manrope, generous task spacing, and coherent SVG identity rather than imagery or metallic effects.\n\nCall controls, conversation, and appointment review remain the main experience. A dedicated Your appointments view makes session-owned booking management discoverable; technical evidence stays in an expandable inspector. This record derives from the shipped React components and CSS, not a promise of manual voice or accessibility verification.",
+    "keyCharacteristics": [
+      "Matte charcoal surfaces with warm brass actions and off-white facts.",
+      "Self-hosted variable typography and consistent stroked SVG icons.",
+      "Flat, finely divided working regions and explicit appointment states.",
+      "Visible mobile navigation, typed fallback, and confirmation before changes."
+    ],
+    "rules": [
+      {
+        "name": "The Brass Action Rule",
+        "body": "Reserve brass for interaction, current proposals, and small status or identity accents; keep large working surfaces charcoal.",
+        "section": "colors"
+      },
+      {
+        "name": "The Task First Rule",
+        "body": "Keep call controls and conversation before appointment details in reading order, and place technical evidence after the caller's task.",
+        "section": "layout"
+      },
+      {
+        "name": "The Matte Surface Rule",
+        "body": "Separate regions through tone, spacing, and fine borders rather than ornamental elevation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use matte charcoal, warm brass, self-hosted Manrope, and coherent SVG icons.",
+      "**Do** retain visible mobile destinations, visible keyboard focus, readable inputs, and 44px primary control targets.",
+      "**Do** distinguish proposals from confirmed appointments and require explicit confirmation.",
+      "**Do** render appointment facts and decision traces from actual session-scoped API data.",
+      "**Do** keep transcript scrolling local and respect reduced-motion preferences."
+    ],
+    "donts": [
+      "**Don't** reintroduce the superseded white/blue theme or generic marketing-page styling.",
+      "**Don't** add gradients, glows, metallic effects, or ornamental panel shadows.",
+      "**Don't** treat illustrative waveform bars as measured audio or invent confidence scores.",
+      "**Don't** infer provider, microphone, hosting, or accessibility-conformance verification from visual source inspection.",
+      "**Don't** collect real contact, registration, or payment information in this fictional simulation."
+    ]
+  }
+}
