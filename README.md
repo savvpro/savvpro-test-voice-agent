@@ -103,7 +103,7 @@ Time expressions such as “at five”, “five thirty”, and “half past four
 
 When asked for a name, reply with a fictional name alone or a phrase such as “Use name Taha”, “Please use the name Alex Example”, or “Put it under Alex Example”. The instruction words are removed before showing the confirmation and saving the name. Missing names or alternatives such as “Taha or John” require clarification. An explicit name correction to a pending proposal requires a fresh confirmation.
 
-Explicit names supplied with booking details are retained while an invalid date or time is clarified. "You should use Muhammad" also supplies or corrects a name. If you say "I just told you the name", the assistant reports the name saved in the current draft or asks for one if none was captured. New bookings collect their own names.
+Explicit names supplied with booking details are retained while an invalid date or time is clarified. "You should use Muhammad" also supplies or corrects a name. If you say "I just told you the name", the assistant reports the name saved in the current draft or asks for one if none was captured. New bookings collect their own names. The phrases "for the name Alex Example", "for name Alex Example", "with the name Alex Example", and "with name Alex Example" work both inside booking requests and as separate name answers. A slot conflict retains the collected name while asking for another time.
 
 Northline Studio opens **Monday–Saturday 10:00–19:00**, with one chair:
 

@@ -2,7 +2,7 @@
 import pytest
 
 from app.brain.language import extract
-from conftest import NOW, new_session, turn
+from conftest import NOW, book, new_session, turn
 
 
 @pytest.mark.parametrize("text", [
@@ -145,3 +145,49 @@ def test_negated_name_instruction_clears_an_existing_proposal(client):
     assert c["proposed_action"] is None
     c = turn(client, c, "yes")
     assert c["appointment"] is None
+
+
+@pytest.mark.parametrize("prefix", ["for the name", "for name", "with the name", "with name"])
+def test_name_prepositions_in_a_booking_request(prefix):
+    parsed = extract(f"I want you to make a booking for haircut {prefix} Muhammadaha on the on 28th of October 2026 at 4:00 p.m.", NOW)
+    assert parsed.entities.name == "Muhammadaha"
+    assert parsed.entities.service == "haircut"
+    assert parsed.entities.date == "2026-10-28"
+    assert parsed.entities.time == "16:00"
+    assert not parsed.issues
+
+
+@pytest.mark.parametrize("prefix", ["for the name", "for name", "with the name", "with name"])
+def test_name_prepositions_in_a_separate_answer(prefix):
+    parsed = extract(f"{prefix} Muhammad Taha", NOW, expecting_name=True)
+    assert parsed.entities.name == "Muhammad Taha"
+    assert not parsed.issues
+
+
+@pytest.mark.parametrize("second_slot_taken", [False, True])
+def test_occupied_slot_keeps_name_until_explicit_correction(client, second_slot_taken):
+    original = book(client, "book a haircut on October 28 2026 at 4 PM")["appointment"]
+    if second_slot_taken:
+        book(client, "book a haircut on October 28 2026 at 5 PM")
+    c = turn(client, new_session(client), "I want you to make a booking for haircut for the name Muhammadaha on the on 28th of October 2026 at 4:00 p.m.")
+    assert c["entities"]["name"] == "Muhammadaha"
+    assert c["entities"]["time"] is None
+    assert c["missing_information"] == ["time"]
+    assert "taken" in c["reply"]
+    c = turn(client, c, "Yeah change it to 5:00 p.m.")
+    assert c["entities"]["name"] == "Muhammadaha"
+    if second_slot_taken:
+        assert c["missing_information"] == ["time"]
+        c = turn(client, c, "6 PM")
+    assert c["state"] == "AWAITING_CONFIRMATION"
+    assert "Muhammadaha" in c["reply"]
+    assert c["appointment"] is None
+    c = turn(client, c, "I already told you the name is Muhammad Taha")
+    assert c["entities"]["name"] == "Muhammad Taha"
+    assert c["state"] == "AWAITING_CONFIRMATION"
+    assert c["appointment"] is None
+    c = turn(client, c, "yes")
+    assert c["appointment"]["customer_name"] == "Muhammad Taha"
+    expected_time = "18:00" if second_slot_taken else "17:00"
+    assert c["appointment"]["starts_at"] == f"2026-10-28T{expected_time}:00+05:00"
+    assert client.get(f"/api/appointments/{original['reference']}").json() == original

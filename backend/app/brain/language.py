@@ -24,6 +24,7 @@ def intent_text(text: str) -> str:
 
 AFFIRMATIVE = r"(?:yes|yeah|yep|sure|okay|ok)"
 BOOKING_OBJECT = r"(?:(?:a|an|my|the)\s+)?(?:(?:new|another)\s+)?(?:booking|appointment|reservation)"
+NAME_PREPOSITION = r"(?:with|for) (?:the )?name"
 
 
 def confirms_action(text: str, intent: Intent) -> bool:
@@ -107,6 +108,7 @@ def customer_name(text: str, *, expecting_name: bool) -> str | None:
     candidate = re.sub(request_prefix, "", candidate)
     explicit = re.fullmatch(
         r"(?:use (?:(?:the|my) )?name(?: (?:is|of))?"
+        rf"|{NAME_PREPOSITION}"
         r"|put (?:it|(?:(?:the|my) )?(?:booking|appointment)) under(?: the name)?"
         r"|under(?: the name)?|(?:my|the) name is|name is|name's|i am|i'm|call me)\s+(.+)",
         candidate,
@@ -140,7 +142,7 @@ def explicit_name_clause(text: str) -> tuple[str | None, str, str | None]:
         return whole_name, "", None
     if recognize(text).intent != Intent.CREATE:
         return None, clean, None
-    marker = r"\b(?:with (?:the )?name|under the name|use (?:(?:the|my) )?name(?: (?:is|of))?|my name is|the name is|call me)\s+"
+    marker = rf"\b(?:{NAME_PREPOSITION}|under the name|use (?:(?:the|my) )?name(?: (?:is|of))?|my name is|the name is|call me)\s+"
     boundary = (
         r"\s+(?:and\s+)?(?:for|on|at)\b|,\s*"
         r"|\s+and\s+(?=\d|(?:today|tomorrow|next|haircut|hair|beard|classic|combo|use|with|under)\b)"

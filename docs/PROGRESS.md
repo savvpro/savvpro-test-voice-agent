@@ -20,14 +20,14 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 
 | Check | Actual result |
 | --- | --- |
-| `.venv/Scripts/python -m pytest` | **264 passed** after five spoken-conversation follow-ups, one upstream Starlette TestClient/httpx deprecation warning; no failures |
+| `.venv/Scripts/python -m pytest` | **274 passed** after six spoken-conversation follow-ups, one upstream Starlette TestClient/httpx deprecation warning; no failures |
 | `npm run build` in frontend | Passed production compilation, type validation and static-page generation; Next.js 15.5.28 |
 | `npm run typecheck` | Passed |
 | `PLAYWRIGHT_CHANNEL=msedge npm run test:e2e` (PowerShell environment equivalent) | **6 passed**, using installed headless Edge and a real isolated fixed-clock backend |
 | `npm audit --audit-level=high` | **0 vulnerabilities** after PostCSS 8.5.31 override |
 | `.venv/Scripts/python -m pip check` | No broken requirements |
 | `git diff --check` | Passed; Git emitted its normal Windows LF/CRLF notice |
-| Source/documentation credential-pattern scan | 45 files scanned after the fifth follow-up, 0 findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
+| Source/documentation credential-pattern scan | 45 files scanned after the sixth follow-up, 0 findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
 | Assessment preservation | `TASK.md` blob hash exactly matches HEAD; branch remains `candidate-TUAHASHAIKH` |
 
 Backend tests include actual state transitions, relative/spoken date/time parsing, uncertainty, corrections, service duration, opening/closing boundaries, explicit confirmations, conflicts, two independent application instances confirming concurrently, repeated request receipts, stale revisions/appointment versions, isolation, persistence after restart, UTC storage, configured business timezone, rollback after simulated commit failure, and prevention of partial rescheduling after caught validation errors.
@@ -67,6 +67,10 @@ The final full backend suite passed **234 tests**. No frontend code or dependenc
 The next transcript supplied "with the name Muhammad Taha" alongside a malformed date and a valid time, but the parser discarded the name. Explicit name clauses are now consumed before service/calendar/time extraction and retain their own value when another field needs clarification. The malformed "428th" is still rejected. After correcting the date and choosing "Haircut plus beard", the reported flow reaches confirmation with the original name and time. "You should use Muhammad" updates the pending name without committing. A bounded name-reminder phrase reports only the current draft's name, or candidly asks for one when missing.
 
 Added 30 regression cases, including the actual conversation through persistence, inline name orderings, invalid date/time recovery, names that overlap catalog/calendar words, conflicting or negated name corrections and new-booking name isolation. The initial 24-case targeted run reproduced 16 failures, with 8 cases already passing. The final full backend suite passed **264 tests** with one upstream warning. No frontend/dependency changes, database rewrites or browser/audio reruns occurred. The assessment and candidate branch remain unchanged.
+
+## Sixth follow-up: name prepositions and occupied slots
+
+The transcript's "for the name Muhammadaha" was unsupported, so no name was available after the occupied-time rejection. Shared name-preposition grammar now supports "for [the] name" and "with [the] name" in both booking requests and separate answers. The original transcribed spelling is retained until explicitly corrected; changing the time does not discard it. Added 10 cases, including the reported conversation with a real occupied slot and a second conflict before selecting another time. Tests verify fresh confirmation, the final saved name/time and preservation of the original conflicting appointment. The initial targeted run reproduced 8 failures with 2 passing cases; the full backend suite passed **274 tests**. Frontend/dependencies and the demo database were unchanged; browser/audio checks were not rerun.
 
 ## Remaining manual actions and limits
 
