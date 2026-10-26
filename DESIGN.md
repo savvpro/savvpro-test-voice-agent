@@ -1,133 +1,193 @@
-# VoxDesk design
+# VoxDesk implementation and design
 
-## Use case and architecture
+## Use case and scope
 
-Northline Studio is a fictional single-chair barbershop. Appointment reception is bounded and realistic: identify a service, collect a day/time/name, check a calendar, request confirmation and persist the result. It exposes meaningful cases—duration overlaps, corrections, stale availability, ambiguous times, retries and cancellation—without external credentials or real customer records.
+Northline Studio is a fictional single-chair barbershop. Its receptionist handles a complete telephone-style job: identify a service, collect a date/time and fictional customer name, check a real schedule, explain the proposal, obtain confirmation and persist a booking. The same assistant checks availability, reschedules or cancels an existing appointment, answers business questions and closes the conversation.
 
-Next.js owns the interface and browser audio. FastAPI/Pydantic validates HTTP contracts. `brain/language.py` orders intent rules and composes the control, service, calendar and clock grammars in `control_phrases.py`, `services.py`, `calendar_dates.py` and `clock_times.py`. `brain/engine.py` transitions structured context through a small `BookingPort` interface. `bookings.py` owns calendar rules/operations; `db.py` owns models/transactions. An injected clock and IANA timezone make behavior reproducible.
+This job makes uncertainty concrete: a caller can change a time, reject a proposal, omit a detail, refer to an earlier booking or retry after losing a response. The implementation favors an inspectable decision and a safe clarification over silently guessing. The app uses no real customer contact details, external calendar account or payment integration.
+
+## Architecture and ownership
 
 ```mermaid
 flowchart LR
-  A[Speech recognition or typed text] --> B[FastAPI validated turn]
-  B --> C[Intent rules and entity grammar]
-  C --> D[Conversation state machine]
-  D --> E[Booking service]
-  E --> F[(SQLite)]
-  D --> G[Reply and structured decision]
-  G --> H[Conversation and Decision Inspector]
-  G --> I[Browser speech synthesis]
+  Caller[Caller speaks] --> STT[Browser speech recognition]
+  Typed[Typed input] --> API[FastAPI validated turn]
+  STT --> API
+  API --> Grammar[Custom Python intent and entity grammars]
+  Grammar --> Engine[Conversation state machine]
+  Engine --> Booking[Booking service and business validation]
+  Booking --> DB[(SQLite)]
+  Engine --> Result[Reply and structured decision]
+  Result --> UI[Transcript, receipt and Decision Inspector]
+  Result --> TTS[Browser speech synthesis]
+  TTS --> Heard[Caller hears reply]
 ```
 
-The backend is authoritative. State labels, extracted values, availability, references, outcomes and explanations come from its responses. UI network/audio activity indicates local status, not invented engine decisions. `last_committed_action` distinguishes a receipt from merely retrieving an existing appointment or ending a conversation.
+The frontend owns presentation, microphone/speaker lifecycle and transport recovery. FastAPI validates the request contract. The Python brain owns intent, collected details, questions, proposals, confirmation and responses. The booking service owns calendar validation and writes. The database layer makes a turn's effects atomic. No browser button directly changes an appointment.
 
-## Custom deterministic brain
-
-**AI tools helped develop this software; they do not run the receptionist.** There are no LLM clients, prompts, model calls, embeddings or remote intent engines. Python rules and static reply templates determine actions. Browser services handle audio transcription/synthesis only, as permitted by the assessment.
-
-### Intent rules and priority
-
-Text is normalized for case, whitespace, apostrophes and AM/PM punctuation. Ordered rules handle:
-
-1. Whole-utterance end/repeat/denial/confirmation controls and courtesy acknowledgements.
-2. Negated action commands.
-3. Business questions, including informational “How do I cancel a booking?”
-4. Explicit cancellation, rescheduling, availability and creation patterns. Conflicting requested actions require clarification.
-5. Contextual corrections: “actually”, “make it”, “instead”, “I meant”.
-6. Active-task details or unknown-request recovery.
-
-Confirmation uses a full-utterance allowlist. “Yes, but make it Friday” cannot commit. “Read a book” is not a booking command. Denial discards pending changes. `control_phrases.py` composes bounded denial clauses and optional courtesy, so “never mind, don't do it, revert the change” rejects the proposal without substring matching. “Nothing, thank you so much” ends the conversation; thanks alone preserves the current step. Rejecting when nothing is pending says so and keeps the saved receipt. Rule matches have no confidence percentages because they are not calibrated probabilities.
-
-### Entity extraction
-
-Service aliases map to three catalog IDs. The service grammar separates positive choices from local exclusions: “haircut without a beard trim” selects haircut, while “hair and beard” selects the combination. Contradictions, alternatives and positive unsupported services require clarification; a negated unsupported service does not override an otherwise valid choice. Dates support relative days, bounded day offsets, weekdays, next weekday, validated ISO dates, month names/abbreviations with numeric or word-ordinal days, and year-first numeric forms. Bare weekday includes today; next weekday is strictly future. Negated dates require an explicit replacement. Yesterday is extracted and rejected by business validation. A 180-day horizon keeps the calendar bounded.
-
-`brain/calendar_dates.py` parses and masks whole calendar spans before the clock-time grammar runs. “28th of October 2026”, “2026 October 28”, and “2026 1028” become the same ISO date; their numbers cannot become hours or minutes. Malformed year-led fragments such as “2026 0 to 10” and invalid dates are also masked, with a date-specific clarification, preserving a separately supplied time. Ordinal day words are consumed before validating the calendar range so “thirty third” cannot collapse into the third day. Leap years and weekday/date consistency use Python's calendar arithmetic. Named dates without a year use the current business year, never an implicit rollover; explicit incomplete/spoken years require clarification. The booking layer still rejects past and out-of-horizon dates, and includes the interpreted past date in its reply.
-
-Time parsing supports AM/PM, unambiguous 24-hour values, noon/midnight, word hours, “five thirty”, “half past four”, “quarter past four” and “quarter to five”. Quarter-to computes the preceding hour, including the AM/PM boundary at twelve. Bare 1–12 hours require AM/PM rather than assuming the likely studio time. A same-utterance day period can disambiguate a time. Period-only availability is supported; booking requires an exact start. Unsupported offsets, ranges and negated times cannot collapse to a trailing hour: they ask for an exact positive time. Multiple distinct values, invalid hours/minutes, invalid dates and numeric slash dates trigger field-specific clarification and clear the affected old value.
-
-Names are collected in a name context or through a name-introduction phrase. Creation requests can include marked inline clauses such as "with the name Alex Example"; separators delimit the name from following appointment details. Anchored request wrappers such as “use name”, “put it under”, and “my name is” are removed before validating the entire name value. Bounded courtesy/repair prefixes and trailing politeness are removed; Unicode letters, apostrophes and hyphens remain supported. Bare names and the short “use Taha” form require the name-collection context. Explicit name clauses are consumed before calendar/time/service parsing, so name words cannot become service aliases or dates. A date/time error clears only that field and preserves the explicit name. Shared name-preposition rules support "for [the] name" and "with [the] name" in both inline and separate answers. Availability conflicts likewise clear only the rejected slot field, preserving the name until an explicit correction. Multiple or negated name clauses invalidate the name and pending proposal. "You should use Muhammad" is an explicit name instruction even while reviewing a proposal; a later confirmation is still required. Control/request fragments, alternatives and unmarked appointment details cannot become names. References match `NL-` plus eight alphanumeric characters; generated references use random synthetic hexadecimal values. Names are never used to guess a booking. This is a documented small English grammar, not unrestricted NLU.
-
-### State machine and context
-
-`SessionView` stores workflow intent, state, entities, missing information, `rejected_fields`, proposed action, last committed action, bounded history, last decision, clarification count, target booking version, actual appointment/slots and monotonic revision. Rejected fields persist independently until explicitly repaired; fixing the time cannot restore a rejected date from the original appointment. The new list defaults to empty for older persisted sessions. Context is copied before each turn and persisted as JSON. No shared global conversation variables exist.
-
-| Situation | Transition / behavior |
+| Source | Responsibility |
 | --- | --- |
-| Idle/completed + supported request | Initialize workflow and collect supplied entities |
-| Missing service/date/time | `COLLECTING_DETAILS` or `RESCHEDULING`, ask specific question |
-| Existing operation without reference | `IDENTIFYING_EXISTING_BOOKING` |
-| Reference found | Load authoritative appointment and version |
-| Slot valid, name missing | Ask name, without reserving |
-| Complete valid proposal | `AWAITING_CONFIRMATION` |
-| Explicit confirmation | Revalidate, write, then `BOOKING_COMPLETE` or `COMPLETED` |
-| Commit rejected | Clear proposal and request corrected information |
-| Denial/negated command | Discard pending proposal, `IDLE` |
-| Business question/repeat | Respond and preserve context |
-| Restart | Reset proposal; retain persisted appointments |
-| End | `COMPLETED`, discard pending authorization |
+| `backend/app/main.py`, `config.py` | Application factory/lifespan, database-error responses, CORS, environment settings, IANA timezone and injected clock |
+| `backend/app/api.py`, `schemas.py` | REST contracts, validated turn bodies, typed intents/states/entities/results, revisions and idempotency lookup |
+| `backend/app/brain/language.py` | Normalization, ordered intent recognition, name grammar, entity composition and confirmation-target helpers |
+| `backend/app/brain/control_phrases.py` | Whole-utterance confirmation, denial, composed back-outs, repeat, courtesy and ending rules |
+| `backend/app/brain/services.py` | Service aliases, inclusion/exclusion scope, alternatives and unsupported choices |
+| `backend/app/brain/calendar_dates.py` | Calendar interpretation, valid/invalid consumed spans and protection against date digits becoming clock values |
+| `backend/app/brain/clock_times.py` | Complete clock expressions, periods, AM/PM, validation and ambiguity |
+| `backend/app/brain/engine.py` | Context transitions, missing-detail prompts, corrections, target selection, proposal/confirmation gate and actual decision trace |
+| `backend/app/catalog.py`, `bookings.py` | Synthetic business definitions, date/hours/duration checks, availability, lookup, create/reschedule/cancel and appointment version checks |
+| `backend/app/db.py` | Appointments, conversation payloads, turn receipts and SQLite transactions |
+| `frontend/app/page.tsx` | Workspace views, authoritative conversation state, requests/retries, suggestions, composer and Inspector |
+| `frontend/lib/api.ts`, `types.ts`, `session-cache.ts` | Typed API client, request timeout/errors, session/pending-turn recovery and storage failure handling |
+| `frontend/lib/use-voice.ts` | Browser STT/TTS adapters, language choice, recognition/speech separation, error guidance and cleanup |
+| `frontend/components/` | Appointment cards, service catalog and theme preference controls |
+| `frontend/app/layout.tsx`, `icon.svg`, `globals.css` | VoxDesk metadata/favicon, early theme preference and responsive interface styles |
+| `backend/tests/`, `frontend/tests/` | Deterministic domain/API tests and production-browser workflows/fault injection |
+| `.github/workflows/ci.yml` | Python matrix and Node/browser verification jobs, pinned action revisions and failure artifacts |
 
-Checks run synchronously; the frontend receives the result rather than a transient checking snapshot. Cancellation uses the same explicit confirmation gate. Enum labels reserved for checking/cancelling do not imply background tasks.
+The `__init__.py` files mark Python packages. Lockfiles record dependency versions; the remaining TypeScript/Next/PostCSS/Pytest configuration supports builds and checks. The repository keeps the three requested documentation files, the original `TASK.md` and non-Markdown AI evidence. Development milestone/checklist/matrix notes have been consolidated into these required documents.
 
-### Corrections and uncertainty
+## Custom Python brain
 
-A correction overrides only its supplied fields. “Actually make it 5 PM” retains service/date/name, clears authorization and checks availability again. “No, I meant Friday” is a date correction, not a denial. Ambiguous corrections clear the old field; unspecified corrections invalidate authorization and ask what should change. Negated action commands always discard the pending action.
+**AI assisted development; it is not part of the runtime decision path.** There is no prompt-driven router, probabilistic intent service, embedding search or LLM SDK. Every action comes from Python rules and explicit state. Browser speech services are used only for transcription and synthesis, as permitted by the task.
 
-Ordinary request forms such as “make a booking”, “I want you to make a haircut”, “can you fit me in”, “could you squeeze me in”, and polite lead-ins are matched by explicit grammar rules. Contrast tests exercise the same request families with single and combined services. A directional correction (“change from 4 PM to 5 PM”) extracts its destination; two alternatives without that directional grammar still need clarification. Name answers strip a bounded set of leading fillers (“and”, “um”, “it's”) and trailing courtesy words, with the interpreted name shown in the confirmation summary.
+### Recognition and priority
 
-`last_booking_reference` remembers the most recently verified appointment within a session, separately from the pending proposal. Reschedule/cancel can reuse it; explicit references take priority and no other session is searched. Old persisted sessions can recover it from their own assistant-generated booking receipt, followed by database lookup; user-supplied receipt quotations are not trusted as session memory. A time-only reschedule keeps the date, and a date-only reschedule keeps the time, except when that field was explicitly rejected or is specifically awaiting clarification. An open “new date or time” question accepts either and keeps the other saved value. A field-only request such as “change the timing for this appointment” clears any pending time and asks for its replacement; it cannot re-propose an earlier value. Within active rescheduling, a complete “from X to Y” answer supplies the destination even when surrounding speech is unclear. Outside that context, reported actions and garbled booking objects cannot start a change. Stale versions still require fresh review. Draft-level “move it” and “cancel it” cannot target an older confirmed booking.
+Normalization standardizes case, whitespace, apostrophes and AM/PM punctuation. A bounded set of spoken repair prefixes is removed without stripping negation. The recognition order is:
 
-Operation scope is explicit. “Cancel that change” discards a reschedule proposal. “Cancel it” during a new booking discards that draft, even if a previous appointment is remembered. During rescheduling, the ambiguous pronoun clears pending authorization and asks whether to discard the change or cancel the confirmed appointment. An explicit reference or “cancel my confirmed appointment” selects the stored appointment, with its own confirmation. A subsequent bare “yes” cannot act on an abandoned proposal.
+1. Whole-utterance end/repeat/denial/confirmation controls and courtesy.
+2. Negated action commands, reference help and booking-status questions.
+3. Business-information questions, including “How do I cancel a booking?”
+4. Cancellation, rescheduling, availability and creation patterns. Multiple requested operations require clarification.
+5. Affirmatives with new details and contextual corrections.
+6. Active-task details or an unknown-request fallback.
 
-Availability and creation share collected details. Accepting an availability offer enters the create workflow and never directly commits a booking. Unknown speech after an availability result gets a targeted booking-offer clarification; no fuzzy match turns a transcription like “poke it” into a write. Status/reference-help questions have dedicated rules and cannot authorize writes. Business replies select only requested catalog topics to keep spoken answers brief.
+This distinction prevents “read a book” becoming a booking and “have you booked it?” creating another one. No confidence percentage is invented for a rule match. Business answers come from the static catalog and retain the active workflow.
 
-Intent normalization also removes bounded repair prefixes such as “I said” and normalizes clause punctuation, while preserving negation. Name answers and draft cancellation use that same normalization so the repair words cannot become a name or redirect a draft cancellation to an older booking. New/another booking requests share their noun grammar with negation and informational-question rules.
+`control_phrases.py` composes bounded denial clauses and optional courtesy. “Never mind, don't do it, revert the change” rejects a proposal; “nothing, thank you so much” ends; thanks alone preserves the current step. Whole-utterance matching avoids interpreting a control word embedded in another request as a close or confirmation.
 
-Availability results accept subsequent entity-bearing answers even after their query has completed. A bounded affirmative with new details (“yes, do it at 4:30 PM”) starts collecting a booking with that time; a bare time refines availability without assuming a booking instruction. Both paths revalidate against current database conflicts. An affirmative that changes a ready proposal updates the proposal and asks for another confirmation. Exact affirmative action phrases (“yes, book it”) confirm only a matching, complete pending action. Compound action requests invalidate prior authorization.
+### Entities and uncertainty
 
-Time normalization joins adjacent hour/minute tokens (“5 30 PM”, “four 30 PM”) and supports numeric hours with spoken minutes. AM/PM and range validation still apply; alternatives are not joined. Explicit approximate time claims (“around 40”, “around forty”, “around 430”) that cannot be interpreted produce a time clarification, so an invalid requested time cannot silently become an all-day availability search. No fuzzy correction maps “Effect” to a service or “look it” to a booking command.
+| Field | Implementation and boundary |
+| --- | --- |
+| Service | Catalog aliases resolve to haircut, beard or combo. Local exclusions distinguish “haircut without beard” from the combination. Alternatives, contradictions and positive unsupported choices ask for one valid service. |
+| Date | Supports relative days, bounded numeric/word day offsets, weekdays/next weekday, ISO dates, named months/abbreviations, numeric/word ordinal days and year-first numeric forms. Python calendar arithmetic rejects impossible dates and mismatched weekdays. |
+| Time | Supports AM/PM, unambiguous 24-hour values, word hours, selected spoken minute forms, colon-free `5 30 PM`, half/quarter past and quarter to. Bare 1–12 asks AM/PM; booking needs an exact start. |
+| Name | A bounded, Unicode-aware whole-slot grammar strips “use the name”, “put it under”, repair fillers and courtesy. Explicit inline name clauses are consumed before service/date/time extraction. Unmarked words outside a name context are not guessed to be names. |
+| Reference | Parses `NL-` plus eight letters/digits. Generated references use eight random hexadecimal characters. Reference spans are removed before numeric time parsing. |
+| Period | Morning/afternoon/evening can filter availability; a period alone cannot complete a booking. |
 
-Unknown input cannot become a write. The engine asks the outstanding question or explains supported tasks. Every third consecutive clarification offers restart/end guidance. Business interruptions preserve the workflow. The frontend exposes both newly extracted entities in the raw trace and accumulated entities in collected details. Session revisions reject unordered concurrent utterances rather than choosing their order silently.
+Calendar extraction masks **both valid and invalid date spans** before clock parsing. “2026 1028” means a date; “2026 0 to 10” requests a date repair rather than becoming a time. An independently supplied valid time remains available. Named dates without a year use the current business year; incomplete or entirely word-spoken years request clarification rather than silently defaulting.
 
-## Booking persistence and time
+Clock extraction consumes complete supported expressions before pulling out numbers. “Quarter to five PM” means 16:45, including the AM/PM boundary at twelve. Unsupported offsets/ranges, a negated time, a partial minute or several distinct times cannot collapse to the last plausible hour. Slash-date ordering and multiple/negated dates also require clarification.
 
-Three SQLAlchemy tables store appointments, conversations and turn receipts. Starts/ends are UTC epoch seconds; API timestamps include the business offset and IANA zone. Relative dates use business time. DST gaps/folds are rejected rather than guessed. Monday–Saturday 10:00–19:00 must contain the full service; Sunday, past starts and out-of-horizon dates are rejected. Availability suggestions use ten-minute increments; exact valid starts may use other minutes.
+The name grammar preserves a marked name through unrelated field errors and occupied slots. It rejects missing wrappers, alternatives, conflicting names and instruction fragments. Customer names are displayed in the proposal for review. It does not correct spelling from sound; a transcribed name remains unchanged until the caller corrects it.
 
-Intervals are half-open: `existing.start < proposed.end AND existing.end > proposed.start`. Adjacent appointments can touch. Cancelled rows preserve a retrieval record and release their interval.
+### Context and state transitions
 
-Every mutating turn acquires **`BEGIN IMMEDIATE` before reading session/appointment state**. Conflict validation, appointment mutation, context update and idempotency receipt commit together. SQLite's file writer lock covers separate connection pools/server workers. Concurrent confirmations cannot both silently book an overlap. A losing request sees the winner's write. The API returns only after commit; errors roll everything back. Busy writers wait at most ten seconds. See [SQLite transactions](https://www.sqlite.org/lang_transaction.html) and [isolation](https://www.sqlite.org/isolation.html).
+`SessionView` stores the intent, entities, independently rejected fields, missing details, proposed action, last committed action, remembered reference, target appointment version, authoritative appointment, available slots, decision, clarification count, revision and bounded message history. The engine copies context before processing. Context is persisted per conversation, with no global caller state.
 
-Each turn includes `request_id` and `expected_revision`. A unique session/request receipt stores its exact historical response. Identical retries replay it; changed content using the same ID returns 409. `frontend/lib/session-cache.ts` validates pending data and session binding and catches storage read/write/removal failures. With working tab storage, pending requests survive reloads; when storage fails, a warning explains the limit and the current tab retains its request in memory. Safe retries reuse the exact body/ID. An unreadable HTTP response also preserves that pending request instead of assuming failure or generating a new confirmation.
+| Situation | Result |
+| --- | --- |
+| New request while idle/completed | Start the requested workflow and collect provided fields |
+| Required detail missing | `COLLECTING_DETAILS` or `RESCHEDULING`; ask a specific service/date/time/name question |
+| Existing operation without a verified reference | `IDENTIFYING_EXISTING_BOOKING` |
+| Valid reference found | Load the saved appointment and version; use permissible saved defaults |
+| Date/time/service valid but name absent | Ask for the name after checking availability; make no reservation |
+| Complete valid request | `AWAITING_CONFIRMATION`, with a create/reschedule/cancel proposal |
+| Matching explicit confirmation | Revalidate and apply the operation; `BOOKING_COMPLETE` or `COMPLETED` |
+| Failed commit validation | Clear authorization, preserve the real calendar and request repair |
+| Confirmation names another action | Clear proposal, enter collection/rescheduling/cancelling as applicable, and ask for the intended operation |
+| Rejection or negated action | Discard only the pending request; return to `IDLE` |
+| Repeat/business question/courtesy | Reply while retaining the workflow |
+| Restart/end | Clear pending authorization; never silently change saved appointments |
 
-Reschedule/cancel carries the version loaded at proposal time. Commit rejects an appointment changed by another session and asks for a fresh review. Started appointments cannot be changed. Rescheduling validates before changing the original row; failure preserves the old booking. All writes go through the conversation confirmation gate.
+Checking is synchronous: reserved enum labels for checking/cancelling do not imply asynchronous tasks. New session creates another conversation; it does not delete calendar rows.
 
-## Voice and interface
+A correction replaces only supplied fields and invalidates the old proposal. “Actually make it 5 PM” retains service/date/name and checks the new slot. “No, I meant Friday” is a correction rather than a plain denial. Invalid fields stay in `rejected_fields` until individually repaired; fixing a time cannot restore a previously rejected date from the saved appointment.
 
-Recognition is feature-detected (`SpeechRecognition`/`webkitSpeechRecognition`); final transcripts become turns, interim text is feedback only. Permission denial, missing microphone, no speech, network errors and unsupported browsers offer typed recovery. Recognition aborts before synthesis and typed sends; the mic is disabled during speech. There is no automatic listening restart. Cleanup stops both APIs. Muting, stopping audio and replaying the current reply are explicit controls. Users can select US, UK or Pakistan English; installed/browser voice support determines actual pronunciation. Synchronous synthesis failure clears the speaking state and leaves typing usable.
+### Existing appointment and operation scope
 
-The UI uses system fonts, code-native graphics, accessible names/focus, reduced-motion support, live conversation output, alerts and responsive layouts. Message text uses 14px and the composer 16px; primary microphone, send and confirmation controls remain 44px high. Typed turns return focus to the composer. Voice controls share the chat bar, with language selection and listening guidance beneath the input.
+The most recently verified reference is remembered **within its session**, separately from a pending draft. An explicit reference takes priority. A new session still needs a reference; the code never searches another session or chooses a booking by customer name. Legacy contexts can recover a reference only from their own assistant-generated receipt and subsequent database lookup, not a user-supplied quoted receipt.
 
-The interface centers an open transcript with right-aligned user messages and a pinned composer. The sidebar starts collapsed to icons, expands to labels and becomes a drawer on phones. A labeled right-side Decision inspector button animates the Inspector open/closed; collapsed content is inert and hidden from assistive technology. Desktop panels scroll independently; on narrow screens the Inspector opens over the chat. Appointment details have a separate sidebar view, also accessible from a mobile calendar button. Hidden views stay mounted so conversation state and unsent input survive navigation. Available starts stay inside the chat and still require confirmation. Warm neutral light/dark themes use a guarded browser preference; a small bootstrap applies the saved theme before hydration.
+A time-only reschedule retains the saved date; a date-only reschedule retains the saved time, unless that field was rejected or explicitly awaits repair. “Change the timing for this appointment” asks for a replacement time. A generic reschedule asks for a new date, time or both. Within an established reschedule, a complete directional “from X to Y” answer can supply Y despite unclear surrounding speech. Garbled words and reported past actions cannot independently start a reschedule.
 
-Two first-turn suggestions are centered above the input only while the authoritative session revision is zero and no request is pending. They submit ordinary turns through the same API path as typed/voice input. A restored used session keeps them hidden; a fresh session restores them. Inline receipts appear only beside the latest reply whose real decision is `commit.confirmed`, using the authoritative appointment object. No UI text infers that a proposed action succeeded.
+“Cancel that change” rejects the move. During a new draft, “cancel it” discards the draft rather than cancelling an older booking. During rescheduling, an ambiguous “cancel it” clears authorization and asks whether the caller means the proposal or the confirmed appointment. A subsequent bare yes cannot choose that target.
 
-Studio services is a third workspace view rather than a popup. `studio-services.tsx` renders the business API's service catalog, currency, durations, hours and timezone; the combo saving is calculated from the returned prices. A Book button submits an ordinary service-specific booking turn and returns to chat, without bypassing the backend's collection or confirmation rules. The conversation shortcut preserves unsent input. Switching to this view keeps the chat mounted and highlights the services navigation item.
+### Confirmation invariants
 
-`frontend/components/appointment-card.tsx` renders empty, draft and saved card layouts, with pending details in a separate proposed-change region. Saved dates use the appointment's business timezone; duration comes from the saved start/end timestamps, while price comes from the current service catalog. A proposed service change cannot replace the saved service's price or duration. Ending or discarding a proposal cannot relabel the saved appointment as a draft. The booking shortcut and management buttons submit normal conversation turns with an explicit reference for reschedule/cancel; they do not call calendar-write endpoints or confirm an action. Cancelled receipts omit management controls. Appointment provides Back to conversation and hides the chat's Inspector toggle.
+1. No appointment write occurs before a complete reviewed proposal and a later explicit confirmation.
+2. A confirmation containing new values revises the proposal and requires fresh review.
+3. An action-specific confirmation must match the pending operation: **confirm booking**, **confirm reschedule** and **confirm cancellation** cannot authorize one another. A mismatch clears authorization and requests the intended operation; a following bare yes cannot revive it.
+4. Availability and accepting an availability offer never directly create an appointment.
+5. Every confirmation rechecks availability/business rules and, for an existing booking, its version and status.
+6. Rejection, ending, ambiguity or a failed validation cannot produce a success claim.
 
-Connection indicators reflect the latest session/turn request outcome; they are not a continuous health monitor. The Inspector displays actual rule/explanation/state/next action; it does not simulate traces. Browser support is limited; [MDN documents platform constraints](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition).
+The final audit found and corrected invariant 3's missing target comparison. A nine-case matrix now tests each named confirmation against all three pending operations, including database preservation and a subsequent stale yes.
 
-## Validation, tradeoffs and limitations
+Every processed turn returns a `Decision`: intent, extracted entities, previous/current state, matched rule, explanation, next action and missing details. Extracted candidates and retained context are distinct; an informational/control turn can decline to apply a candidate. The Inspector renders this actual server data, including the raw JSON trace.
 
-Fixed-clock Pytest tests exercise intent/extraction, actual state transitions, corrections, missing details, confirmation, unknown input, boundaries, conflicts, rescheduling/cancellation, idempotency, revisions, session isolation and persistence after restart. Separate app instances test concurrent writers. A simulated commit error tests rollback of booking, context and receipt.
+## Calendar and persistence
 
-Contrast sets test meaning changes across service exclusions, action targets, negated dates/times, partial clock expressions, multi-field repair order and request families. These complement reported-transcript regressions; they are authored by the same coding agent and are not independent human evaluation. See [the conversation test matrix](docs/CONVERSATION_TEST_MATRIX.md) for the coverage map and a held-out manual protocol.
+One chair operates Monday–Saturday 10:00–19:00. The selected service's whole duration must fit; Sunday, past starts, out-of-horizon dates and overlaps are rejected. Aware clocks and the studio's IANA timezone drive relative dates. UTC epoch seconds are stored; API timestamps include the configured business offset and timezone. Nonexistent/ambiguous local wall times are guarded against rather than guessed.
 
-Playwright exercises the production UI with a disposable real backend, including lost commit responses, storage/network failures, saved/proposed separation, keyboard focus, slots and multiple mobile sizes. Speech APIs and explicit failure scenarios are mocked. Mocks cannot prove actual microphone permission, recognition accuracy or audible output. Those remain device checks in `docs/DEMO_CHECKLIST.md`; actual executed results are recorded in `docs/PROGRESS.md`.
+Intervals are half-open: `existing.start < proposed.end` and `existing.end > proposed.start`. Adjacent bookings can touch. Availability enumerates ten-minute starts, accounts for duration and persisted confirmed appointments, filters a requested period and omits the rescheduled booking itself. Exact valid starts need not be on the suggestion grid. Availability is a snapshot, not a hold.
 
-The browser runner checks the production build's API URL before launch, requires its own free ports and never reuses unrelated servers. Configurable frontend/backend ports and a separate build directory allow isolation from a running demo. GitHub Actions is configured for Python 3.11/3.13 backend tests and Node 22 frontend checks, using SHA-pinned actions and retained failure artifacts. It has not executed remotely while publication is on hold.
+| Table | Stored data |
+| --- | --- |
+| `appointments` | Synthetic reference, service ID, fictional name, UTC start/end, status and optimistic version |
+| `conversations` | Conversation ID and structured JSON state/history |
+| `turn_receipts` | Session/request ID, request text, expected revision and exact response; unique per session/request |
 
-SQLite serialization favors correctness and setup simplicity over throughput. Session JSON avoids event-sourcing complexity but receipts have no expiry, and future schema changes need migrations. Availability is a snapshot rather than a hold. The small English grammar asks clarification instead of guessing; fully word-spoken years, compound requests and broad paraphrases are limited.
+Each mutating turn acquires **SQLite `BEGIN IMMEDIATE` before reading** the conversation or calendar. The appointment change, session revision/history and idempotency receipt commit in one transaction. This serializes separate workers/connection pools as well as threads; an in-process mutex would not suffice. A failure rolls the transaction back. The lock timeout is ten seconds.
 
-An availability result can become a booking while retaining its service/date; an empty result stays open for another date. Changing a draft to a day period clears its exact time and asks for a new one. Reschedule validation finishes before mutating ORM objects because the engine catches domain errors to persist a clarification. The frontend pins a patched PostCSS via npm override because the initial nested version was flagged by audit; [the PostCSS advisories](https://github.com/advisories/GHSA-r28c-9q8g-f849) explain the affected source-map behavior.
+The booking layer validates name, interval and conflicts **before mutating** a rescheduled ORM object. This matters because domain errors are caught to persist a clarification: a partially dirty appointment must not be committed along with that reply. Existing operations also compare the stored appointment version; a changed/cancelled/started appointment requires a new review or rejection.
 
-This is a localhost synthetic demo with no authentication, real identity verification, notifications, payments, PII governance, holiday calendars or multiple chairs. References are identifiers, not authorization. Browser speech services may be remote and fail independently; typed workflows remain available. Optional shadcn/ui was unnecessary for the native controls; Tailwind/Lucide provide the requested UI foundation without another component abstraction.
+Turn replay checks the receipt before the latest revision. The exact same request retrieves the saved response even if its original transaction already committed. Reusing an ID with different text/revision returns 409. A new request with a stale conversation revision also returns 409. Replayed responses are historical; retrieving the session/appointment returns current state.
+
+## Frontend and voice implementation
+
+`use-voice.ts` feature-detects SpeechRecognition/webkitSpeechRecognition and speechSynthesis. Recognition is one turn at a time with interim feedback; only a final transcript submits a turn. Recognition is aborted before typed submission or synthesized replies. The mic remains disabled while speaking and does not automatically restart. Mute, replay, stop audio and US/UK/Pakistan English choices are explicit. Actual voices and pronunciation depend on browser/device support.
+
+Permission denial, blocked speech service, missing microphone, silence, network errors, unsupported recognition and synthesis failure have readable guidance and typed recovery. Synchronous synthesis failure releases the speaking state. Unmount cleanup stops recognition and audio. The startup greeting is visible; the replay control can speak the current reply.
+
+The page serializes submissions using a synchronous lock plus busy/pending state. A turn gets a new ID and current revision before sending. Unknown outcomes retain the **same** request in memory and, when available, sessionStorage; input/new session stay blocked until retry resolves it. Malformed stored requests are validated and cleared. Storage exceptions show a warning without locking the live tab. Known rejected 404/409/422 requests clear the uncertain turn and attempt a state refresh. Fetch timeout is twenty seconds.
+
+The UI uses mounted hidden views so navigation preserves conversation and draft text. The transcript alone scrolls above the composer. A collapsed Inspector is hidden and inert; desktop supplementary content scrolls independently, while narrow layouts use an overlay. Only chat shows its labeled Inspector toggle. Reduced-motion settings disable transitions; controls have accessible labels, focus styles and keyboard paths, with 44px primary control heights and a 16px composer font.
+
+Appointment cards distinguish empty/draft/saved/cancelled states and isolate pending changes. Saved duration comes from start/end timestamps; price comes from the **current** catalog, not an archived billing record. Services shows API catalog values, a calculated combo saving and opening hours. Booking and management buttons submit ordinary conversational requests, never calendar writes. Theme persistence and early theme bootstrap tolerate storage failure. Metadata uses a code-native waveform favicon and the VoxDesk title.
+
+## Validation and coverage
+
+Final automated validation is reported in [README.md](README.md#verification). The backend suite has **407 parametrized cases**; browser coverage has **28 cases**. Counts measure exercised cases, not recognition accuracy or a correctness proof.
+
+| Backend suite | Cases | Coverage |
+| --- | ---: | --- |
+| [test_brain.py](backend/tests/test_brain.py) | 46 | Intent/entity rules, state transitions, ambiguity, name context, correction and confirmation |
+| [test_workflows.py](backend/tests/test_workflows.py) | 36 | Actual API/database booking, availability, duration boundaries, reschedule/cancel, persistence/restart, concurrency, versions, retries and rollback |
+| [test_spoken_conversations.py](backend/tests/test_spoken_conversations.py) | 35 | Ordinary request families, availability handoff, retained references, status/help and the first reported transcript |
+| [test_transcript_recovery.py](backend/tests/test_transcript_recovery.py) | 39 | Repair prefixes, malformed/colon-free times, uncertain speech, affirmative details and the second transcript |
+| [test_calendar_dates.py](backend/tests/test_calendar_dates.py) | 46 | Named/numeric/ordinal dates, masks, impossible/ambiguous dates, year handling and calendar/time separation |
+| [test_customer_names.py](backend/tests/test_customer_names.py) | 32 | Name wrappers, fillers, Unicode, invalid instructions and persisted corrections |
+| [test_inline_customer_names.py](backend/tests/test_inline_customer_names.py) | 40 | Marked inline names, independent repairs, name isolation, occupied slots and explicit corrections |
+| [test_audit_recovery.py](backend/tests/test_audit_recovery.py) | 17 | Draft versus saved operation targets, ambiguous cancellation and independently rejected fields |
+| [test_language_contrasts.py](backend/tests/test_language_contrasts.py) | 49 | Service exclusions, request families, complete clock expressions, negated dates/times and alternatives |
+| [test_reschedule_dialogue.py](backend/tests/test_reschedule_dialogue.py) | 29 | Date/time-only changes, open questions, directional context, command-shaped repairs and negation |
+| [test_polite_controls.py](backend/tests/test_polite_controls.py) | 29 | Composed back-outs, courtesy/end distinction, unchanged calendar and the complete beard-booking transcript |
+| [test_confirmation_targets.py](backend/tests/test_confirmation_targets.py) | 9 | Every named confirmation against every pending action; mismatches invalidate authorization without a write |
+
+| Browser suite | Cases | Coverage |
+| --- | ---: | --- |
+| [workspace.spec.ts](frontend/tests/workspace.spec.ts) | 14 | Complete booking/reschedule/cancel, inline receipt, lost success retry after reload, mocked voice sequencing, unsupported/denied voice, navigation, suggestions and service/appointment handoff at desktop/mobile sizes |
+| [recovery.spec.ts](frontend/tests/recovery.spec.ts) | 7 | Blocked/corrupt storage, memory-only retry, saved/proposed separation, network indicators/retry and unreadable responses |
+| [accessibility.spec.ts](frontend/tests/accessibility.spec.ts) | 7 | Keyboard focus and slot selection, 360/390/768px layouts, input/control sizes, replay/language and synthesis failure |
+
+Tests inject a fixed aware clock and disposable file-backed SQLite databases. Separate app instances test concurrent confirmation; a simulated commit error verifies rollback of appointment, context and receipt. Browser tests build a production UI and use a real backend. Browser speech APIs and deliberate fault cases are mocked; screenshots demonstrate rendering rather than physical sound quality. The candidate separately confirmed all manual device/conversation checks passed on 2026-10-26.
+
+CI is configured for Python 3.11/3.13 and Node 22, dependency integrity/audit, format/type/build checks and Chromium browser workflows. It checks the production build's API address before launch, requires free test ports and refuses unrelated running servers. Local audit used Python 3.13.3 and Edge; Python 3.11/Linux/Chromium remote execution awaits publication. The remaining upstream TestClient deprecation warning is documented rather than suppressed.
+
+### Testing limits and future work
+
+The same coding agent authored automated cases and implementation. Reported transcripts plus contrast cases exercise meaningful repairs, but they are not a statistically independent measure of arbitrary English. Candidate manual verification is a self-reported device check, not a recording-based independent benchmark. For broader evaluation, have another tester write requests before reading rules, compare intended speech with the actual transcript and saved record, record safe clarifications separately from errors, and add a new held-out example after each repair.
+
+SQLite and session JSON keep installation and inspection simple; they trade throughput and migration discipline for a small local product. There is no authentication/authorization, rate limiting, encrypted customer-data governance, receipt expiry, external telephony, notification/payment integration, multi-chair scheduling or public-deployment hardening. Grammar breadth, configuration-driven business metadata, retained historical pricing and more independent accessibility/device testing are future improvements rather than claimed completed features.

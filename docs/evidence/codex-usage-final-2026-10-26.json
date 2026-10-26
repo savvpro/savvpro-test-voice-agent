@@ -1,0 +1,273 @@
+{
+  "recorded_at_utc": "2026-10-26T18:33:29+00:00",
+  "recorded_at_asia_karachi": "2026-10-26T23:33:29+05:00",
+  "scope": "Primary VS Code coding session cumulative counters through the cited event, including implementation, conversation feedback, evaluation, UI iterations and documentation. Automatic approval-review sessions and work after this cutoff are excluded. Not a billing statement, quota conversion, unique-token count or measurement of implementation alone.",
+  "source_file": "rollout-2026-10-26T14-48-43-01a1779c-bed1-7441-85b0-4402c7e7b9e8.jsonl",
+  "session_started_at": "2026-10-26T09:48:43.741Z",
+  "session_source": "vscode",
+  "models_recorded": [
+    "gpt-6.1-sol"
+  ],
+  "token_count_event": {
+    "source_line": 3450,
+    "timestamp": "2026-10-26T18:32:55.470Z",
+    "type": "event_msg",
+    "payload": {
+      "type": "token_count",
+      "info": {
+        "total_token_usage": {
+          "input_tokens": 69201286,
+          "cached_input_tokens": 68348160,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 454316,
+          "reasoning_output_tokens": 178317,
+          "total_tokens": 69655602
+        },
+        "last_token_usage": {
+          "input_tokens": 306982,
+          "cached_input_tokens": 305024,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1019,
+          "reasoning_output_tokens": 489,
+          "total_tokens": 308001
+        },
+        "model_context_window": 475000
+      }
+    }
+  },
+  "previous_snapshot": "codex-usage-audit-2026-10-26.json",
+  "delta_since_previous_snapshot": {
+    "input_tokens": 38301927,
+    "cached_input_tokens": 37886208,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 183958,
+    "reasoning_output_tokens": 71815,
+    "total_tokens": 38485885
+  },
+  "git_baseline": "1e8a7dc",
+  "git_head": "e1676bd",
+  "project_commits_at_snapshot": 43,
+  "project_commits": [
+    {
+      "commit": "aa682c2",
+      "timestamp": "2026-10-26T15:52:20+05:00",
+      "subject": "chore: add dependency locks and local development configuration"
+    },
+    {
+      "commit": "ec71189",
+      "timestamp": "2026-10-26T15:52:20+05:00",
+      "subject": "feat: define studio catalog and conversation contracts"
+    },
+    {
+      "commit": "26da1e1",
+      "timestamp": "2026-10-26T15:52:20+05:00",
+      "subject": "feat: add transactional SQLite persistence and turn receipts"
+    },
+    {
+      "commit": "a3dd46e",
+      "timestamp": "2026-10-26T15:52:20+05:00",
+      "subject": "feat: parse caller intents and entities with deterministic rules"
+    },
+    {
+      "commit": "6a392c8",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "feat: implement explainable conversation state transitions"
+    },
+    {
+      "commit": "8038f47",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "feat: validate availability and manage appointment changes"
+    },
+    {
+      "commit": "7ed2258",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "feat: expose session and appointment APIs with safe retries"
+    },
+    {
+      "commit": "bf55d5b",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "test: cover deterministic brain and transactional booking workflows"
+    },
+    {
+      "commit": "800e45d",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "chore: scaffold Next.js workspace and styling tools"
+    },
+    {
+      "commit": "1d7655c",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "feat: add typed frontend contracts and backend API client"
+    },
+    {
+      "commit": "9e5f886",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "feat: add browser voice recognition and synthesis controls"
+    },
+    {
+      "commit": "aee36b5",
+      "timestamp": "2026-10-26T15:52:22+05:00",
+      "subject": "feat: build receptionist workspace and live decision inspector"
+    },
+    {
+      "commit": "3a220c7",
+      "timestamp": "2026-10-26T15:52:22+05:00",
+      "subject": "test: verify connected browser flows and voice recovery"
+    },
+    {
+      "commit": "bde1b5f",
+      "timestamp": "2026-10-26T15:52:22+05:00",
+      "subject": "docs: document setup architecture verification and AI usage"
+    },
+    {
+      "commit": "6d79132",
+      "timestamp": "2026-10-26T16:07:52+05:00",
+      "subject": "fix: make spoken booking conversations retain context"
+    },
+    {
+      "commit": "918c6f9",
+      "timestamp": "2026-10-26T16:30:01+05:00",
+      "subject": "fix: preserve spoken time choices across availability handoff"
+    },
+    {
+      "commit": "918bace",
+      "timestamp": "2026-10-26T16:47:25+05:00",
+      "subject": "fix: parse spoken calendar dates before clock times"
+    },
+    {
+      "commit": "39b12b8",
+      "timestamp": "2026-10-26T16:58:33+05:00",
+      "subject": "fix: extract customer names from spoken instructions"
+    },
+    {
+      "commit": "bfa5d5a",
+      "timestamp": "2026-10-26T17:20:35+05:00",
+      "subject": "fix: retain inline customer names through detail corrections"
+    },
+    {
+      "commit": "ca1d325",
+      "timestamp": "2026-10-26T17:24:07+05:00",
+      "subject": "fix: recognize name prepositions before slot conflicts"
+    },
+    {
+      "commit": "af64165",
+      "timestamp": "2026-10-26T17:39:11+05:00",
+      "subject": "docs: attach authentic Codex usage evidence and delivery log"
+    },
+    {
+      "commit": "259149e",
+      "timestamp": "2026-10-26T18:25:13+05:00",
+      "subject": "fix: preserve operation targets and rejected booking fields"
+    },
+    {
+      "commit": "91b64c6",
+      "timestamp": "2026-10-26T18:31:02+05:00",
+      "subject": "fix: parse service exclusions and complete clock expressions"
+    },
+    {
+      "commit": "6dfccb8",
+      "timestamp": "2026-10-26T18:37:06+05:00",
+      "subject": "fix: recover browser failures and distinguish saved appointments"
+    },
+    {
+      "commit": "ba9ab01",
+      "timestamp": "2026-10-26T18:40:59+05:00",
+      "subject": "feat: improve mobile accessibility and voice controls"
+    },
+    {
+      "commit": "f893f5b",
+      "timestamp": "2026-10-26T18:52:55+05:00",
+      "subject": "ci: verify backend frontend and browser recovery workflows"
+    },
+    {
+      "commit": "0165d3c",
+      "timestamp": "2026-10-26T19:05:06+05:00",
+      "subject": "docs: record audit fixes validation and publication hold"
+    },
+    {
+      "commit": "20f901d",
+      "timestamp": "2026-10-26T20:51:24+05:00",
+      "subject": "feat: add warm neutral themes and responsive workspace styles"
+    },
+    {
+      "commit": "26b9e9d",
+      "timestamp": "2026-10-26T20:51:24+05:00",
+      "subject": "feat: focus chat with appointment navigation and collapsible inspector"
+    },
+    {
+      "commit": "edc3330",
+      "timestamp": "2026-10-26T20:51:24+05:00",
+      "subject": "test: follow appointment tabs and inspector navigation in browser flows"
+    },
+    {
+      "commit": "03efb44",
+      "timestamp": "2026-10-26T21:01:42+05:00",
+      "subject": "fix: understand reschedule requests and retain contextual destinations"
+    },
+    {
+      "commit": "6dd832b",
+      "timestamp": "2026-10-26T21:05:05+05:00",
+      "subject": "fix: handle natural back-outs courtesy and conversation endings"
+    },
+    {
+      "commit": "f5cb39f",
+      "timestamp": "2026-10-26T22:25:31+05:00",
+      "subject": "docs: record chat workspace and spoken conversation recovery"
+    },
+    {
+      "commit": "bf2b107",
+      "timestamp": "2026-10-26T22:44:46+05:00",
+      "subject": "feat: simplify chat layout with collapsible workspace navigation"
+    },
+    {
+      "commit": "d8ce1d2",
+      "timestamp": "2026-10-26T22:44:46+05:00",
+      "subject": "test: cover responsive navigation and inline appointment receipts"
+    },
+    {
+      "commit": "f4c193e",
+      "timestamp": "2026-10-26T22:48:03+05:00",
+      "subject": "feat: label decision inspector and show centered first-turn suggestions"
+    },
+    {
+      "commit": "c15ffb0",
+      "timestamp": "2026-10-26T22:48:03+05:00",
+      "subject": "docs: describe minimal workspace and first-turn suggestion behavior"
+    },
+    {
+      "commit": "0408d6d",
+      "timestamp": "2026-10-26T22:56:17+05:00",
+      "subject": "feat: replace services popup with catalog workspace and booking handoff"
+    },
+    {
+      "commit": "65017b9",
+      "timestamp": "2026-10-26T22:56:17+05:00",
+      "subject": "docs: record services workspace behavior and browser validation"
+    },
+    {
+      "commit": "ac3e217",
+      "timestamp": "2026-10-26T23:06:37+05:00",
+      "subject": "feat: redesign appointment cards and keep management actions in chat"
+    },
+    {
+      "commit": "b6caccc",
+      "timestamp": "2026-10-26T23:06:37+05:00",
+      "subject": "docs: record appointment layouts and confirmation-safe controls"
+    },
+    {
+      "commit": "2f8e0c3",
+      "timestamp": "2026-10-26T23:09:43+05:00",
+      "subject": "feat: use VoxDesk logo favicon and concise browser title"
+    },
+    {
+      "commit": "e1676bd",
+      "timestamp": "2026-10-26T23:32:54+05:00",
+      "subject": "fix: match named confirmations to their pending operation"
+    }
+  ],
+  "verification_at_cutoff": {
+    "backend_tests_passed": 407,
+    "browser_tests_passed": 28,
+    "physical_checks": "Candidate reported all manual device/conversation scenarios passed; not performed by the coding agent."
+  },
+  "note": "Earlier snapshots and original screenshot are retained unchanged. The final documentation/consolidation commit and any later work are excluded from the commit list and counters at this cutoff."
+}

@@ -1,94 +1,81 @@
 # AI-assisted development disclosure
 
-VoxDesk was implemented with OpenAI Codex in the candidate's local workspace. Codex assisted with architecture, Python/TypeScript implementation, tests, debugging, dependency review, interface review, and documentation. No other AI coding tool was used by this agent. The runtime application makes no LLM calls and needs no LLM credentials. Browser speech recognition and synthesis handle audio only; Python rules determine every action.
+## Tools, responsibility and runtime boundary
 
-## Recorded usage and screenshot
+The recorded development session used **OpenAI Codex in VS Code**, with **gpt-6.1-sol** recorded in its local session metadata. Codex assisted with architecture, Python/TypeScript implementation, deterministic grammar, state transitions, persistence, frontend/voice adapters, tests, code review, debugging and documentation. This disclosure describes that recorded session; it does not infer use of another coding tool from visual references supplied by the candidate.
 
-**Recorded: 2026-10-26 17:36:04 PKT (Asia/Karachi, UTC+05:00).** The functional Python backend and Next.js frontend were already complete at initial implementation commit `bde1b5f`. Subsequent work refined the working product through real conversation feedback, parser corrections and regression tests.
+The candidate selected the assessment/use case, supplied real demo conversation transcripts and UI references, directed iterations, reviewed the result and performed manual voice/device checks. On 2026-10-26 the candidate explicitly confirmed that the physical voice check and all manual device/conversation scenarios had passed. No browser/hardware/version details or audio recordings were supplied, so none are invented here.
 
-![Candidate-supplied Codex usage screenshot showing 49% five-hour quota and 92% weekly quota remaining](docs/evidence/codex-usage-2026-10-26.png)
+**There is no runtime LLM.** Browser recognition/synthesis handles speech. The custom Python grammar, state machine, business validation and confirmation gate make every receptionist decision. No model SDK, model prompt, embeddings, paid speech credentials or API keys are required by the app. Using AI to develop the code is separate from using an AI model to decide appointments.
 
-The original screenshot is preserved without editing. It shows **49% of the five-hour quota remaining** and **92% of the weekly quota remaining**, alongside the labels `7:49 PM` and `Nov 2`. These account-level quota percentages do not measure this project's token count. The recorded time above comes from the current UTC clock converted to Pakistan time.
+## Authentic usage evidence
 
-Authentic counters were subsequently found in the primary local Codex session log, replacing the earlier unavailable-count placeholder. The latest counter at the cutoff is dated **2026-10-26 17:34:34 PKT**:
+The repository retains the original screenshot and earlier filtered logs unchanged, and adds a final-audit snapshot:
 
-| Tool / model recorded in session | Input tokens | Output tokens | Total tokens |
-| --- | ---: | ---: | ---: |
-| OpenAI Codex / gpt-6.1-sol | 14,840,089 | 175,628 | **15,015,717** |
+| Evidence | Recorded cutoff, Asia/Karachi | Scope |
+| --- | --- | --- |
+| [Initial filtered log](docs/evidence/codex-usage-2026-10-26.json) | 2026-10-26 17:36:04 PKT | Functional backend/frontend and the first spoken-conversation refinements; 20 project commits |
+| [Strict-audit filtered log](docs/evidence/codex-usage-audit-2026-10-26.json) | 2026-10-26 19:03:04 PKT | Cumulative session usage through the first strict audit; 26 project commits |
+| [Final-audit filtered log](docs/evidence/codex-usage-final-2026-10-26.json) | 2026-10-26 23:33:29 PKT | Cumulative session usage through UI iterations, conversation repairs and the final confirmation-target fix; 43 project commits through `e1676bd` |
 
-The input counter includes **14,599,936 cached input tokens**. The log separately reports **64,523 reasoning output tokens** within output usage. These are cumulative session counters across repeated context processing; cached/reasoning figures are not added again to the total. This snapshot covers the primary coding session; automatic approval-review sessions and work after the cutoff are excluded. It is not a billing statement or a conversion of the quota screenshot.
+These are **cumulative snapshots of the same primary coding session**:
 
-The [filtered JSON usage log and commit list](docs/evidence/codex-usage-2026-10-26.json) preserve the original token-count fields, event timestamp, source filename/line, screenshot checksum and Git scope. Raw conversation logs and unrelated account files are not included.
+| Snapshot | Input tokens | Cached input, included in input | Output tokens | Total input + output |
+| --- | ---: | ---: | ---: | ---: |
+| Initial | 14,840,089 | 14,599,936 | 175,628 | **15,015,717** |
+| Strict audit | 30,899,359 | 30,461,952 | 270,358 | **31,169,717** |
+| Final audit | 69,201,286 | 68,348,160 | 454,316 | **69,655,602** |
 
-## Completed work and later refinement
+Do **not** add the three totals together. The final snapshot includes the earlier ones. The increase from the strict-audit snapshot to the final snapshot is **38,485,885 tokens**: 38,301,927 input and 183,958 output. Final output includes **178,317 reasoning tokens**; that subset is not added again. Cached input is also a subset rather than an additional charge/count.
 
-**20 project commits** were completed from assessment baseline `1e8a7dc` through `ca1d325`, excluding three upstream commits and the later commit adding this evidence:
+The totals count repeated context processing across implementation, conversation feedback, evaluation, discussion, UI experiments, debugging, tests and documentation. They are not a count of unique words/code, a measurement of the initial implementation alone, a cost estimate or a billing statement. Most input at these cutoffs was cached. No token count was estimated from quota percentages, elapsed time or commit counts.
 
-| Phase | Commits | Delivered result |
+The logs were filtered from the primary local rollout `rollout-2026-10-26T14-48-43-01a1779c-bed1-7441-85b0-4402c7e7b9e8.jsonl`, whose metadata identifies the project directory, VS Code source and recorded model. Each evidence file retains the event timestamp, original token fields and source line. The final cited token event is **2026-10-26 18:32:55.470 UTC / 23:32:55.470 PKT**. Automatic platform approval-review sessions and work **after each cutoff** are excluded. The final documentation/consolidation commit and later conversation are outside the last snapshot. Raw conversations, unrelated account files, rate-limit payloads and credentials are not committed.
+
+### Original quota screenshot
+
+![Original candidate-supplied Codex usage screenshot showing 49% five-hour quota and 92% weekly quota remaining](docs/evidence/codex-usage-2026-10-26.png)
+
+The original image is preserved without editing. It shows **49% of the five-hour quota remaining**, **92% weekly remaining**, and the labels `7:49 PM` and `Nov 2`. These are account-level quota indicators, **not project token counts**. Its SHA-256 matches the initial evidence record: `492d9f60c6c28a042bd56ba8fcc6d85204e67a5372526cc6facec99a5358726d`.
+
+## What the AI helped deliver
+
+| Phase | Commits at the final evidence cutoff | Delivered work |
 | --- | ---: | --- |
-| Functional backend and frontend, `aa682c2` through `bde1b5f` | 14 | Python decision engine, real availability and persistent booking/rescheduling/cancellation, transaction/retry protection, Next.js interface, browser STT/TTS, Decision Inspector, tests and documentation. Initial recorded validation: 82 backend tests, 6 browser tests, frontend build and typecheck passed. |
-| Later polishing and robustness fixes, `6d79132` through `ca1d325` | 6 | Broader spoken phrasing, retained booking references and details, availability handoff, calendar dates, name extraction and occupied-slot recovery. Latest backend validation: 274 tests passed. |
+| Initial functional product | 14 | Configuration, custom Python brain, calendar operations, persistence, transaction/retry protection, REST API, Next.js workspace, browser STT/TTS, Inspector and initial tests/docs |
+| First transcript-driven refinements | 6 | Natural booking requests, availability handoff, retained references, time/date parsing, name wrappers, inline names and occupied-slot recovery |
+| Usage evidence and first strict audit | 7 | Authentic evidence, operation-target/rejected-field safety, language contrasts, browser storage/retry recovery, mobile/keyboard controls, CI and audit documentation |
+| Later conversation repair and initial UI refinement | 6 | Field-specific rescheduling, contextual directional answers, compound back-outs, courtesy/end distinction, themes, pinned chat and supplementary views |
+| Minimal workspace and dedicated views | 9 | Collapsible navigation, first-turn suggestions, service catalog, empty/draft/saved/cancelled appointment cards, confirmation-safe action buttons and VoxDesk favicon/title |
+| Final confirmation-target audit fix | 1 | Named confirmations checked against the pending operation, with nine cross-operation regressions |
+| **Total at `e1676bd`** | **43** | Full commit subjects and actual timestamps are retained in the final filtered log |
 
-The initial 14 commits were organized after implementation at the candidate's request and use their actual creation timestamps. They are component-based commits, not a reconstructed timeline of live development. The six later fixes address functional conversation defects as well as polish; frontend build/browser results above predate those backend refinements.
+The backend and frontend were already functional at initial implementation commit `bde1b5f`; the first recorded validation was 82 backend cases and six browser cases with build/type checks passing. Later changes included functional repairs, not just visual polish. Final automated validation after the last safety fix is **407 backend cases and 28 browser cases**, plus frontend clean-copy typecheck, production build, formatting, zero reported npm vulnerabilities and Python dependency integrity. [README.md](README.md#verification) records the final results and [DESIGN.md](DESIGN.md#validation-and-coverage) maps the tests to behavior.
 
-The main problems were overly narrow phrase matching, lost conversation context, dates leaking into time parsing, and instruction words being stored as names. Smaller issues included a TypeScript build failure, an unsafe rescheduling mutation order, browser-test setup/locator errors and a dependency audit finding. The corrections and checks are recorded below. Real microphone recognition quality remains a device-level check; parser tests do not establish audio accuracy.
+At the candidate's request, the initial working product was grouped into component-based commits after implementation. UI experiments also remained uncommitted until the candidate approved local batching. All commits use their actual creation timestamps; no backdating, fabricated live timeline or rewritten history is claimed. The final documentation cleanup is a later commit beyond the evidence cutoff. Nothing has been pushed, submitted as a PR or deployed by the coding agent.
 
-## Review and corrections
+## Where AI-assisted work went wrong
 
-Observed issues from this implementation session:
-
-| AI-assisted mistake / review finding | How it was corrected and verified |
+| Observed mistake or review finding | Correction and evidence |
 | --- | --- |
-| The first time parser used a substring check for noon, accidentally assigning 12:00 to “Friday afternoon”. | The entity test failed. Word boundaries replaced the substring check; the fixed-clock parser tests passed. |
-| Initial intent rules treated the noun in “read a book” as a booking command. | Tightened creation patterns to command/request contexts and retained a regression case. |
-| After adding “yesterday” extraction, the engine asked for a time before rejecting the past date. | A workflow test failed; known dates are now validated before asking for additional details. |
-| A UI refactor lost TypeScript's null narrowing for the conversation object. | The production build failed, optional chaining was corrected, and the subsequent build/typecheck passed. |
-| The first browser-test server command used forward slashes in a Windows command-shell executable path. | Corrected the platform-specific path; the servers and browser suite launched successfully. |
-| An unscoped browser test found both the app alert and Next.js's route-announcer alert. | Scoped the assertion to the conversation region. This was a test-locator issue; the permission error was already rendered. |
-| Screenshot review showed that scrollIntoView could scroll the entire workspace when new messages arrived. | Changed scrolling to the message container and reran connected browser flows/screenshots. |
-| Review found that rescheduling assigned ORM fields before validating the customer name; a caught domain error could leave a dirty object. | All validation now precedes mutation. A regression test catches the error inside a committing transaction and verifies the original appointment is unchanged. |
-| The initial Next.js dependency tree included a PostCSS version flagged by npm audit. | Added a patched PostCSS 8.5.31 override. The final audit reported zero vulnerabilities; the build and browser flows were revalidated. |
-| Real user testing exposed narrow phrase matching (“make a booking”), filler captured in a name (“And John”), generic recovery after unclear speech, and reference memory lost between workflows. The first automated suite did not cover this spoken conversation. | Added the reported conversation and ordinary-language/safety regressions: the initial new suite reproduced 24 failures. Expanded deterministic grammar, retained verified session references and related workflow details, added targeted status/reference recovery, cleaned name fillers, and guarded explicit confirmation and rejected fields. Current executed results are recorded in the progress log. |
-| A second real transcript exposed silently ignored malformed approximate times, details discarded after availability, unhandled repair prefixes, space-separated hour/minute tokens, and “new booking” phrasing. | Added another complete API/database conversation regression and related safety cases. The initial targeted run reproduced 25 failures (5 cases already passed). Shared repair normalization and booking grammar, validated explicit time claims, retained/refreshed availability follow-up details, and bounded affirmative-action confirmation corrected the faults. The final full backend suite passed 156 tests. Browser recognition/audio quality was not claimed to be fixed or physically reverified. |
+| A substring check for noon misread “Friday afternoon”; the first intent rules also treated “read a book” as booking. | Word boundaries and command/request contexts replaced broad matches; [test_brain.py](backend/tests/test_brain.py) retains contrasts. |
+| Early phrase matching rejected ordinary booking/reschedule requests and repeatedly asked generic questions. | Added explicit request families, repair-prefix normalization, field-specific prompts and complete API/database transcript regressions in [test_spoken_conversations.py](backend/tests/test_spoken_conversations.py), [test_transcript_recovery.py](backend/tests/test_transcript_recovery.py) and [test_reschedule_dialogue.py](backend/tests/test_reschedule_dialogue.py). |
+| Calendar numbers reached clock parsing; unsupported offsets could collapse to a plausible last hour. | Separate calendar-span consumption and complete clock grammar now retain valid independent fields and clarify ambiguity; [calendar](backend/tests/test_calendar_dates.py) and [language contrasts](backend/tests/test_language_contrasts.py) cover both positive and negative cases. |
+| Request words were stored as names, inline names were lost after field errors, and names disappeared on occupied slots. | Anchored wrappers and independent marked-name extraction preserve the supplied name through repairs; [customer-name](backend/tests/test_customer_names.py) and [inline-name](backend/tests/test_inline_customer_names.py) suites verify persisted results. No spelling guess was introduced. |
+| Context/reference loss forced callers to copy a reference that the session already knew. | Retained only verified session-local references, with explicit-reference priority and database lookup. Legacy recovery trusts the session's own assistant receipt, never a caller-quoted receipt or another session. |
+| Cancellation could select an older saved booking while a new draft existed; repairing one bad field could restore another rejected value. | Separated operation scope and independently rejected fields; [test_audit_recovery.py](backend/tests/test_audit_recovery.py) verifies no unintended writes. |
+| A caught rescheduling error could leave a dirty ORM object inside a transaction that still committed its clarification. | All domain validation now precedes ORM mutation. [test_workflows.py](backend/tests/test_workflows.py) catches the error inside a committing transaction and verifies the original row is unchanged. |
+| The final review found “confirm booking” could authorize a pending cancellation because named confirmations shared a generic rule. | Added an explicit confirmation-target comparison. All nine pending-action/named-confirmation combinations are checked in [test_confirmation_targets.py](backend/tests/test_confirmation_targets.py); mismatches clear authorization, preserve the database and reject a subsequent stale yes. |
+| Longer back-outs and polite endings fell through to generic recovery. | Whole-utterance composed control grammar now handles rejection/courtesy/end separately; [test_polite_controls.py](backend/tests/test_polite_controls.py) includes the full reported beard-booking conversation. |
+| Browser storage exceptions could strand the UI, and an abandoned proposal could visually replace saved details. | Added validated pending-request recovery with memory fallback, exact-request retry and separate authoritative/proposed rendering. [recovery.spec.ts](frontend/tests/recovery.spec.ts) exercises actual lost-commit responses and fault injection. |
+| Initial UI changes needed correction: a navy palette was rejected, scrolling could move the whole workspace, a mobile grid column was misplaced, and a later CSS rule hid a drawer backdrop. | Used the candidate's feedback and screenshot review to refine warm neutral themes, container scrolling, explicit grid placement and drawer behavior; browser regressions preserve navigation, draft and confirmation behavior. |
+| A TypeScript narrowing error, Pytest's reserved `request` parameter, outdated UI locators and Windows/browser fixture setup mistakes interrupted checks. | Fixed each setup/implementation error and reran the relevant checks. Failed/interrupted attempts were not reported as passes; semantic timestamp assertions replaced brittle date-display text when the layout changed. |
+| An npm dependency advisory affected the initial PostCSS tree. | Pinned an overriding PostCSS 8.5.31 version; the final npm audit reported zero vulnerabilities and production build/browser checks passed. This is not a general security guarantee. |
 
-The third transcript exposed missing calendar-date formats and date numbers reaching the clock-time parser. The initial targeted run reproduced 35 failures out of 37 cases. A separate deterministic calendar grammar now consumes valid and invalid date spans before time extraction, with named-month/ordinal and year-first numeric support. Additional tests caught a partial word-ordinal match (“thirty third” becoming the third day); the grammar now consumes out-of-range day words and rejects them through calendar validation. The final full backend suite passed 202 tests. No physical speech recognition quality was inferred from these text/API regressions.
+Some regressions reproduced candidate-supplied transcripts, so passing those repaired examples alone would overstate generality. Additional contrast sets vary service exclusions, operation targets, negation, field-repair order, concurrency and retry behavior. Tests were authored by the same coding agent as the implementation. Candidate manual testing is recorded separately; neither a complete natural-language guarantee nor independent recognition/accessibility/security certification is claimed.
 
-The fourth transcript exposed “Use name Taha” being stored as “Use Name Taha”. The initial 32-case regression suite reproduced 19 failures, with 13 already passing. Anchored name-request wrappers now extract only the name, with bounded courtesy/repair cleanup and rejection of incomplete requests or alternatives. API/database tests verify the exact reported conversation and a pending name correction followed by fresh confirmation. The full backend suite passed 234 tests. Existing stored appointments were not migrated, and browser/audio checks were not rerun.
+## Final documentation and submission status
 
-The fifth transcript exposed names embedded in booking requests being dropped whenever calendar/time/service fields or parsing issues were present, plus an unhandled "You should use Muhammad" instruction. The initial 24-case regression run reproduced 16 failures, with 8 already passing. Explicit name clauses are now consumed independently before other fields are parsed, preserving the name through date/time repairs. The follow-up added 30 cases in total, including persisted booking values, current-draft name reminders, independent time errors, ambiguous/negated name corrections and fresh-booking isolation. The full backend suite passed 264 tests. The malformed "428th" date still requires clarification; no transcription guess or runtime LLM was introduced. Browser/audio checks were not rerun.
+The final audit consolidated the development progress, conversation matrix and manual checklist into the three documents required by the assessment: README, DESIGN and this disclosure. The original task and authentic non-Markdown evidence remain. Stale “manual check pending” statements were replaced with the candidate's explicit completion report; CI execution and PR submission are still separate future steps.
 
-The sixth transcript exposed a missing "for the name" variant; the name was never captured before a slot conflict. The initial 10-case targeted run reproduced 8 failures with 2 already passing. A shared preposition rule now supports "for [the] name" and "with [the] name" in inline requests and separate answers. API/database regressions cover the exact conversation, repeated slot conflicts, retained transcribed spelling, explicit name correction and the unchanged conflicting booking. The full backend suite passed 274 tests. No spelling guess, database rewrite or browser/audio verification was performed.
-
-## Strict-audit fixes and second usage snapshot
-
-The later strict review found defects beyond the transcripts: cancellation could select the wrong operation, repairing one invalid field could restore another rejected value, service exclusions and partial clock expressions could be misread, and the browser lacked robust storage failure handling. Saved appointment details could also appear replaced by an abandoned proposal. Mobile labels/controls, keyboard focus, selectable slots and speech replay needed improvement.
-
-Five focused implementation commits (`259149e` through `f893f5b`) address these findings. They add 17 operation/repair regressions, 49 language contrast cases and 14 browser recovery/interaction cases. Initial targeted runs reproduced 14 operation failures and 39 language failures. Final executed checks passed **340 backend tests, 20 browser tests, production build, typecheck and frontend formatting**. CI is configured, with remote execution still pending publication. The tests were authored by the same coding agent; neither independent human validation nor physical voice quality is claimed. See [the progress log](docs/PROGRESS.md) and [conversation test matrix](docs/CONVERSATION_TEST_MATRIX.md).
-
-Verification also encountered Windows temporary-directory permissions that blocked Node, and a browser output directory that overlapped the separate build. Both test setup issues were corrected before the final passing browser run. The candidate's running application and demo database were preserved; tests used a separate build, ports 3011/8011 and a disposable database.
-
-**Second snapshot recorded: 2026-10-26 19:03:04 PKT.** The latest token event before this cutoff is 19:02:37 PKT. The original 17:36 snapshot and screenshot above remain unchanged. [The second filtered usage log](docs/evidence/codex-usage-audit-2026-10-26.json) records the counters and commit scope:
-
-| Primary Codex / gpt-6.1-sol session | Input tokens | Output tokens | Total tokens |
-| --- | ---: | ---: | ---: |
-| Cumulative at second cutoff | 30,899,359 | 270,358 | **31,169,717** |
-| Increase since first snapshot | 16,059,270 | 94,730 | **16,154,000** |
-
-Cumulative input includes **30,461,952 cached tokens**; output includes **106,502 reasoning tokens**. As above, do not add these subsets to the total. The increase includes evaluation, discussion, implementation, testing and documentation since the first cutoff, rather than measuring the fixes alone. Automatic approval-review sessions and work after this cutoff are excluded. These are repeated-context session counters, not unique source-code tokens, an efficiency benchmark or a billing statement.
-
-There are **26 project commits at this cutoff**: the original 20, one usage-evidence documentation commit and five audit implementation commits. The later documentation commit containing this snapshot is excluded. All audit commits are local. The candidate explicitly requested **“dont submit yet”**; no push, PR or deployment was performed.
-
-Sandbox socket and Node write restrictions required approved command retries. Those environment errors were not reported as successful installs/checks. No test results, token counts, screenshots or physical voice verification were invented.
-
-Executed checks and remaining verification limits are documented in [docs/PROGRESS.md](docs/PROGRESS.md). Browser UI screenshots under ignored test artifacts demonstrate UI rendering only, not AI token usage or physical speech verification.
-
-
-## Later UI refinement and rescheduling conversation
-
-The candidate requested a chat-focused UI with light/dark themes, voice controls in the composer, a separate Appointment view and an animated Inspector toggle. Visual iterations initially stayed uncommitted at the candidate's request. A navy palette was rejected; it was replaced with warm neutral surfaces inspired by the supplied reference. The candidate then explicitly authorized regular local commits: UI foundation `20f901d`, workspace `26b9e9d`, browser navigation checks `edc3330`, followed by rescheduling `03efb44` and conversation controls `6dd832b`. No push, PR or deployment occurred.
-
-The next real transcript exposed missed “change the timing for this appointment”, command-shaped “rescheduled” speech, a date-only question for a generic reschedule, compound denial and a polite closing. Added two 29-case suites, each initially reproducing 24 failures with five already passing. One new test first failed collection because it used Pytest's reserved `request` parameter; renaming fixed setup. The full suite caught an intermediate reset affecting legacy reference recovery; the reset now runs only for an explicit new action request. Final backend validation: **398 passed** with the existing upstream warning.
-
-Controls now use whole-utterance grammar with bounded repeated denial clauses and courtesy. Context can disambiguate a directional destination after a reschedule is already established; no fuzzy mapping makes “diamond” a booking object or treats a reported action as a new command. Plain thanks preserves the workflow, explicit “nothing else” closes it, and rejecting an absent proposal preserves the saved receipt. The full reported conversation verifies the original appointment is unchanged after discarding the move. Text/API tests do not establish physical speech recognition quality.
-
-The earlier authentic usage snapshots are historical cutoffs. This later UI work and conversation repair are excluded from their token totals; no later token count is inferred from time, commits or quota percentages.
+The candidate branch remains **`candidate-TUAHASHAIKH`**. `TASK.md` is unchanged from the assessment baseline. Final work is saved locally for review; pushing the fork and opening the upstream assessment PR remain pending publication authorization.

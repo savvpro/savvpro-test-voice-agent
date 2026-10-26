@@ -1,42 +1,38 @@
 # VoxDesk
 
-An explainable voice receptionist for **Northline Studio**, a fictional single-chair barbershop. Speak or type to book, check availability, reschedule, cancel, or ask about services. A live Decision Inspector shows the actual matched Python rule, extracted entities, state transition, explanation, and next action.
+A voice receptionist for **Northline Studio**, a fictional single-chair barbershop. Speak or type to check availability, book a service, change an appointment, cancel it, or ask about the business. The assistant collects missing details, checks the actual calendar, asks for confirmation, persists the result and returns a booking reference.
 
-**All runtime decisions are deterministic Python code. No LLM, API key, paid speech service, authentication, or telephone infrastructure is required.** AI-assisted development is disclosed in [AI_USAGE.md](AI_USAGE.md). Use fictional customer names only.
+**The brain is entirely custom deterministic Python code.** No runtime LLM, prompt, model API, embeddings or intent service decides what happens. Browser speech recognition and synthesis handle audio only. No API keys or paid service accounts are required. Use fictional names and demo data only.
 
-## Features and architecture
+- [DESIGN.md](DESIGN.md): architecture, decision rules, state transitions, transaction guarantees, implementation map and test coverage.
+- [AI_USAGE.md](AI_USAGE.md): Codex's contribution, mistakes and corrections, authentic token counters, usage logs and screenshot.
+- [TASK.md](TASK.md): the unchanged assessment specification.
 
-- Complete booking with missing-detail questions, contextual corrections, actual availability, and explicit confirmation.
-- Duration-aware overlap checks, operating hours, past-date prevention, and a 180-day horizon.
-- Rescheduling and cancellation by synthetic reference, each with separate confirmation.
-- Browser speech recognition/synthesis, typed fallback, permission/error guidance, and turn separation.
-- Persistent sessions, appointments, transaction-safe concurrent writes, and idempotent retries after an uncertain network outcome.
-- Responsive dark interface, confirmation controls, booking receipts, and raw decision traces.
+## Assessment coverage
 
-```text
-Next.js / TypeScript / Tailwind / Lucide
-  browser STT → text ── HTTP ──► FastAPI / Pydantic
-  browser TTS ◄ reply + trace      │
-                                  ├─ ordered intent rules
-                                  ├─ deterministic entity grammar
-                                  ├─ explicit state machine
-                                  └─ booking service → SQLAlchemy → SQLite
-```
-
-`backend/app/brain/` contains the custom brain; `bookings.py` owns calendar rules; `db.py` owns persistence/transactions; `api.py` handles REST contracts. `frontend/app/` contains the workspace, and `frontend/lib/` contains typed API and browser voice adapters. See [DESIGN.md](DESIGN.md) for decisions and tradeoffs.
+| Task requirement | Delivered implementation |
+| --- | --- |
+| A real job from start to finish | Availability, booking, reference-based rescheduling/cancellation, business questions and polite conversation completion |
+| Caller speaks, assistant listens and replies | Browser STT → FastAPI → Python brain → structured reply → browser TTS; typed fallback uses the same workflow |
+| Own-code brain, no big-model decisions | Ordered intent rules, separate entity grammars, explicit state transitions and catalog-based reply templates |
+| Python backend and React/Next.js frontend | FastAPI, Pydantic, SQLAlchemy and SQLite; Next.js, React and TypeScript |
+| Messy conversations | Corrections, retained details, ambiguous values, name wrappers, unclear transcripts, reference recovery, interrupted proposals and safe clarification |
+| Real operations | Duration-aware calendar checks and persistent transactional writes, revalidated at confirmation |
+| Tests and practical engineering | 407 backend cases; 28 production-browser cases; fixed clocks, disposable databases, concurrency/rollback/retry coverage and CI configuration |
+| AI-use transparency | Tool/model disclosure, what went wrong, cumulative token snapshots and the original quota screenshot in AI_USAGE.md |
 
 ## Prerequisites
 
-- Python **3.11+** (validated locally with 3.13.3).
-- Node.js **22+**, npm (validated with Node 22.15.0).
-- Chrome or Edge recommended for voice; modern browsers support typed input.
-- Internet for dependency installation. Browser speech recognition may also require internet. Backend decision-making and typed conversations run locally after installation.
+- Python **3.11+**; final local validation used **3.13.3**.
+- Node.js **22+** and npm; final local validation used **22.15.0 / 10.9.2**.
+- Chrome or Edge for the physical voice demo. Browser support and microphone permission still apply; typed input supports every workflow.
+- Internet for installing dependencies. Browser speech recognition may also use an online service. The backend and typed workflows run locally after installation.
 
-## Installation and startup
+## Set up and run
 
-Run the backend from the **repository root**. The database is created automatically; no seeding or migrations are needed for a fresh checkout.
+Launch the backend from the **repository root**. A fresh database is created automatically; no seed data, account setup or migration command is needed for a fresh checkout.
 
-Windows PowerShell, first terminal:
+Windows PowerShell, terminal 1:
 
 ```powershell
 python -m venv .venv
@@ -45,7 +41,7 @@ Copy-Item .env.example .env
 .\.venv\Scripts\python -m uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 8000
 ```
 
-macOS/Linux:
+macOS/Linux, terminal 1:
 
 ```bash
 python3 -m venv .venv
@@ -54,7 +50,7 @@ cp .env.example .env
 .venv/bin/python -m uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 8000
 ```
 
-Second terminal:
+Terminal 2, all platforms:
 
 ```bash
 cd frontend
@@ -62,126 +58,132 @@ npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:3000**. API documentation: **http://127.0.0.1:8000/docs**. Health: **http://127.0.0.1:8000/api/health**.
+Open **http://127.0.0.1:3000**. Backend health is at **http://127.0.0.1:8000/api/health** and interactive API documentation at **http://127.0.0.1:8000/docs**. To run the production frontend, stop its development server, then run `npm run build` and `npm start` from `frontend/`. Keep the backend running separately.
 
-For a production frontend build, stop the dev server, run `npm run build`, then `npm start` in `frontend/`.
+### Configuration
 
-### Environment configuration
+Defaults work without environment files. Root `.env` configures the backend. Put frontend changes in `frontend/.env.local`; the root `.env` is not Next.js's environment file.
 
-Defaults work without an environment file. Root `.env` configures the backend; `frontend/.env.local` configures Next.js. Neither should be committed.
-
-| Variable | Default | Purpose |
+| Variable | Default | Meaning |
 | --- | --- | --- |
-| `VOXDESK_DATABASE_URL` | `sqlite:///./voxdesk.db` | Database relative to backend launch directory |
-| `VOXDESK_TIMEZONE` | `Asia/Karachi` | IANA business timezone; tzdata supports Windows |
-| `VOXDESK_CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Allowed frontend origins, comma separated |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Frontend backend URL; restart/rebuild after changes |
+| `VOXDESK_DATABASE_URL` | `sqlite:///./voxdesk.db` | SQLite database relative to the backend's launch directory |
+| `VOXDESK_TIMEZONE` | `Asia/Karachi` | IANA studio timezone; bundled tzdata supports Windows |
+| `VOXDESK_CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Comma-separated allowed frontend origins |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Backend address used by Next.js; restart/rebuild after changing it |
 
-`backend/requirements-lock.txt` and `frontend/package-lock.json` record verified dependency versions. `backend/requirements.txt` declares supported ranges. SQLite files, environments and build artifacts are ignored by Git.
+`backend/requirements-lock.txt` and `frontend/package-lock.json` pin the dependency snapshots. `backend/requirements.txt` declares supported Python ranges. Runtime databases, local environment files, dependencies, browser outputs and builds are ignored by Git.
 
-## Demo
+## Try the complete workflow
 
-Tap the microphone for **each** spoken turn, or type:
+Tap the mic for **each turn**, or type these requests. Use an available Monday–Saturday date within 180 days; choose another date if tomorrow is Sunday.
 
 1. “Book a haircut tomorrow at 3 PM.”
 2. “Actually, make it 5 PM instead.”
-3. “Alex Example.”
-4. Review the proposal; say “Yes” or click **Confirm appointment**.
-5. Keep the `NL-XXXXXXXX` reference from the booking card.
-6. “Reschedule NL-XXXXXXXX Friday at 4 PM.” Then confirm.
-7. “Cancel NL-XXXXXXXX.” Then confirm cancellation.
+3. “Use the name Alex Example.”
+4. Review the service, date, time and name. Say “Yes” or choose **Confirm appointment**.
+5. Keep the `NL-XXXXXXXX` reference. “Change the timing for this appointment” asks for a replacement time and keeps the saved date.
+6. “4 PM.” Review the proposed move. “Never mind, don't do it, revert the change” discards it and leaves the saved appointment unchanged.
+7. “Cancel my confirmed appointment.” Review the cancellation and confirm separately.
+8. “Nothing, thank you so much.” The conversation ends without applying any pending proposal.
 
-Choose a Monday–Saturday date within 180 days. If tomorrow is Sunday or a slot is taken, choose another day/time. Also try “Check beard trim availability Friday afternoon”, “What are your prices?”, “Repeat”, “Start over”, and “Order a pizza”.
+Also try “Check beard trim availability Friday afternoon”, “What are your prices?”, “Repeat”, “Start over”, an occupied slot and an unsupported request. Accepting an availability offer starts a booking draft; it does not book without a later complete proposal and confirmation. New sessions need an existing appointment's reference; the app never searches for someone by name.
 
-The brain supports a bounded English grammar. Unclear details trigger a specific question; they do not authorize a booking. Useful examples:
+### Supported language and safe limits
 
-| Caller intent | Supported behavior |
+The supported English grammar is deliberately bounded and inspectable. Explicit rules suit this small reception job and meet the task's custom-brain constraint. Clarification is the intended response when the code cannot safely establish the caller's meaning.
+
+| Detail | Examples and behavior |
 | --- | --- |
-| Start a booking | “Make a new booking”, “Can you fit me in for a haircut?”, “I need a hair and beard appointment” |
-| Choose a service | “Haircut plus beard” selects the combination; “haircut without a beard trim” selects only the haircut. Alternatives and unsupported positive choices need clarification. |
-| Accept availability | “Yes, do it at 4:30 PM” retains the service/date and supplies the time. Clickable available starts also begin a draft. The complete proposal needs a separate confirmation. |
-| Repair details | “I already told you, 5 30 PM” or “change from 4 PM to 5 PM” updates the time and retains other fields. Invalid fields stay rejected until individually repaired. |
-| Give a name | Use a fictional name alone when asked, or “Use the name Alex Example”. Mark an inline name with “with/for the name …”; instruction words are removed. Names survive other field errors and occupied slots. |
-| Change a saved booking | “Change the timing for this appointment” asks for a new time and keeps the saved date. A general “reschedule the appointment” accepts a new date, time, or both. A new session needs its reference; rejected fields stay rejected. |
-| Discard a change | “Cancel that change” or “Never mind, don't do it, revert the change” discards the proposal. During a new-booking draft, “cancel it” discards that draft. During rescheduling, “cancel it” asks which target you mean. |
-| Cancel a saved booking | “Cancel my confirmed appointment” or “Cancel NL-XXXXXXXX” selects the stored appointment and requires confirmation. |
-| End politely | “Nothing, thank you so much” ends without applying pending changes. “Thank you” alone acknowledges you and preserves the current step. |
-| Ask for help/status | “Have you booked it?”, “Where can I find the booking reference?”, “Repeat”, “Start over” and “End the conversation” |
+| Services | Haircut, beard trim, hair and beard; exclusions such as “haircut without a beard trim” are respected |
+| Dates | Today/tomorrow, weekdays/next weekday, “in two days”, `2026-10-28`, “28th of October 2026”, “October twenty-eighth 2026”, `2026 1028` |
+| Times | `5 PM`, `17:30`, “five thirty PM”, “half past four PM”, “quarter to five PM”, `5 30 PM`; bare 1–12 requires AM/PM |
+| Names | A fictional name when asked, or “Use the name Alex Example”; marked inline names survive unrelated date/time errors and slot conflicts |
+| Corrections | “Actually make it Friday”; directional “from 4 PM to 5 PM”; changing one valid field retains other collected details |
+| Uncertainty | Multiple dates/times, slash-date ordering, unsupported services and malformed values ask specific questions and invalidate affected authorization |
+| Controls | Repeat, restart, business questions, proposal rejection, courtesy and goodbye; “thank you” alone preserves the workflow |
 
-Dates support relative days, weekdays, bounded “in two days”, `YYYY-MM-DD`, “28th of October 2026”, “October twenty-eighth 2026”, “2026 October 28”, and numeric `2026 10 28`, `2026 1028`, `20261028`. A named date without a year uses the current business year, with past-date validation. A bare weekday includes today; “next Monday” is strictly upcoming. Incomplete years, invalid dates, weekday/date mismatches and ambiguous numeric ordering need clarification. Years spoken entirely as words remain unsupported.
+A named date without a year uses the current studio year; a bare weekday includes today and “next” is strictly upcoming. Fully word-spoken years, broad free-form requests and arbitrary recognition errors are not supported. The assistant does not turn “poke it” into “book it” or infer a name from unrelated words. [DESIGN.md](DESIGN.md#custom-python-brain) explains the grammar and context rules.
 
-Times support AM/PM, unambiguous 24-hour values, noon/midnight, “five thirty PM”, “half past four PM”, “quarter past four PM” and “quarter to five PM” (16:45). Bare 1–12 hours require AM/PM. Supply the full time when clarifying. Unsupported offsets/ranges (“twenty to five”, “between four and five”), malformed values (“around 40”), and negated times need an exact replacement. Negated dates also require clarification. The assistant does not guess what a garbled transcript meant; review the displayed interpretation before confirming.
+## Interface
 
-The centered chat is the main workspace. The sidebar starts as an icon rail and can expand to show labels; on phones it opens as a drawer. The labeled **Decision inspector** button on the right expands or collapses the Inspector with a transition; reduced-motion preferences disable animation. **Appointment** in the sidebar opens the current draft or saved receipt, with proposed changes shown separately. On phones, the calendar icon opens that view. Switching views preserves the conversation and unsent input. Available starts stay in the chat even when the Inspector is closed. Successful actions also show a receipt below the latest assistant reply using the confirmed backend details.
+The transcript scrolls independently above a pinned composer. Mic, mute, replay, language and stop-audio controls stay beside typed input. Light/dark themes use warm neutral surfaces; browser preference storage is guarded. The tab title and waveform favicon identify **VoxDesk**.
 
-**Explore availability** and **Services & pricing** are centered above the message field in a new session. Sending the first message hides them, including after a reload; **New session** brings them back. Typing an unsent draft leaves them visible.
+The sidebar expands from icons to labels and becomes a drawer on phones. **Decision inspector** expands the chat's real intent, matched rule, extracted fields, state, explanation, next action and raw trace. **Appointment** shows empty/draft/saved/cancelled cards, current catalog price, actual saved duration and separate proposed changes. Its management buttons return to the conversation and still require confirmation. **Studio services** is a dedicated catalog page with prices, durations, combo saving, opening hours and service-specific booking handoff.
 
-**Studio services** in the sidebar opens a dedicated catalog with prices, durations, the combo saving and opening hours. **Book** starts the selected service in the conversation; dates, times and confirmation still go through the same backend workflow. **Start a conversation** returns to chat and preserves an unsent draft.
+Two centered suggestions appear above the composer in a new session, disappear after the first submitted turn and stay hidden on reload. New session restores them. Navigation preserves the conversation and unsent draft; availability choices remain usable with the Inspector collapsed.
 
-**Appointment** shows a centered empty state, a draft as details arrive, or a saved card with status, reference, service, local date/time, customer, duration and catalog price. The empty-state booking shortcut and saved **Reschedule**/**Cancel booking** buttons return to chat and use the normal confirmation flow. Proposed changes remain separate from saved details; cancelled appointments keep their receipt and hide management buttons. The Decision Inspector button appears only in chat; Appointment keeps **Back to conversation**.
+### Synthetic studio rules
 
-Microphone, spoken-reply toggle, **Listen again**, **Speech language** and stop-audio controls live in the chat bar. US, UK and Pakistan English depend on browser support. Tap the mic for each turn; typing restores focus to the input. The theme button switches between warm neutral light/dark palettes and remembers the preference when storage works. A storage warning means the live tab remains usable, but recovery after closing/reloading may be unavailable.
-
-Northline Studio opens **Monday–Saturday 10:00–19:00**, with one chair:
-
-| Service | Duration | Synthetic price |
+| Service | Duration | Price |
 | --- | --- | --- |
 | Classic Haircut | 30 minutes | PKR 1,800 |
 | Beard Trim | 20 minutes | PKR 900 |
 | Haircut + Beard | 50 minutes | PKR 2,500 |
 
-## Testing
+One chair; Monday–Saturday **10:00–19:00**; Sunday closed. The complete service must fit within opening hours. Adjacent appointments may touch, overlaps are rejected, past starts are rejected and bookings are limited to 180 days ahead. Availability uses ten-minute suggestions, while an exact valid start can use another minute. A displayed slot is never a hold.
+
+## Verification
+
+Final repository audit: **2026-10-26, Asia/Karachi**. Validation used the committed application, a separate production build, isolated ports 3011/8011 and disposable fixed-clock test databases. No tests modify the demo database.
+
+| Check | Observed result |
+| --- | --- |
+| Backend Pytest suite | **407 passed**; one upstream Starlette/httpx deprecation warning |
+| Production-browser suite | **28 passed**, using Edge and the real backend; speech APIs/fault scenarios mocked where specified |
+| TypeScript from a clean frontend copy before building | Passed |
+| Next.js 15.5.28 production build | Passed, including page and favicon generation |
+| Frontend formatting | Passed |
+| `npm audit --audit-level=high` | **0 reported vulnerabilities** across all severities |
+| Python dependency integrity | `pip check`: no broken requirements |
+| Source/history credential-pattern check | No matches for the checked private-key/OpenAI/AWS/GitHub patterns; not a complete security audit |
+| Assessment and branch | `TASK.md` matches baseline `1e8a7dc`; branch is `candidate-TUAHASHAIKH` |
+| CI | Workflow structure and action SHA pins checked locally; remote execution awaits push |
+
+**Physical verification:** the candidate confirmed on 2026-10-26 that the physical voice check and all manual device/conversation scenarios had been completed successfully. This covers the spoken loop, reply separation, correction/confirmation, mute/replay/stop controls, language choices, denied permission/silent or missing microphone recovery, booking changes, navigation and narrow-screen/keyboard checks. This is candidate-reported manual verification; browser/hardware versions and per-utterance recordings were not supplied, and no measured recognition-accuracy percentage is claimed.
+
+The automated coverage map and testing boundaries are in [DESIGN.md](DESIGN.md#validation-and-coverage). After changing the app or device, repeat a spoken booking/correction/confirmation, a discarded reschedule, a separately confirmed cancellation, permission-denial recovery, replay/stop audio, a reload after an uncertain response and a mobile/keyboard pass. Record unexpected behavior with the actual recognition transcript before repairing it.
+
+### Run the checks yourself
 
 From the repository root:
 
 ```powershell
 .\.venv\Scripts\python -m pytest
+.\.venv\Scripts\python -m pip check
 ```
 
-On macOS/Linux use `.venv/bin/python -m pytest`. Tests use fixed clocks and disposable databases, never the demo database.
+On macOS/Linux use `.venv/bin/python` in place of `.venv\Scripts\python`.
 
-Frontend:
+From `frontend/`:
 
 ```bash
-cd frontend
-npm run typecheck
 npm run format:check
+npm run typecheck
 npm run build
+npm audit --audit-level=high
 ```
 
-Browser tests start their own production UI and fixed-clock backend with a disposable database. **Stop the dev server and free ports 3000/8000 first.** Build with the default API URL (`http://localhost:8000` or `http://127.0.0.1:8000`). The runner checks the build's API target before starting; it refuses a different backend to protect unrelated demo data. Install a Playwright browser once:
+For browser tests, **free ports 3000/8000 and stop unrelated servers first**. The suite launches its own production frontend and fixed-clock disposable backend; it refuses to reuse existing servers or target an unrelated backend.
 
 ```bash
-cd frontend
 npx playwright install chromium
 npm run build
 npm run test:e2e
 ```
 
-Or use installed Edge in PowerShell:
+The default build must target `http://localhost:8000` or `http://127.0.0.1:8000`. With installed Edge, PowerShell can use `$env:PLAYWRIGHT_CHANNEL = 'msedge'` before `npm run test:e2e`. For alternate ports, set `$env:NEXT_PUBLIC_API_URL = 'http://127.0.0.1:8011'` **before building**, then `$env:E2E_FRONTEND_PORT = '3011'` and `$env:E2E_BACKEND_PORT = '8011'` before running. `E2E_FRONTEND_DIR` may point to a separate frontend copy built with the same API target, preserving a running dev build.
 
-```powershell
-$env:PLAYWRIGHT_CHANNEL = 'msedge'
-npm run test:e2e
-```
+## API and retry contract
 
-For alternate ports, set `NEXT_PUBLIC_API_URL=http://127.0.0.1:8011` **before building**, then set `E2E_FRONTEND_PORT=3011` and `E2E_BACKEND_PORT=8011` before running tests. `E2E_FRONTEND_DIR` can point to a separate frontend copy built with that API URL, preserving a running development build. These are environment variables; use `$env:NAME = 'value'` in PowerShell. The suite refuses to reuse existing servers.
-
-Browser tests cover connected booking workflows, lost commit responses/retries, storage failures, saved/proposed details, network errors, keyboard focus, selectable slots, 360/390/768-pixel layouts and speech sequencing/replay/failure. Speech APIs and explicit failure scenarios are mocked; normal workflows use the real backend. Actual microphone access, recognition quality and audible output need the [manual checklist](docs/DEMO_CHECKLIST.md). [The conversation test matrix](docs/CONVERSATION_TEST_MATRIX.md) explains coverage and held-out manual checks; executed results are in [progress](docs/PROGRESS.md).
-
-[GitHub Actions](.github/workflows/ci.yml) is configured to run backend tests on Python 3.11/3.13 and frontend format/type/build/audit/browser checks on Node 22. The workflow has not run remotely while publication is on hold.
-
-## REST API
-
-| Method | Endpoint | Behavior |
+| Method | Endpoint | Purpose |
 | --- | --- | --- |
-| GET | `/api/health` | Backend/database health |
-| GET | `/api/business` | Catalog, timezone and hours |
+| GET | `/api/health` | Database/backend health, studio timezone, deterministic-brain label |
+| GET | `/api/business` | Synthetic catalog, prices, durations, hours and timezone |
 | POST | `/api/sessions` | Create persisted conversation |
-| GET | `/api/sessions/{id}` | Retrieve context and decision |
-| POST | `/api/sessions/{id}/turns` | Submit utterance |
-| GET | `/api/availability?service=haircut&day=2026-10-30` | Real slots; use a future date |
-| GET | `/api/appointments/{reference}` | Retrieve synthetic booking |
+| GET | `/api/sessions/{id}` | Retrieve its current context and decision |
+| POST | `/api/sessions/{id}/turns` | Process an utterance and, only after confirmation, apply a calendar action |
+| GET | `/api/availability?service=haircut&day=2026-10-30` | Query real available starts; choose a valid future date |
+| GET | `/api/appointments/{reference}` | Retrieve the authoritative synthetic appointment |
 
 ```json
 {
@@ -191,30 +193,23 @@ Browser tests cover connected booking workflows, lost commit responses/retries, 
 }
 ```
 
-Use a new request ID and the current revision for each utterance. **Retries reuse the exact body and ID.** Responses include reply, context, decision, available slots, and appointment when applicable. Stale revisions/reused IDs with different bodies return 409, invalid input 422, absent resources 404, and transient database failures 503 without a success claim. All appointment writes go through confirmation; no raw write endpoint bypasses the brain.
+Each new turn uses a new request ID and the current revision. **A retry reuses the exact ID, text and expected revision.** The server replays a stored receipt before checking revision, so a lost success response cannot create a second appointment. Reused IDs with different content or stale revisions return 409; invalid input returns 422, absent resources 404 and transient database failures 503. There is no raw calendar-write endpoint that bypasses the brain.
 
-## Browser compatibility and limitations
+## Limitations and deployment boundary
 
-- SpeechRecognition has [limited browser availability](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition). Chrome/Edge are recommended; platform policies may still disable it. Typed input supports every workflow.
-- Microphone access needs permission and localhost/HTTPS. Browser speech services may process audio remotely; no paid credentials are configured. Use synthetic information.
-- Recognition is aborted before synthesis; the mic stays disabled while speaking. There is no automatic restart or full-duplex streaming. See [MDN recognition stop](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition/stop) and [synthesis cancel](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis/cancel).
-- Local assessment demo: no authentication, customer identity verification, privacy governance, notifications, payments, holidays, staff selection or multiple chairs. Bind to localhost. References are identifiers, not secure credentials.
-- Availability suggestions use a ten-minute grid; an exact valid start may use another minute. Availability is never a hold and is rechecked at confirmation.
-- Sessions/receipts persist without expiry; history is bounded to 100 messages. New session discards the proposal, not stored appointments. Replayed receipts are historical responses; GET returns current state. Tab-storage failure limits reload recovery; a visible warning explains this, and same-tab retries retain the original request ID in memory.
-- SQLite serializes writes; lock waits time out after ten seconds and can be retried. Existing schema changes would need migrations before real deployment.
+This is a local assessment application, not an authenticated public booking service. Bind to localhost. References identify synthetic records; they are not secure customer credentials. Browser recognition can be unavailable or process audio through the browser provider; permission and localhost/HTTPS apply. No telephony, continuous/full-duplex listening, notifications, payments, holidays, multiple chairs or customer identity verification is implemented.
 
-## Assessment submission workflow
+Session history is bounded to 100 messages, but sessions and idempotency receipts have no expiry. New session resets the conversation, not saved appointments. Browser storage failure preserves same-tab retries in memory but can prevent recovery after closing/reloading. Connection status reflects the latest API outcome rather than continuous monitoring. SQLite serializes writers with a ten-second lock timeout; schema evolution needs migrations. Current catalog prices are displayed, not archived billing amounts. Before public deployment, add authentication/authorization, privacy/retention controls, rate limits, managed backups, migrations and broader independent conversation/device testing.
 
-Original assessment: [TASK.md](TASK.md). Upstream: https://github.com/savvpro/savvpro-test-voice-agent.
+## Candidate branch and submission
 
-**Publication is on hold at the candidate's request. All audit fixes remain in local commits; no push or submission PR has been made by the coding agent.**
+The original [upstream instructions](https://github.com/savvpro/savvpro-test-voice-agent) require a fork, a `candidate-<github-username>` branch and a PR to upstream `main`. This checkout uses **`candidate-TUAHASHAIKH`** and preserves `TASK.md` unchanged. All implementation and documentation commits are local; no push or PR has been performed by the coding agent.
 
-1. Fork upstream and clone **your fork**.
-2. Read `TASK.md`. Work on `candidate-<your-github-username>`; this checkout already uses **`candidate-TUAHASHAIKH`**.
-3. Run checks, complete the physical voice demo, and attach authentic token logs/screenshots in `AI_USAGE.md`.
-4. Review secrets/real-data risks and commit on the candidate branch.
-5. When submission is authorized, push the candidate branch to **your fork**.
-6. Open a PR with **base repository** `savvpro/savvpro-test-voice-agent`, **base branch** `main`, **head repository** your fork, and **compare branch** `candidate-<your-github-username>`.
-7. Use title **`feat: complete voice-agent assessment`** and submit before the deadline.
+After reviewing the final changes and authorizing publication:
 
-The coding agent does not push, create a PR, deploy, or perform destructive Git operations without explicit approval. `TASK.md` is preserved unchanged.
+```bash
+git status
+git push -u origin candidate-TUAHASHAIKH
+```
+
+Push to the candidate's fork, then open a PR with base **`savvpro/savvpro-test-voice-agent:main`**, head **the candidate's fork**, compare **`candidate-TUAHASHAIKH`**, and title **`feat: complete voice-agent assessment`**. Check the resulting remote CI run and submit before the assessment deadline. Remote CI and the PR are the remaining submission steps, not completed evidence.
