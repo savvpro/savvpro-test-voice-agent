@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap');
+
+:root {
+  --bg-primary: #0b0f17;
+  --bg-surface: #131a26;
+  --bg-card: rgba(22, 31, 46, 0.75);
+  --bg-glass: rgba(255, 255, 255, 0.04);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: #c5a059;
+  
+  --accent-gold: #c5a059;
+  --accent-gold-glow: rgba(197, 160, 89, 0.25);
+  --accent-emerald: #10b981;
+  --accent-emerald-glow: rgba(16, 185, 129, 0.2);
+  --accent-crimson: #f43f5e;
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  line-height: 1.5;
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(197, 160, 89, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.04) 0%, transparent 40%);
+  background-attachment: fixed;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+input, textarea {
+  font-family: inherit;
+  outline: none;
+}
