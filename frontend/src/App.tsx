@@ -1,0 +1,188 @@
+import { useRef, useState } from 'react'
+import { ApiError, sendTurn, startCall, type Decision, type TurnResponse } from './api'
+import BrainPanel from './components/BrainPanel'
+import Transcript, { type Message } from './components/Transcript'
+import { useSpeech } from './useSpeech'
+
+type Problem = { kind: 'expired' } | { kind: 'network'; retry: () => void } | null
+
+const MAX_SILENT = 3 // hands-free gives up after this many empty listens in a row
+
+export default function App() {
+  const speech = useSpeech()
+  const [callId, setCallId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [decisions, setDecisions] = useState<Decision[]>([])
+  const [ended, setEnded] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [problem, setProblem] = useState<Problem>(null)
+  const [handsFree, setHandsFree] = useState(false)
+  const [draft, setDraft] = useState('')
+  const handsFreeRef = useRef(false)
+  const session = useRef(0) // bumped on every start/end so stale async work is dropped
+
+  const inCall = callId !== null
+  const live = inCall && !ended && problem?.kind !== 'expired'
+
+  function reset() {
+    session.current++
+    speech.stop()
+    setCallId(null)
+    setMessages([])
+    setDecisions([])
+    setEnded(false)
+    setBusy(false)
+    setProblem(null)
+    setDraft('')
+  }
+
+  async function onReply(res: TurnResponse, sid: number) {
+    setMessages((m) => [...m, { role: 'assistant', text: res.reply }])
+    setDecisions((d) => [res.decision, ...d])
+    if (res.ended) setEnded(true)
+    await speech.speak(res.reply)
+    if (!res.ended && handsFreeRef.current && sid === session.current) void listenLoop(res.call_id, sid, 0)
+  }
+
+  async function listenLoop(id: string, sid: number, silent: number) {
+    if (sid !== session.current) return
+    const text = await speech.listen()
+    if (sid !== session.current || !handsFreeRef.current) return
+    if (text) void submit(id, text, sid)
+    else if (silent + 1 < MAX_SILENT) void listenLoop(id, sid, silent + 1)
+  }
+
+  async function submit(id: string, text: string, sid: number, echo = true) {
+    if (echo) setMessages((m) => [...m, { role: 'caller', text }])
+    setBusy(true)
+    setProblem(null)
+    try {
+      const res = await sendTurn(id, text)
+      if (sid !== session.current) return
+      setBusy(false)
+      await onReply(res, sid)
+    } catch (e) {
+      if (sid !== session.current) return
+      setBusy(false)
+      if (e instanceof ApiError && e.status === 404) setProblem({ kind: 'expired' })
+      else setProblem({ kind: 'network', retry: () => void submit(id, text, sid, false) })
+    }
+  }
+
+  async function start() {
+    reset()
+    const sid = session.current
+    setBusy(true)
+    try {
+      const res = await startCall()
+      if (sid !== session.current) return
+      setCallId(res.call_id)
+      setBusy(false)
+      await onReply(res, sid)
+    } catch {
+      if (sid !== session.current) return
+      setBusy(false)
+      setProblem({ kind: 'network', retry: () => void start() })
+    }
+  }
+
+  async function mic() {
+    if (!callId || busy) return
+    if (speech.listening) return speech.stop()
+    const text = await speech.listen()
+    if (text) void submit(callId, text, session.current)
+  }
+
+  function toggleHandsFree() {
+    const on = !handsFree
+    handsFreeRef.current = on
+    setHandsFree(on)
+    if (!on) speech.stop()
+    else if (callId && live && !busy) void listenLoop(callId, session.current, 0)
+  }
+
+  function send(e: React.FormEvent) {
+    e.preventDefault()
+    const text = draft.trim()
+    if (!text || !callId || busy || !live) return
+    setDraft('')
+    speech.stop()
+    void submit(callId, text, session.current)
+  }
+
+  return (
+    <div className="app">
+      <header>
+        <h1>Maple Street Clinic</h1>
+        <p>Appointment line</p>
+        {inCall ? (
+          <button className="btn danger" onClick={reset}>End call</button>
+        ) : (
+          <button className="btn primary" onClick={start} disabled={busy}>Start call</button>
+        )}
+      </header>
+
+      {problem?.kind === 'expired' && (
+        <div className="notice" role="alert">
+          This call has ended or expired.{' '}
+          <button className="btn primary" onClick={start}>Start new call</button>
+        </div>
+      )}
+      {problem?.kind === 'network' && (
+        <div className="notice" role="alert">
+          Can’t reach the clinic line. Check your connection.{' '}
+          <button className="btn" onClick={problem.retry}>Retry</button>
+        </div>
+      )}
+      {ended && (
+        <div className="notice info" role="status">
+          The call has finished.{' '}
+          <button className="btn primary" onClick={start}>Start new call</button>
+        </div>
+      )}
+
+      <main>
+        <div className="col">
+          <Transcript messages={messages} />
+          {inCall && (
+            <div className="controls">
+              {speech.supported && (
+                <div className="voice">
+                  <button
+                    className={`mic${speech.listening ? ' on' : ''}`}
+                    onClick={mic}
+                    disabled={!live || busy}
+                    aria-pressed={speech.listening}
+                    aria-label={speech.listening ? 'Stop listening' : 'Push to talk'}
+                  >
+                    {speech.listening ? 'Listening…' : 'Talk'}
+                  </button>
+                  <label className="toggle">
+                    <input type="checkbox" checked={handsFree} onChange={toggleHandsFree} />
+                    Hands-free
+                  </label>
+                </div>
+              )}
+              <form onSubmit={send} className="text">
+                <label htmlFor="msg">Type a message</label>
+                <input
+                  id="msg"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  maxLength={500}
+                  autoComplete="off"
+                  disabled={!live}
+                  placeholder={speech.supported ? 'Or type here' : 'Voice isn’t supported here; type instead'}
+                />
+                <button className="btn primary" type="submit" disabled={!live || busy || !draft.trim()}>
+                  Send
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+        <BrainPanel decisions={decisions} />
+      </main>
+    </div>
+  )
+}
