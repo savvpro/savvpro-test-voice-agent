@@ -1,83 +1,238 @@
-# Step-by-Step Guide: How to Fork, Clone, and Submit Your Assessment
+# Voice Booking Assistant — The Copper Spoon
 
-**Repository:** https://github.com/savvpro/savvpro-test-voice-agent
+A voice agent that books restaurant tables over the phone. Built for the
+SavvPro voice-agent assessment.
 
----
+> **The one big rule:** the brain is 100% hand-written Python. No LLM, no
+> embeddings, no model files. Just a finite state machine + regex slot
+> extractors + keyword intent classification.
 
-## Step 1: Fork the Repository
+## What it does
 
-1. Go to the repository: https://github.com/savvpro/savvpro-test-voice-agent
-2. Click the **Fork** button in the top-right corner.
-3. This will create a copy of the repository in your GitHub account.
+A caller phones the restaurant. The assistant:
 
----
+1. Greets them.
+2. Asks for the **day**, **time**, and **party size** (in any order, all at once, or one at a time).
+3. Checks table **availability** against a fake bookings store (with operating hours, table sizes, and existing bookings).
+4. Asks for the **name** and **phone number**.
+5. **Confirms** the reservation back to the caller.
+6. On "yes", **books** the table and gives a confirmation number.
+7. Says goodbye and ends the call.
 
-## Step 2: Clone Your Fork
+It also handles messy-caller scenarios:
 
-1. Open your forked repository in your GitHub account.
-2. Click the green **Code** button and copy the URL.
-3. Run the following commands:
+- **Mid-flow changes**: "actually change the time to 6:30" re-validates availability and re-confirms.
+- **Side questions**: "wait, what are your hours?" is answered, then the brain returns to the booking.
+- **Repeats**: "can you repeat that?" replays the last prompt.
+- **Cancellations**: "cancel" wipes the in-progress booking.
+- **Unavailable slots**: offers the closest available alternatives.
+- **Closed days / outside hours**: explains the operating hours.
+- **Gibberish / silence**: reprompts gracefully.
 
-```bash
-git clone https://github.com/your-username/savvpro-test-voice-agent.git
-cd savvpro-test-voice-agent
+## Architecture
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                       Browser (caller)                     │
+│                                                            │
+│  ┌──────────────┐         ┌──────────────────────────┐    │
+│  │ Web Speech   │  STT    │  Next.js frontend        │    │
+│  │ Recognition  │ ──────> │  (React + Tailwind)      │    │
+│  │ (mic input)  │         │                          │    │
+│  └──────────────┘         │  - mic button            │    │
+│                           │  - live transcript        │    │
+│  ┌──────────────┐         │  - brain decision panel  │    │
+│  │ Web Speech   │  TTS    │  - slot grid             │    │
+│  │ Synthesis    │ <────── │                          │    │
+│  │ (spoken reply│         └──────────┬───────────────┘    │
+│  └──────────────┘                    │ POST /api/chat     │
+└──────────────────────────────────────┼─────────────────────┘
+                                       │ (text only)
+                                       ▼
+┌────────────────────────────────────────────────────────────┐
+│              Python FastAPI backend (port 8000)            │
+│                                                            │
+│  ┌────────────────────────────────────────────────────┐   │
+│  │  Brain (rule-based — NO LLM)                       │   │
+│  │                                                    │   │
+│  │  intents.py   keyword + regex intent classifier    │   │
+│  │  slots.py     regex slot extractors                │   │
+│  │  state_machine.py  finite state machine            │   │
+│  │  restaurant.py     fake bookings + hours + tables  │   │
+│  │  responses.py      response templates              │   │
+│  │  sessions.py   in-memory session store             │   │
+│  └────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────┘
 ```
 
----
+The brain runs entirely on the backend. STT and TTS run entirely in the
+browser via the Web Speech API — no external API keys, no paid services.
 
-## Step 3: Read the Task
+## Project layout
 
-Open and read **TASK.md** carefully before writing any code.
-
-- TASK.md URL: https://github.com/savvpro/savvpro-test-voice-agent/blob/main/TASK.md
-
----
-
-## Step 4: Create a New Branch
-
-Branch pattern: `candidate-<your-github-username>`
-
-```bash
-git checkout -b candidate-<your-github-username>
+```
+.
+├── backend/                    # Python FastAPI backend
+│   ├── brain/
+│   │   ├── __init__.py
+│   │   ├── intents.py          # Keyword + regex intent classifier
+│   │   ├── slots.py            # Regex slot extractors (date/time/party/name/phone)
+│   │   ├── state_machine.py    # DialogueManager — the brain
+│   │   ├── restaurant.py       # Fake operating hours, tables, booking store
+│   │   └── responses.py        # Response templates
+│   ├── tests/
+│   │   ├── test_slots.py       # 30+ slot extractor tests
+│   │   ├── test_intents.py     # 25+ intent classifier tests
+│   │   ├── test_state_machine.py  # 20+ end-to-end brain tests
+│   │   └── test_api.py         # 7 FastAPI endpoint tests
+│   ├── main.py                 # FastAPI app
+│   ├── sessions.py             # Session store
+│   └── requirements.txt
+├── src/                        # Next.js frontend
+│   ├── app/
+│   │   ├── page.tsx            # Main route — renders VoiceAssistant
+│   │   └── layout.tsx
+│   ├── components/
+│   │   ├── voice-assistant.tsx # Main voice UI component
+│   │   └── ui/                 # shadcn/ui components
+│   └── lib/
+│       ├── api.ts              # Backend API client
+│       └── voice.ts            # Web Speech API wrappers (STT + TTS)
+├── DESIGN.md                   # Brain design — read this!
+├── AI_USAGE.md                 # AI tools used
+├── pytest.ini
+└── README.md                   # This file
 ```
 
-**Example:**
-```bash
-git checkout -b candidate-johndoe
-```
+## Prerequisites
 
----
+- **Python 3.10+** with `pip`
+- **Node.js 18+** and **bun** (or npm/pnpm)
+- A browser that supports the **Web Speech API** for STT (Chrome, Edge, Safari). Firefox supports TTS but not STT — the text input fallback works everywhere.
 
-## Step 5: Complete the Task
+## Setup & run
 
-Build the full application on your branch.
-
----
-
-## Step 6: Push Your Branch
+### 1. Backend
 
 ```bash
-git add .
-git commit -m "feat: complete voice-agent assessment"
-git push origin candidate-<your-github-username>
+# from the repo root
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+
+# start the API server on port 8000
+python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
----
+Verify it's up:
 
-## Step 7: Create a Pull Request
+```bash
+curl http://localhost:8000/api/health
+# {"ok": true, "version": "1.0.0", "bookings_count": 4, ...}
+```
 
-1. Go to your **forked** repository on GitHub (`https://github.com/your-username/savvpro-test-voice-agent`).
-2. Click **Compare & pull request** (GitHub will show this banner after you push your branch).
-3. Ensure the following settings in the PR form:
-   - **Base repository:** `savvpro/savvpro-test-voice-agent` ← the original repo
-   - **Base branch:** `main`
-   - **Head repository:** `your-username/savvpro-test-voice-agent` ← your fork
-   - **Compare branch:** `candidate-<your-github-username>`
-4. Use the title: `feat: complete voice-agent assessment`
-5. Submit the pull request.
+### 2. Frontend
 
-> 💡 **Tip:** If you don't see the banner, go to the original repo (`savvpro/savvpro-test-voice-agent`), click the **Pull requests** tab, then click **New pull request** → **compare across forks**.
+```bash
+# from the repo root
+bun install         # or: npm install
+bun run dev         # or: npm run dev
+```
 
----
+Open <http://localhost:3000>. Click the mic and say:
 
-> ⚠️ **Important:** No submissions will be accepted after the deadline.
+> "Hi, I'd like to book a table for tomorrow at 7pm for 4 people"
+
+Or use the text input at the bottom of the page if your browser doesn't
+support speech recognition.
+
+### 3. Tests
+
+```bash
+# Brain unit tests + API tests
+python3 -m pytest backend/tests/ -v
+```
+
+All 81 tests should pass.
+
+## Sample conversation
+
+```
+Assistant:  Thanks for calling The Copper Spoon. I can help you book a table.
+            What day would you like to come in?
+
+Caller:     Hi, I want to book friday at 8pm for 4 people.
+
+Assistant:  Last thing — what name should I put the reservation under?
+
+Caller:     John Smith.
+
+Assistant:  And a phone number where we can reach you?
+
+Caller:     555-123-4567.
+
+Assistant:  Let me confirm. A table for 4 on Friday, October 30 at 8 p.m.,
+            under John Smith. Should I go ahead and book that?
+
+Caller:     Yes.
+
+Assistant:  You're all set. Your reservation is confirmed for 4 on Friday,
+            October 30 at 8 p.m., under John Smith. Your confirmation number
+            is B-2005. We'll see you then. Anything else?
+
+Caller:     Bye.
+
+Assistant:  Thank you for calling The Copper Spoon. Have a great day. Goodbye.
+```
+
+## Try saying
+
+| Phrase | What happens |
+|--------|--------------|
+| "Hi, I'd like to book a table" | Starts a booking |
+| "Tomorrow at 7pm for 4 people" | Fills 3 slots in one utterance |
+| "Friday at 8 for 2" | Same — partial slot phrasing |
+| "Actually change the time to 6:30" | Mid-flow change, re-validates availability |
+| "What are your hours?" | Side question, answered, then returns to booking |
+| "Can you repeat that?" | Repeats the last prompt |
+| "Cancel" | Cancels the in-progress booking |
+| "Bye" | Ends the call |
+
+## What the brain decides — and how you can see it
+
+The right-hand **Brain Decision** panel on the web page shows, for every turn:
+
+- **Current state** — which state the state machine is in (e.g. `Asking: Time`, `Confirming`, `Booked`).
+- **Intent detected** — what the classifier thought the caller wanted (e.g. `provide_party_size`, `change_value`, `ask_hours`).
+- **Brain action** — the internal decision label (e.g. `need_name`, `availability_failed`, `side_ask_hours`, `booking_confirmed`).
+- **Slots** — the current values of `date`, `time`, `party_size`, `name`, `phone`.
+- **Booking ID** — once confirmed, the booking reference.
+
+This makes the brain's behavior fully transparent — you can see exactly what
+it decided and why at every turn.
+
+## Tech choices & why
+
+| Layer | Choice | Why |
+|-------|--------|-----|
+| Brain language | Python | Required by the task. Also great for regex + dataclasses. |
+| Brain logic | Hand-written FSM + regex | Required by the task — no LLM allowed for decisions. |
+| Backend framework | FastAPI | Async, automatic OpenAPI, Pydantic models, great DX. |
+| STT / TTS | Browser Web Speech API | No API keys, no paid services, runs locally. The task explicitly allows any STT/TTS service. |
+| Frontend | Next.js 16 + TypeScript + Tailwind + shadcn/ui | Required by the task (React/Next.js). shadcn/ui for fast, consistent components. |
+| State | In-memory session store + in-memory booking store | Sufficient for a demo. Would swap for Redis + Postgres in production. |
+| Tests | pytest + FastAPI TestClient | Fast, deterministic, covers slots/intents/state machine/API. |
+
+## Production notes (what I'd add next)
+
+- Replace the in-memory stores with Redis (sessions) and Postgres (bookings).
+- Add authentication and per-restaurant tenancy.
+- Stream audio to the backend and run STT there (Whisper) so we can support browsers without Web Speech API.
+- Add a real TTS voice (ElevenLabs / OpenAI TTS) for less robotic delivery.
+- Add metrics (turn success rate, fallback rate, booking completion rate).
+- Internationalize the brain (multi-language intent + slot patterns).
+- Add a confirmation step that sends an SMS / email with the booking details.
+
+## License
+
+MIT — this is a coding assessment, take whatever's useful.
