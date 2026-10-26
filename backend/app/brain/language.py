@@ -48,6 +48,7 @@ def recognize(text: str, active: bool = False) -> Recognition:
     t = intent_text(text)
     rules = [
         (Intent.END, "control.end", r"(?:goodbye|bye|end (?:the )?(?:call|conversation)|stop|hang up)"),
+        (Intent.DENY, "context.discard_proposal", r"(?:please )?(?:cancel|discard|undo|forget) (?:(?:this|that|the|my) )?(?:change|reschedule|rescheduling|draft|proposal|new booking|new appointment)"),
         (Intent.REPEAT, "control.repeat", r"(?:repeat(?: that)?|say that again|pardon|what did you say)"),
         (Intent.DENY, "confirmation.deny", r"(?:no(?: thanks| thank you)?|nope|not yet|do not|don't|do not (?:book|cancel)|don't (?:book|cancel)|never mind|nevermind|forget it)"),
         (Intent.CONFIRM, "confirmation.explicit", rf"(?:{AFFIRMATIVE}(?: please)?(?: (?:do it|go ahead))?|sounds good|confirm(?: it| booking| cancellation| reschedule)?|(?:please )?do it|go ahead|that's correct|that is correct|correct|please confirm)"),
@@ -55,7 +56,7 @@ def recognize(text: str, active: bool = False) -> Recognition:
     for intent, rule, pattern in rules:
         if re.fullmatch(pattern, t):
             return Recognition(intent, rule)
-    if re.search(rf"\b(?:do not|don't|never)\s+(?:want (?:you )?to\s+)?(?:cancel|book|reschedule|(?:make|arrange)\s+{BOOKING_OBJECT})\b|\b(?:do not|don't) want (?:a|an) (?:haircut|beard trim|appointment)\b", t):
+    if re.search(rf"\b(?:do not|don't|never)\s+(?:want (?:you )?to\s+)?(?:cancel|book|reserve|schedule|reschedule|move|change\s+(?:(?:my|the|this|that)\s+)?(?:booking|appointment)|(?:make|arrange)\s+{BOOKING_OBJECT})\b|\b(?:do not|don't) want (?:a|an) (?:haircut|beard trim|appointment)\b", t):
         return Recognition(Intent.DENY, "action.negated")
     if re.search(r"\breference\b", t) and re.search(r"\b(?:where|find|what|don't know|do not know|cannot see|can't see|don't have)\b", t):
         return Recognition(Intent.INFO, "booking.reference_help")
@@ -64,7 +65,7 @@ def recognize(text: str, active: bool = False) -> Recognition:
     if re.search(r"\b(?:hours|prices?|cost|how much|services|address|where are you|when do you open|what time do you (?:open|close)|what do you offer)\b", t) or re.search(rf"\bhow (?:(?:do|can) i |to )(?:cancel|book|reschedule|(?:make|arrange)\s+{BOOKING_OBJECT})\b", t):
         return Recognition(Intent.INFO, "business.question")
     actions = []
-    if re.search(r"\b(?:cancel|remove|delete)\s+(?:(?:my|the|an|this|a)\s+)?(?:appointment|booking|reservation|it|that|nl[- ]?[a-z0-9]{8})\b|^cancel$", t):
+    if re.search(r"\b(?:cancel|remove|delete)\s+(?:(?:my|the|an|this|that|a)\s+)?(?:(?:new|existing|confirmed|original|previous)\s+)?(?:appointment|booking|reservation|it|that|nl[- ]?[a-z0-9]{8})\b|^cancel$", t):
         actions.append(Intent.CANCEL)
     if re.search(r"\b(?:reschedule|move)\b|\bchange\s+(?:my|the|an)\s+(?:appointment|booking)\b", t):
         actions.append(Intent.RESCHEDULE)

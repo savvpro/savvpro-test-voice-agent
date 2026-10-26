@@ -33,6 +33,7 @@ export type Conversation = {
   current_intent: string;
   entities: Entities;
   missing_information: string[];
+  rejected_fields: string[];
   proposed_action: string | null;
   last_committed_action: string | null;
   history: { role: "user" | "assistant"; text: string }[];

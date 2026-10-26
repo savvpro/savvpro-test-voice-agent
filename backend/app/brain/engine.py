@@ -73,6 +73,7 @@ class Engine:
             c.last_committed_action = None
             c.available_slots = []
             c.missing_information = []
+            c.rejected_fields = []
             c.current_intent = Intent.UNKNOWN
             c.state = State.IDLE
 
@@ -130,10 +131,17 @@ class Engine:
             if c.state == State.CONFIRMING:
                 c.state = State.RESCHEDULING if c.current_intent == Intent.RESCHEDULE else State.COLLECTING
             return finish("Please choose one action: book, check availability, reschedule, or cancel.", recognition.rule, "clarify_intent", "Multiple requested actions cannot safely share a confirmation.", clarify=True)
-        cancel_draft = recognition.intent == Intent.CANCEL and active and c.current_intent in (Intent.CREATE, Intent.AVAILABILITY) and re.fullmatch(r"(?:please )?cancel(?: it| that| this)?", intent_text(text))
+        saved_target = parsed.entities.reference or re.search(r"\b(?:existing|confirmed|original|previous) (?:booking|appointment)\b", intent_text(text))
+        cancel_draft = recognition.intent == Intent.CANCEL and active and c.current_intent in (Intent.CREATE, Intent.AVAILABILITY) and not saved_target
         if recognition.intent == Intent.DENY or cancel_draft:
+            saved_appointment = c.appointment if active and c.current_intent in (Intent.RESCHEDULE, Intent.CANCEL) else None
             reset()
-            return finish("I haven't made any changes. What would you like to do next?", recognition.rule, "ask_intent", "Declined or negated the proposed action; nothing was written.")
+            c.appointment = saved_appointment
+            return finish("I discarded the pending request. Existing appointments are unchanged. What would you like to do next?", recognition.rule, "ask_intent", "Discarded only the uncommitted proposal; no persisted appointment was changed.")
+        if recognition.intent == Intent.CANCEL and active and c.current_intent == Intent.RESCHEDULE and not saved_target and re.fullmatch(r"(?:please )?cancel(?: it| this| that)?", intent_text(text)):
+            c.proposed_action = None
+            c.state = State.RESCHEDULING
+            return finish("Do you want to discard this change or cancel your confirmed appointment? Say 'discard the change' or 'cancel my confirmed appointment'.", "cancel.target_ambiguous", "clarify_cancel_target", "An ambiguous pronoun cannot select a destructive target or retain prior authorization.", clarify=True)
 
         if active and re.fullmatch(r"(?:i (?:just|already) told you (?:the|my) name|i already gave you my name)(?: bro)?", normalize(text)):
             if c.entities.name:
@@ -186,6 +194,8 @@ class Engine:
                     c.missing_information = ["reference"]
                 else:
                     setattr(c.entities, error.field, None)
+                    if error.field not in c.rejected_fields:
+                        c.rejected_fields.append(error.field)
                     c.state = State.RESCHEDULING if c.current_intent == Intent.RESCHEDULE else State.COLLECTING
                     c.missing_information = [error.field]
                 return finish(str(error) + " " + self.prompt(c), "commit.rejected", "clarify", "Revalidated at commit; rejected the action without claiming success.", clarify=True)
@@ -221,8 +231,12 @@ class Engine:
             c.available_slots = []
             for key, value in found.items():
                 setattr(c.entities, key, value)
+                if key in c.rejected_fields:
+                    c.rejected_fields.remove(key)
             for key in parsed.issues:
                 setattr(c.entities, key, None)
+                if key not in c.rejected_fields:
+                    c.rejected_fields.append(key)
             if "time" in found:
                 c.entities.period = None
             elif "period" in found and c.current_intent != Intent.AVAILABILITY:
@@ -254,16 +268,16 @@ class Engine:
                 c.appointment = appointment
                 c.target_version = appointment.version
                 c.entities.name = appointment.customer_name
-                if c.current_intent == Intent.RESCHEDULE:
+                if c.current_intent == Intent.RESCHEDULE and "service" not in c.rejected_fields:
                     c.entities.service = c.entities.service or appointment.service
             elif appointment.version != c.target_version:
                 c.appointment = appointment
                 c.target_version = appointment.version
                 c.proposed_action = None
             if c.current_intent == Intent.RESCHEDULE:
-                if c.entities.time and not c.entities.date and "date" not in parsed.issues and c.missing_information != ["date"]:
+                if c.entities.time and not c.entities.date and "date" not in parsed.issues and "date" not in c.rejected_fields and "date" not in c.missing_information:
                     c.entities.date = appointment.starts_at[:10]
-                elif c.entities.date and not c.entities.time and not c.entities.period and "time" not in parsed.issues and c.missing_information != ["time"]:
+                elif c.entities.date and not c.entities.time and not c.entities.period and "time" not in parsed.issues and "time" not in c.rejected_fields and "time" not in c.missing_information:
                     c.entities.time = appointment.starts_at[11:16]
             if c.current_intent == Intent.CANCEL:
                 c.entities.service = appointment.service
@@ -277,7 +291,7 @@ class Engine:
 
         if parsed.issues:
             c.state = State.RESCHEDULING if c.current_intent == Intent.RESCHEDULE else State.COLLECTING
-            c.missing_information = list(parsed.issues)
+            c.missing_information = list(c.rejected_fields)
             return finish(next(iter(parsed.issues.values())), "entities.ambiguous", "clarify_entities", "Ambiguous or unsupported values were cleared; all other known fields were retained.", clarify=True)
 
         if c.entities.date:
@@ -285,6 +299,8 @@ class Engine:
                 self.bookings.day(c.entities.date)
             except BookingError as error:
                 c.entities.date = None
+                if "date" not in c.rejected_fields:
+                    c.rejected_fields.append("date")
                 c.state = State.RESCHEDULING if c.current_intent == Intent.RESCHEDULE else State.COLLECTING
                 c.missing_information = ["date"]
                 return finish(str(error) + " " + self.prompt(c), "date.rejected", "ask_date", "Rejected an invalid business date before requesting additional details.", clarify=True)
@@ -310,6 +326,8 @@ class Engine:
             self.bookings.check(c.entities, excluding)
         except BookingError as error:
             setattr(c.entities, error.field, None)
+            if error.field not in c.rejected_fields:
+                c.rejected_fields.append(error.field)
             c.state = State.RESCHEDULING if c.current_intent == Intent.RESCHEDULE else State.COLLECTING
             c.missing_information = [error.field]
             return finish(str(error) + " " + self.prompt(c), "availability.rejected", "ask_" + error.field, "Validated business hours, date, duration and persisted conflicts before proposing an action.", clarify=True)

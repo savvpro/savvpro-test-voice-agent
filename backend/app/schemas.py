@@ -73,6 +73,7 @@ class SessionView(BaseModel):
     current_intent: Intent = Intent.UNKNOWN
     entities: Entities = Field(default_factory=Entities)
     missing_information: list[str] = Field(default_factory=list)
+    rejected_fields: list[str] = Field(default_factory=list)
     proposed_action: str | None = None
     last_committed_action: str | None = None
     history: list[Message] = Field(default_factory=list)
