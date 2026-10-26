@@ -134,8 +134,9 @@ test("abandoned changes cannot replace saved details in the appointment card", a
     name: "Saved appointment",
     exact: true,
   });
-  await expect(saved.locator(".booking-detail")).toContainText(
-    "2026-11-02 · 10:00",
+  await expect(saved.locator(".booking-detail time")).toHaveAttribute(
+    "datetime",
+    "2026-11-02T10:00:00+05:00",
   );
   await expect(
     page.getByRole("region", { name: "Proposed change", exact: true }),
@@ -147,8 +148,9 @@ test("abandoned changes cannot replace saved details in the appointment card", a
   await page
     .getByRole("button", { name: "View appointment", exact: true })
     .click();
-  await expect(saved.locator(".booking-detail")).toContainText(
-    "2026-11-02 · 10:00",
+  await expect(saved.locator(".booking-detail time")).toHaveAttribute(
+    "datetime",
+    "2026-11-02T10:00:00+05:00",
   );
   await expect(saved).not.toContainText("Draft · not booked");
   await expect(

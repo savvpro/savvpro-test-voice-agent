@@ -402,14 +402,16 @@ export default function Home() {
           </div>
         </header>
         <main className={showingInspector ? "with-inspector" : undefined}>
-          <section className="page-heading">
+          <section
+            className={`page-heading ${activeView === "appointment" ? "appointment-page-heading" : ""}`}
+          >
             <div>
               <h1>
                 {activeView === "voice"
                   ? "Voice receptionist"
                   : activeView === "services"
                     ? "Studio services"
-                    : "Your appointment"}
+                    : "Appointment"}
               </h1>
               <p>
                 {activeView === "voice" ? (
@@ -430,7 +432,7 @@ export default function Home() {
                     "Loading studio details…"
                   )
                 ) : (
-                  "Your draft and saved appointment, in one place."
+                  "Your draft and saved booking. Changes happen in the conversation."
                 )}
               </p>
             </div>
@@ -449,11 +451,19 @@ export default function Home() {
               aria-expanded={showingInspector}
               aria-controls="decision-inspector-panel"
               onClick={toggleInspector}
-              hidden={activeView === "services"}
+              hidden={activeView !== "voice"}
             >
               <span>Decision inspector</span>
               <ChevronRight size={19} className="inspector-arrow" />
             </button>
+            {activeView === "appointment" && (
+              <button
+                className="button secondary appointment-back"
+                onClick={() => setActiveView("voice")}
+              >
+                Back to conversation
+              </button>
+            )}
           </section>
 
           <div
@@ -928,29 +938,25 @@ export default function Home() {
             aria-label="Appointment workspace"
             hidden={activeView !== "appointment"}
           >
-            <div className="appointment-view-intro">
-              <div>
-                <span className="eyebrow">APPOINTMENT DETAILS</span>
-                <h2>Everything for your next visit.</h2>
-                <p>
-                  Review your draft or saved receipt here. Confirmations and
-                  changes happen in the conversation.
-                </p>
-              </div>
-              <button
-                className="button secondary"
-                onClick={() => setActiveView("voice")}
-              >
-                <Headphones size={16} /> Back to conversation
-              </button>
-            </div>
-            <AppointmentCard conversation={conversation} business={business} />
+            <AppointmentCard
+              conversation={conversation}
+              business={business}
+              disabled={disabled}
+              onStartBooking={() => {
+                setActiveView("voice");
+                void submit("Book a haircut tomorrow at 3 PM");
+              }}
+              onContinue={() => setActiveView("voice")}
+              onManage={(action, reference) => {
+                setActiveView("voice");
+                void submit(`${action} ${reference}`);
+              }}
+            />
 
             <div className="rules-note">
-              <ShieldCheck size={16} />
               <p>
-                <strong>Code makes the call.</strong>Deterministic Python rules.
-                No LLM decisions. No API keys.
+                Every decision is made by deterministic rules, with no LLM and
+                no API keys.
               </p>
             </div>
           </section>

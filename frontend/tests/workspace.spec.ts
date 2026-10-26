@@ -18,6 +18,137 @@ async function open(page: Page) {
 }
 
 for (const width of [390, 1440]) {
+  test(`appointment cards preserve saved details through management actions at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page);
+    const appointment = () =>
+      page
+        .getByRole("button", { name: "View appointment", exact: true })
+        .click();
+    await appointment();
+    await expect(
+      page.getByRole("heading", { name: "No appointment yet", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".inspector-toggle")).toBeHidden();
+    await page.screenshot({
+      path: `test-results/appointment-${width}-empty-dark.png`,
+    });
+    await page.getByRole("button", { name: "Switch to light mode" }).click();
+    await page.waitForTimeout(200);
+    await page.screenshot({
+      path: `test-results/appointment-${width}-empty-light.png`,
+    });
+    await page.getByRole("button", { name: "Switch to dark mode" }).click();
+    await page
+      .getByRole("button", {
+        name: "Book a haircut tomorrow at 3 PM",
+        exact: true,
+      })
+      .click();
+    await expect(
+      page.getByRole("textbox", { name: "Your message" }),
+    ).toBeEnabled();
+    await expect(page.getByRole("log")).toContainText(
+      "What name should I use?",
+    );
+    await appointment();
+    const draft = page.getByRole("region", {
+      name: "Appointment draft",
+      exact: true,
+    });
+    await expect(draft).toContainText("Draft · not booked");
+    await expect(draft).toContainText("2026-10-27 · 15:00");
+    await draft
+      .getByRole("button", { name: "Continue in conversation", exact: true })
+      .click();
+    await message(page, "Riley Demo");
+    await page
+      .getByRole("button", { name: "Confirm appointment", exact: true })
+      .click();
+    await appointment();
+    const saved = page.getByRole("region", {
+      name: "Saved appointment",
+      exact: true,
+    });
+    await expect(saved.locator(".booking-status")).toHaveText("confirmed");
+    await expect(
+      saved.getByRole("heading", { name: "Classic Haircut", exact: true }),
+    ).toBeVisible();
+    await expect(saved.locator(".appointment-facts")).toContainText(
+      "Riley Demo",
+    );
+    await expect(saved.locator(".appointment-facts")).toContainText("30 min");
+    await expect(saved.locator(".appointment-facts")).toContainText(
+      "PKR 1,800",
+    );
+    await expect(saved.locator("time")).toHaveAttribute(
+      "datetime",
+      "2026-10-27T15:00:00+05:00",
+    );
+    const reference = await saved.locator("code").textContent();
+    await page.screenshot({
+      path: `test-results/appointment-${width}-saved-dark.png`,
+    });
+    await page.getByRole("button", { name: "Switch to light mode" }).click();
+    await page.waitForTimeout(200);
+    await page.screenshot({
+      path: `test-results/appointment-${width}-saved-light.png`,
+    });
+    await saved
+      .getByRole("button", { name: "Reschedule", exact: true })
+      .click();
+    await expect(page.getByRole("log")).toContainText("What new date or time");
+    await message(page, "October 28 2026 at 4 PM");
+    await appointment();
+    await expect(saved.locator("time")).toHaveAttribute(
+      "datetime",
+      "2026-10-27T15:00:00+05:00",
+    );
+    await expect(
+      saved.getByRole("region", { name: "Proposed change", exact: true }),
+    ).toContainText("2026-10-28 · 16:00");
+    await saved
+      .getByRole("button", { name: "Review in conversation", exact: true })
+      .click();
+    await message(page, "no");
+    await appointment();
+    await expect(saved.locator("code")).toHaveText(reference!);
+    await saved
+      .getByRole("button", { name: "Cancel booking", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Confirm cancellation", exact: true }),
+    ).toBeVisible();
+    await appointment();
+    await expect(saved.locator(".booking-status")).toHaveText("confirmed");
+    await expect(
+      saved.getByRole("region", { name: "Proposed change", exact: true }),
+    ).toContainText("Proposed cancellation");
+    await saved
+      .getByRole("button", { name: "Review in conversation", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Confirm cancellation", exact: true })
+      .click();
+    await appointment();
+    await expect(saved.locator(".booking-status")).toHaveText("cancelled");
+    await expect(
+      saved.getByRole("button", { name: "Reschedule", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      saved.getByRole("button", { name: "Cancel booking", exact: true }),
+    ).toHaveCount(0);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  });
+}
+
+for (const width of [390, 1440]) {
   test(`services are a workspace page with safe booking handoff at ${width}px`, async ({
     page,
   }) => {
@@ -246,8 +377,10 @@ test("typed booking, contextual correction, real trace and receipt", async ({
     .getByRole("button", { name: "View appointment", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Appointment confirmed", exact: true }),
-  ).toBeVisible();
+    page
+      .getByRole("region", { name: "Saved appointment", exact: true })
+      .locator(".booking-status"),
+  ).toHaveText("confirmed");
   await expect(page.locator(".booking-detail")).toContainText("17:00");
   await page
     .getByRole("button", { name: "Voice receptionist", exact: true })
@@ -279,8 +412,9 @@ test("existing appointment can be rescheduled and cancelled through the UI", asy
     "Needs explicit confirmation",
   );
   await message(page, "yes");
-  await expect(page.locator(".booking-detail")).toContainText(
-    "2026-10-30 · 16:00",
+  await expect(page.locator(".booking-detail time")).toHaveAttribute(
+    "datetime",
+    "2026-10-30T16:00:00+05:00",
   );
   await message(page, `cancel ${reference}`);
   await page.getByRole("button", { name: "Confirm cancellation" }).click();
@@ -288,7 +422,9 @@ test("existing appointment can be rescheduled and cancelled through the UI", asy
     .getByRole("button", { name: "View appointment", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Appointment cancelled", exact: true }),
+    page
+      .getByRole("region", { name: "Saved appointment", exact: true })
+      .getByRole("heading", { name: "Beard Trim", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".booking-status")).toHaveText("cancelled");
 });
@@ -330,8 +466,10 @@ test("uncertain network outcome retries the same request after a real commit", a
     .getByRole("button", { name: "View appointment", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Appointment confirmed", exact: true }),
-  ).toBeVisible();
+    page
+      .getByRole("region", { name: "Saved appointment", exact: true })
+      .locator(".booking-status"),
+  ).toHaveText("confirmed");
   expect(ids).toHaveLength(2);
   expect(ids[0]).toBe(ids[1]);
   await expect(
