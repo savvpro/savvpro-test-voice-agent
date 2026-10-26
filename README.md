@@ -1,83 +1,116 @@
-# Step-by-Step Guide: How to Fork, Clone, and Submit Your Assessment
+# Penny — personal expense logging voice assistant
 
-**Repository:** https://github.com/savvpro/savvpro-test-voice-agent
+A small full-stack voice assistant for logging personal expenses. Say or type something like “I spent $12.50 on lunch yesterday”; the assistant extracts the amount, category, and date, reads the entry back, and saves it after confirmation. The browser provides speech recognition and spoken replies when supported. The Python backend owns all intent handling and decisions using deterministic rules; no language model is used at runtime.
 
----
+**Stack:** Python / FastAPI backend + React frontend. Node.js is only used by npm and Vite to install, develop, and build the React frontend; there is no Node.js backend.
 
-## Step 1: Fork the Repository
+## Requirements
 
-1. Go to the repository: https://github.com/savvpro/savvpro-test-voice-agent
-2. Click the **Fork** button in the top-right corner.
-3. This will create a copy of the repository in your GitHub account.
+- Python 3.10 or newer
+- Node.js 20 or newer and npm (frontend development/build tools only)
+- A modern browser. Microphone speech recognition is supported in Chromium-based browsers; typed chat works in all modern browsers.
 
----
+## Run locally
+Follow these exact, copy-pasteable commands from the repository root. These are for Windows PowerShell (adjust `python` / `pip` to your system if needed).
 
-## Step 2: Clone Your Fork
+Open two PowerShell terminals (or tabs). In the FIRST terminal run the backend:
 
-1. Open your forked repository in your GitHub account.
-2. Click the green **Code** button and copy the URL.
-3. Run the following commands:
-
-```bash
-git clone https://github.com/your-username/savvpro-test-voice-agent.git
-cd savvpro-test-voice-agent
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
----
+When the backend starts the API will be available at http://localhost:8000 and the interactive docs at http://localhost:8000/docs
 
-## Step 3: Read the Task
+In the SECOND terminal start the frontend dev server:
 
-Open and read **TASK.md** carefully before writing any code.
-
-- TASK.md URL: https://github.com/savvpro/savvpro-test-voice-agent/blob/main/TASK.md
-
----
-
-## Step 4: Create a New Branch
-
-Branch pattern: `candidate-<your-github-username>`
-
-```bash
-git checkout -b candidate-<your-github-username>
+```powershell
+cd frontend
+npm install
+npm run dev
 ```
 
-**Example:**
-```bash
-git checkout -b candidate-johndoe
+Vite will print a local URL (usually http://localhost:5173). Open that page in a Chromium-based browser for speech recognition, or any modern browser for typing input. The frontend expects the backend at `http://localhost:8000` by default; to point it to a different backend set `VITE_API_URL` before running Vite, for example:
+
+```powershell
+#$env:VITE_API_URL = 'http://127.0.0.1:8000'
+npm run dev
 ```
 
----
+### Run tests and rebuild
 
-## Step 5: Complete the Task
+Run backend tests from the backend folder:
 
-Build the full application on your branch.
-
----
-
-## Step 6: Push Your Branch
-
-```bash
-git add .
-git commit -m "feat: complete voice-agent assessment"
-git push origin candidate-<your-github-username>
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m pytest -q
 ```
 
----
+Build the production frontend bundle:
 
-## Step 7: Create a Pull Request
+```powershell
+cd frontend
+npm run build
+```
 
-1. Go to your **forked** repository on GitHub (`https://github.com/your-username/savvpro-test-voice-agent`).
-2. Click **Compare & pull request** (GitHub will show this banner after you push your branch).
-3. Ensure the following settings in the PR form:
-   - **Base repository:** `savvpro/savvpro-test-voice-agent` ← the original repo
-   - **Base branch:** `main`
-   - **Head repository:** `your-username/savvpro-test-voice-agent` ← your fork
-   - **Compare branch:** `candidate-<your-github-username>`
-4. Use the title: `feat: complete voice-agent assessment`
-5. Submit the pull request.
+## Tests and production build
 
-> 💡 **Tip:** If you don't see the banner, go to the original repo (`savvpro/savvpro-test-voice-agent`), click the **Pull requests** tab, then click **New pull request** → **compare across forks**.
+```powershell
+cd backend
+python -m pytest -q
+```
 
----
+```powershell
+cd frontend
+npm run build
+```
 
-> ⚠️ **Important:** No submissions will be accepted after the deadline.
+## Intent improvement loop
+
+Intent examples, slots, and reply templates live in [backend/config/intents.json](backend/config/intents.json). Rebuild the small explainable classifier with one command:
+
+```powershell
+cd backend
+python train.py
+```
+
+The command reads the JSON examples plus reviewer labels from `backend/data/corrections.jsonl`, evaluates held-out examples, writes `backend/data/intent_model.json` and `backend/data/eval_report.json`, and prints held-out accuracy, confidence quality, per-intent metrics, and a confusion matrix. The model normalizes amount tokens, common synonyms, typos, and unigram/bigram features. The regression suite checks that classifier accuracy does not fall below the safety threshold:
+
+```powershell
+python -m pytest -q
+```
+
+Every API turn is appended to `backend/data/turns.jsonl` with a turn ID, predicted intent, confidence, flags, and decision trace. Low-confidence, fallback, and negative-feedback turns are marked for review. Each assistant response has a `Wrong intent?` control; selecting the correct label writes to `corrections.jsonl`, which the next `python train.py` run includes.
+
+Latest trained model (local): see `backend/data/eval_report.json` for the most recent held-out evaluation. Current build (after adding more held-out examples) reports:
+
+- Held-out samples: 33
+- Accuracy: 0.848 (84.8%)
+- Mean confidence when correct: 0.885
+- Mean confidence when wrong: 0.24
+- Confident share (>= 0.75): 0.706
+- Accuracy when confident: 1.00
+- Brier score: 0.0639
+
+These metrics are printed by `python train.py` and the full report is written to `backend/data/eval_report.json`.
+
+## Conversation behavior and privacy
+
+The assistant collects an amount and category, uses today as the date if none is given, repeats the entry for confirmation, and adds confirmed expenses to a running total. It supports multiple expenses in one sentence, relative dates such as `yesterday`, `last Friday`, and `two days ago`, spoken amounts such as `four fifty`, `twelve hundred`, `5k`, and `fifty bucks`, explicit USD/EUR/GBP or the configured default currency, corrections, and discarding a draft. It asks for missing amounts instead of guessing, asks for clarification on vague store purchases, and rejects income or unrelated questions. Dates are resolved by the Python backend using its current date; there is no runtime LLM and therefore no date prompt to pass to one. Confirmed expense records are stored in the local SQLite database at `backend/data/expenses.db`, keyed by the browser's session ID, and are restored after a backend restart or page reload. They are not sent to a third-party service. The reset button clears the current session from SQLite. This is a demo, not a secure personal-finance product.
+
+See [DESIGN.md](DESIGN.md) for the decision flow and limitations and [AI_USAGE.md](AI_USAGE.md) for AI-tool usage disclosure.
+
+## Frontend features (recent updates)
+
+- Dark theme tuned to a black background with a green accent (accent color: #23dc70).
+- Sticky top navbar with brand mark and compact controls.
+- Voice input via Web Speech API and speech synthesis replies; an audio toggle lets users play/stop the assistant reply at any time.
+- CSV export: download session expenses as CSV from the UI (Download CSV button).
+- Per-currency category charts: open the "View chart" modal to see a per-currency pie breakdown for the current month and select the currency to view totals for that currency. The center label shows the total for the selected currency (other currencies are listed too).
+- Responsive layout: wider, taller chat panel on desktop; mobile layout and spacing fixed to preserve usability.
+- Accessibility and UX polish: larger message font, clearer headings, and compact composer controls.

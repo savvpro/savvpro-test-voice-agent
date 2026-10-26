@@ -1,0 +1,148 @@
+/* Theme helpers using the variables defined in styles.css */
+.brand-mark{background:var(--brand)}
+.theme-root-overrides:root, :root{
+	/* modern dark palette: slightly less contrast than pure black */
+	--bg: #0f1618;       /* page background matches panel */
+	--panel: #0f1618;    /* card/panel background */
+	--muted: #bfc9c8;    /* muted text */
+	--text: #e6f0ef;     /* main text */
+	--brand: #0e1112;    /* brand mark */
+	--accent: #23dc70;   /* green accent */
+	--chip-bg: #121617;  /* small chip/icon bg */
+}
+body{background:var(--bg);color:var(--text)}
+
+/* Strong overrides to ensure the entire UI follows the black+orange theme */
+.app-shell{background:var(--bg) !important}
+.intro-panel, .assistant-card, .help-modal, .booking-summary, .expense-ledger, .modal-backdrop, .help-modal .modal-action { background: var(--panel) !important; color: var(--text) !important }
+.assistant-card{border:1px solid rgba(255,255,255,0.04) !important; box-shadow:0 18px 55px rgba(0,0,0,0.6) !important}
+.help-modal{border:1px solid rgba(255,255,255,0.04) !important}
+.expense-ledger{border:1px solid rgba(255,255,255,0.04) !important}
+.modal-icon{background:var(--chip-bg) !important; color:var(--text) !important}
+.intro-copy, .ledger-row, .ledger-heading strong, .booking-summary span, .booking-summary strong, .brand-subtitle, .eyebrow { color: var(--muted) !important }
+.brand-text strong{color:var(--text) !important}
+.message-bubble.assistant, .message-bubble.caller{background:transparent !important; color:var(--text) !important; border-color: rgba(255,255,255,0.04) !important}
+.composer, .composer input { background: rgba(255,255,255,0.02) !important; color: var(--text) !important; border-color: rgba(255,255,255,0.06) !important }
+.modal-action, .send-button, .mic-button { background: var(--accent) !important; color: #000 !important }
+.page-footer { color: var(--muted) !important }
+
+/* Extra hard overrides for any remaining light/green literals in styles.css */
+.brand-mark { background: var(--brand) !important; color: var(--text) !important }
+.brand-dot { color: var(--accent) !important }
+.assistant-card { background: var(--panel) !important; border-color: rgba(255,255,255,0.04) !important }
+.expense-ledger { background: var(--panel) !important; border-color: rgba(255,255,255,0.04) !important }
+.help-modal { background: var(--panel) !important; border-color: rgba(255,255,255,0.04) !important; box-shadow: 0 22px 65px rgba(0,0,0,0.6) !important }
+.modal-icon { background: var(--chip-bg) !important; color: var(--text) !important }
+.intro-copy, .intro-panel h1, .booking-summary span, .ledger-row, .ledger-heading { color: var(--muted) !important }
+.modal-action { background: var(--accent) !important; color: #000 !important }
+.message-bubble { background: transparent !important; color: var(--text) !important; border-color: rgba(255,255,255,0.04) !important }
+.composer, .composer input { background: rgba(255,255,255,0.02) !important; color: var(--text) !important }
+.send-button, .mic-button { background: var(--accent) !important; color: #000 !important }
+
+.help-modal{background:var(--panel);border-color:rgba(255,255,255,0.04)}
+.modal-icon{background:var(--chip-bg)}
+.modal-action{background:var(--accent)}
+.message-bubble.assistant{background:var(--panel);color:var(--text)}
+.theme-button{border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;padding:6px;border-radius:8px}
+.theme-button:hover{background:rgba(255,255,255,0.03)}
+.low-confidence-badge{background:linear-gradient(90deg, rgba(35,220,112,0.06), rgba(35,220,112,0.02));border:1px solid rgba(35,220,112,0.12);color:var(--accent)}
+
+/* Additional element theming so theme modes feel comprehensive */
+.assistant-card, .help-modal, .composer, .booking-summary, .expense-ledger { background: var(--panel); color: var(--text); }
+.card-heading, .card-footer, .ledger-heading { color: var(--muted); }
+.card-heading h2 { color: var(--accent) !important; font-size:18px !important; font-weight:700 !important; margin:0 !important }
+.composer { border-top: 1px solid rgba(255,255,255,0.06); }
+.message-bubble.assistant { background: var(--panel); color: var(--text); border: 1px solid rgba(255,255,255,0.04); }
+.message-bubble.caller { background: rgba(255,255,255,0.02); color: var(--text); }
+input, .composer input { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.06); }
+.send-button, .mic-button, .modal-action { background: var(--brand); color: #fff; }
+.reset-button, .help-button { color: var(--muted); }
+.page-footer { background: transparent; color: var(--muted); }
+.brand-text{display:flex;flex-direction:column;line-height:1}
+.brand-text strong{font-size:16px}
+.brand-subtitle{font-size:11px;color:var(--muted);font-weight:400}
+
+/* Increase prominence for written text: bolder, brighter, better contrast */
+.message-bubble, .message-bubble.assistant, .message-bubble.caller { font-weight: 500; color: var(--text); line-height:1.35 }
+.message-author { font-weight: 700; color: var(--accent); letter-spacing: .6px }
+.message-content .correction-recorded { color: var(--muted); font-weight:600 }
+.intro-copy, .help-modal p, .modal-action, .brand-subtitle { color: var(--text) !important }
+.ledger-row strong, .booking-summary strong { color: var(--text) !important; font-weight:600 }
+.ledger-row small, .ledger-heading { color: var(--muted) !important }
+.composer input { color: var(--text); font-weight:500 }
+.log-count{color:var(--text); font-weight:700}
+.log-total{color:var(--muted)}
+
+/* Force steps and availability to use the accent green and be more prominent */
+.steps, .steps .step, .steps .step-number {
+	color: var(--accent) !important;
+	font-weight: 700 !important;
+}
+
+.availability {
+	color: var(--accent) !important;
+	font-weight: 700 !important;
+}
+
+/* Small visible app icon used in the header */
+.topbar{position:sticky;top:0;z-index:1200;backdrop-filter:blur(4px);box-shadow:0 6px 18px rgba(0,0,0,0.25)}
+/* Brand mark: use accent background and white icon for contrast */
+.topbar .brand-mark{background:var(--accent) !important;color:#fff !important}
+.topbar .brand-mark svg, .topbar .brand-dot { color: #fff !important; stroke: #fff !important; fill: #fff !important; }
+
+/* Make brand mark icon green inside modals */
+.help-modal .brand-mark{background:transparent !important}
+.help-modal .brand-mark svg, .help-modal .brand-mark { color: var(--accent) !important; stroke: var(--accent) !important; fill: var(--accent) !important }
+
+/* Styled currency selector inside modals */
+.help-modal select { background: var(--accent) !important; color: #000 !important; border: none !important; padding: 6px 10px !important; border-radius: 8px !important; font-weight:700 !important }
+.help-modal select:focus { outline: 2px solid rgba(35,220,112,0.25) !important }
+.help-modal option { background: var(--panel) !important; color: var(--text) !important }
+
+
+/* Enlarge assistant/chat UI for better readability (desktop only) */
+@media (min-width: 900px) {
+	.assistant-card{height:min(88vh,920px) !important; border-radius:16px !important}
+	.conversation{padding:28px 30px 22px !important}
+	.message-bubble{font-size:13px !important; padding:14px 16px !important; border-radius:8px !important}
+	.avatar{height:44px !important; width:44px !important; border-radius:12px !important}
+	.mini-avatar{width:30px !important; height:30px !important; border-radius:8px !important}
+}
+
+/* Slight adjustments for blackorange accent */
+.theme-blackorange .brand-mark{background:#111}
+.theme-blackorange .brand-dot{background:transparent}
+.theme-blackorange .brand-text strong{color:#fff}
+.theme-blackorange .brand-subtitle{color:#d0d0d0}
+
+/* Ensure restaurant note and footer match the dark panels */
+.card-footer { background: var(--panel) !important; color: var(--text) !important; }
+.card-footer span, .card-footer button { color: var(--muted) !important }
+.log-menu-header{display:flex;flex-direction:column;gap:4px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.03)}
+.log-count{font-weight:700;color:var(--text)}
+.log-total{font-size:12px;color:var(--muted)}
+.log-menu-actions{display:flex;flex-direction:column;gap:6px;padding-top:6px}
+.menu-action{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--text);padding:8px 10px;border-radius:8px;text-align:left;cursor:pointer}
+.menu-action:hover{background:rgba(35,220,112,0.08);border-color:rgba(35,220,112,0.18)}
+.menu-action.danger{border-color:rgba(255,0,0,0.12)}
+.menu-action.danger:hover{background:rgba(255,0,0,0.06);color:#fff}
+
+/* Mobile composer fixes: ensure input grows and wraps correctly */
+.composer{display:flex;align-items:center;gap:8px;padding:6px;border-radius:10px}
+.composer input{flex:1;min-width:0;border-radius:8px;padding:8px 10px}
+.composer .send-button{flex:0 0 auto}
+@media(max-width:520px){
+	.composer{height:auto}
+	.composer input{width:100%}
+	.composer-wrap{padding:10px}
+}
+
+/* Written-text prominence: use accent for textual highlights and increase weight */
+.intro-panel h1 span, .brand-dot, .ledger-heading strong, .ledger-row>b, .message-author, .brand-subtitle {
+    color: var(--accent) !important;
+    font-weight: 700 !important;
+}
+
+.intro-copy, .help-modal p, .modal-action, .brand-subtitle {
+    color: var(--text) !important;
+}
