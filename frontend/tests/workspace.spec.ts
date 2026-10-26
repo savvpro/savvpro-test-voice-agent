@@ -17,6 +17,89 @@ async function open(page: Page) {
   if (await mute.isEnabled()) await mute.click();
 }
 
+test("navigation and inspector resize independently without losing a draft", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page);
+  const input = page.getByRole("textbox", { name: "Your message" });
+  await input.fill("Keep this unfinished message");
+  const rail = page.getByRole("complementary", { name: "Application" });
+  const narrow = await rail.boundingBox();
+  await rail
+    .getByRole("button", { name: "Expand navigation", exact: true })
+    .click();
+  await expect(rail).toHaveCSS("width", "232px");
+  expect((await rail.boundingBox())!.width).toBeGreaterThan(narrow!.width);
+  await page
+    .getByRole("button", { name: "Expand decision inspector", exact: true })
+    .click();
+  await expect(
+    page.getByRole("complementary", { name: "Decision inspector" }),
+  ).toBeVisible();
+  await rail
+    .getByRole("button", { name: "Collapse navigation", exact: true })
+    .click();
+  await expect(rail).toHaveCSS("width", "76px");
+  await expect(input).toHaveValue("Keep this unfinished message");
+  await page
+    .getByRole("button", { name: "Collapse decision inspector", exact: true })
+    .click();
+  await expect(
+    page.getByRole("complementary", { name: "Decision inspector" }),
+  ).toBeHidden();
+  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(input).toHaveValue("Keep this unfinished message");
+});
+
+test("mobile navigation opens appointment and returns to the preserved conversation", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page);
+  const input = page.getByRole("textbox", { name: "Your message" });
+  await input.fill("An unfinished mobile message");
+  await page
+    .locator(".topbar")
+    .getByRole("button", { name: "Expand navigation", exact: true })
+    .click();
+  const rail = page.getByRole("complementary", { name: "Application" });
+  await rail
+    .getByRole("button", { name: "View appointment", exact: true })
+    .click();
+  await rail
+    .getByRole("button", { name: "Collapse navigation", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Appointment workspace" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Back to conversation", exact: true })
+    .click();
+  await expect(input).toHaveValue("An unfinished mobile message");
+  await expect(page.locator(".main-grid")).toHaveCSS("width", "362px");
+  await page
+    .locator(".topbar")
+    .getByRole("button", { name: "Expand navigation", exact: true })
+    .click();
+  const backdrop = page.getByRole("button", {
+    name: "Close navigation",
+    exact: true,
+  });
+  await expect(backdrop).toBeVisible();
+  await backdrop.click({ position: { x: 360, y: 400 } });
+  await expect(rail).toBeHidden();
+  await expect(page.getByRole("log")).toContainText(
+    "Welcome to Northline Studio",
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
 test("typed booking, contextual correction, real trace and receipt", async ({
   page,
 }) => {
@@ -32,6 +115,12 @@ test("typed booking, contextual correction, real trace and receipt", async ({
     "Needs explicit confirmation",
   );
   await page.getByRole("button", { name: "Confirm appointment" }).click();
+  await expect(
+    page.getByRole("region", { name: "Latest appointment receipt" }),
+  ).toContainText("Alex Example");
+  await expect(
+    page.getByRole("region", { name: "Latest appointment receipt" }),
+  ).toContainText("17:00");
   await page
     .getByRole("button", { name: "View appointment", exact: true })
     .click();

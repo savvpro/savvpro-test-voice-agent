@@ -168,7 +168,9 @@ test("connection status reflects network failure and recovers on retry", async (
   await expect(
     page.getByText("Backend unavailable", { exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".pill")).toHaveText("Connection interrupted");
+  await expect(page.locator(".conversation-status")).toHaveText(
+    "Connection interrupted",
+  );
   await page.unroute("**/api/sessions/*/turns");
   await page.getByRole("button", { name: "Retry same message" }).click();
   await expect(
