@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      CORS_ORIGINS: http://localhost:8080
+    volumes:
+      - clinic-data:/data
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+volumes:
+  clinic-data:
