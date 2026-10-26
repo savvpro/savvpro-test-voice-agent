@@ -24,7 +24,8 @@ Use fictional names. Start both servers as documented. Automated tests **do not 
 - [ ] Reschedule by reference, confirm, then cancel with another confirmation.
 - [ ] Say “change the timing for this appointment”, supply a new time, then “never mind, don't do it, revert the change”. Verify the saved booking stays unchanged.
 - [ ] Say “thank you” mid-task and continue; say “nothing, thank you so much” to end.
-- [ ] Switch between chat and Appointment, preserving unsent input; use the right-side arrow to open/close the Inspector, and check both themes.
+- [ ] Expand/collapse navigation and switch between chat and Appointment, preserving unsent input; use the labeled Decision inspector button to open/close the Inspector, and check both themes.
+- [ ] In a new session, check both centered suggestions above the input. Send a message, reload and verify they remain hidden; New session restores them.
 - [ ] Say “five thirty”; clarify with “five thirty PM”.
 - [ ] Ask a business question mid-booking and continue without losing details.
 - [ ] Try Sunday, past dates, overlaps and a service finishing after 7 PM.
@@ -50,7 +51,7 @@ Not executed by the coding agent. Fill this in after using a physical microphone
 
 ## Submission evidence
 
-- [x] Run Pytest (**398 passed**), frontend typecheck/format/production build and browser tests (**20 passed**), locally on Python 3.13/Node 22.
+- [x] Run Pytest (**398 passed**), frontend typecheck/format/production build and browser tests (**24 passed**), locally on Python 3.13/Node 22. The latest UI-only follow-up reran frontend checks; the unchanged backend result is from the preceding full run.
 - [x] Configure CI for Python 3.11/3.13, frontend checks and isolated browser tests; check YAML and pinned actions locally.
 - [ ] Observe a successful remote CI run after publication is authorized.
 - [x] Add authentic Codex token counts and logs/screenshots to `AI_USAGE.md` (2026-10-26, 17:36:04 PKT; filtered session counters and original screenshot).

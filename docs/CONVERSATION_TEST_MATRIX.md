@@ -1,6 +1,6 @@
 # Conversation validation matrix
 
-The deterministic brain needs more than examples that mirror reported transcripts. These contrast sets vary intent, exclusions, target scope and repair order. They were authored by the same coding agent; independent human evaluation is still pending. Current executed totals are **398 backend tests and 20 browser tests**; see [PROGRESS.md](PROGRESS.md) for environments and limits.
+The deterministic brain needs more than examples that mirror reported transcripts. These contrast sets vary intent, exclusions, target scope and repair order. They were authored by the same coding agent; independent human evaluation is still pending. Current executed totals are **398 backend tests and 24 browser tests**; see [PROGRESS.md](PROGRESS.md) for environments and limits.
 
 | Family | Contrasts / failure cases | Automated evidence |
 | --- | --- | --- |
@@ -15,6 +15,7 @@ The deterministic brain needs more than examples that mirror reported transcript
 | Reported conversations | Availability handoff, repair prefixes, retained references, inline names, invalid dates and occupied slots | [test_spoken_conversations.py](../backend/tests/test_spoken_conversations.py), [test_transcript_recovery.py](../backend/tests/test_transcript_recovery.py), [test_customer_names.py](../backend/tests/test_customer_names.py) |
 | Browser failure recovery | Blocked reads/writes/removals, malformed cached request, lost committed response without storage, unreadable response, offline/retry indicators | [recovery.spec.ts](../frontend/tests/recovery.spec.ts) |
 | Authoritative appointment | Appointment view keeps saved fields separate from a proposed move; abandoning a proposal preserves saved details | [recovery.spec.ts](../frontend/tests/recovery.spec.ts) |
+| Workspace and first-turn suggestions | Navigation and Inspector resize independently; drafts survive navigation; mobile drawer dismisses; two centered suggestions disappear after a turn, stay hidden on reload and return for New session | [workspace.spec.ts](../frontend/tests/workspace.spec.ts) |
 | Interaction and speech adapter | Keyboard focus, keyboard slot choice with the Inspector closed, 360/390/768px layouts, touch heights, replay/language and synthesis failure | [accessibility.spec.ts](../frontend/tests/accessibility.spec.ts) |
 
 These cases complement existing API, persistence, concurrency, idempotency and calendar-boundary tests. Passing them does not prove arbitrary English, transcription accuracy, complete accessibility compliance or production security.

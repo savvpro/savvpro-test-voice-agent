@@ -24,7 +24,7 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 | `npm run build` in isolated frontend copy | Passed production compilation, type validation and static-page generation; Next.js 15.5.28. Preserved the running development build. |
 | `npm run typecheck` | Passed |
 | `npm run format:check` | Passed for frontend source, components, tests and configuration |
-| `PLAYWRIGHT_CHANNEL=msedge npm run test:e2e` (PowerShell environment equivalent) | **20 passed**, using the committed runner, an isolated production build, ports 3011/8011 and a real fixed-clock disposable backend. User servers on 3000/8000 were preserved. |
+| `PLAYWRIGHT_CHANNEL=msedge npm run test:e2e` (PowerShell environment equivalent) | **24 passed**, using the committed runner, an isolated production build, ports 3011/8011 and a real fixed-clock disposable backend. User servers on 3000/8000 were preserved. |
 | Browser target protection | Runner refused a production build targeting a different backend port before launching test servers |
 | `npm audit --audit-level=high` | **0 vulnerabilities** after PostCSS 8.5.31 override |
 | `.venv/Scripts/python -m pip check` | No broken requirements |
@@ -36,6 +36,16 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 Backend tests include actual state transitions, relative/spoken date/time parsing, uncertainty, corrections, service duration, opening/closing boundaries, explicit confirmations, conflicts, two independent application instances confirming concurrently, repeated request receipts, stale revisions/appointment versions, isolation, persistence after restart, UTC storage, configured business timezone, rollback after simulated commit failure, and prevention of partial rescheduling after caught validation errors.
 
 Browser tests cover typed booking/corrections and raw trace, rescheduling/cancellation, a lost response after a real commit followed by reload/retry, storage exceptions and corrupt data, same-tab retry without storage, saved/proposed separation, network status/recovery, unreadable responses, keyboard focus and selectable slots. Responsive checks cover 360/390/768 pixels and minimum control sizes. Speech API tests cover sequencing, permission denial, replay/language selection and synchronous synthesis failure. The production frontend and backend are real; speech APIs and explicit fault scenarios are mocked. Desktop/mobile screenshots were generated and inspected. Test servers were stopped by suite teardown.
+
+## Minimal chat layout and first-turn suggestions
+
+The next UI iteration replaced the framed conversation with a centered, open transcript, right-aligned user messages, a pinned composer and inline receipts rendered only from a confirmed backend action. Navigation starts as an icon rail, expands to labels and opens as a drawer on phones. The Decision Inspector retains its actual fields, independent scroll area and expand/collapse behavior; its right-side toggle now includes the visible text “Decision inspector”.
+
+Explore availability and Services & pricing are centered immediately above the message field in a fresh session. Sending a turn hides them; reload preserves that state and New session restores them. An unsent draft leaves them visible. Two browser cases verify this lifecycle and geometry at 390px and 1440px. Two earlier added cases cover independent navigation/Inspector resizing, draft preservation, mobile navigation and backdrop dismissal. Existing booking, recovery and voice-adapter checks remain intact.
+
+The initial 22-case run exposed a test still querying the removed status-pill class; the same status assertion now targets its new position. Visual review caught a mobile grid-placement issue and a drawer backdrop style overridden by a later rule; both were corrected and regression-checked. The final production build/type validation, formatting and **24 browser tests passed**. Both palettes, expanded panels and mobile layouts were inspected in screenshots. This frontend-only work did not rerun the unchanged backend suite; its latest result remains **398 passed**. Physical audio and remote CI remain unverified.
+
+The candidate initially kept this experiment uncommitted, then authorized focused local batches: layout `bf2b107`, browser coverage `d8ce1d2`, followed by the labeled Inspector/suggestion refinement and documentation. No push, PR or deployment was performed. Historical AI-usage snapshots exclude this work.
 
 ## UI refinement and latest spoken-conversation follow-up
 
