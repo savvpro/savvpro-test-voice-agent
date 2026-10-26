@@ -430,3 +430,19 @@ def test_evening_conflicts_with_earlier_readback(conn: sqlite3.Connection) -> No
     turns = talk(conn, "book with dr patel tomorrow at 4pm my name is sam lee", "march 4 1990",
                  "yes, evening is good")  # fmt: skip
     assert turns[-1][1].action == "booked"
+
+
+def test_future_dob_is_explained_not_just_reprompted(conn: sqlite3.Connection) -> None:
+    turns = talk(conn, "book an appointment", "Sara Lee", "12 december 2026", "30-12-2026")
+    for reply, d in turns[2:]:
+        assert d.action == "future_dob"
+        assert "future" in reply
+        assert "Thanks." not in reply
+    reply, d = talk(conn, "book an appointment", "Sara Lee", "12 december 1990")[-1]
+    assert d.slots["dob"] == "1990-12-12"
+
+
+def test_reprompt_drops_courtesy_lead(conn: sqlite3.Connection) -> None:
+    reply, d = talk(conn, "book an appointment", "Sara Lee", "blah")[-1]
+    assert d.action == "reprompt"
+    assert reply == "Sorry, I didn't catch that. What's your date of birth?"

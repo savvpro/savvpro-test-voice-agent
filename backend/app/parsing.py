@@ -59,6 +59,9 @@ _SUF = r"(?:st|nd|rd|th)?"
 
 _ISO = re.compile(r"\b(\d{4})-(\d{1,2})-(\d{1,2})\b")
 _NUMERIC = re.compile(r"\b(\d{1,2})/(\d{1,2})(?:/(\d{4}))?\b")
+_NUMERIC_DASH = re.compile(
+    r"\b(\d{1,2})-(\d{1,2})-(\d{4})\b"
+)  # year required: "3-4 pm" isn't a date
 _MONTH_FIRST = re.compile(rf"\b{_MONTH}\.?\s+(\d{{1,2}}){_SUF}\b(?:\s*,?\s*(\d{{4}})\b)?")
 _DAY_FIRST = re.compile(rf"\b(\d{{1,2}}){_SUF}\s+(?:of\s+)?{_MONTH}\b(?:\s*,?\s*(\d{{4}})\b)?")
 _THE_DAY = re.compile(r"\b(\d{1,2})(?:st|nd|rd|th)\b")
@@ -123,8 +126,10 @@ def _ymd(t: str) -> tuple[int | None, int, int] | None:
     """First explicit calendar date in normalised text as (year|None, month, day)."""
     if m := _ISO.search(t):
         return int(m[1]), int(m[2]), int(m[3])
-    if m := _NUMERIC.search(t):
-        return (int(m[3]) if m[3] else None), int(m[1]), int(m[2])
+    if m := _NUMERIC.search(t) or _NUMERIC_DASH.search(t):
+        a, b = int(m[1]), int(m[2])
+        mo, d = (b, a) if a > 12 else (a, b)  # US month/day, unless only day/month can be valid
+        return (int(m[3]) if m[3] else None), mo, d
     if m := _MONTH_FIRST.search(t):
         return (int(m[3]) if m[3] else None), _MONTHS.index(m[1][:3]) + 1, int(m[2])
     if m := _DAY_FIRST.search(t):

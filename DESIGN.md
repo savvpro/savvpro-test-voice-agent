@@ -47,7 +47,7 @@ stateDiagram-v2
     collecting --> [*]: goodbye / emergency / 3 failures
 ```
 
-Actions shown in the Brain panel include `ask_*`, `confirm_booking`, `confirm_reschedule`, `confirm_cancel`, `offer_slots`, `choose_appointment`, `booked`, `rescheduled`, `cancelled`, `explain_slot_problem`, `unknown_doctor`, `not_found`, `reprompt`, `repeat`, `help`, `emergency`, `goodbye`, `give_up`.
+Actions shown in the Brain panel include `ask_*`, `confirm_booking`, `confirm_reschedule`, `confirm_cancel`, `offer_slots`, `choose_appointment`, `booked`, `rescheduled`, `cancelled`, `explain_slot_problem`, `unknown_doctor`, `not_found`, `reprompt`, `future_dob`, `repeat`, `help`, `emergency`, `goodbye`, `give_up`.
 
 ## Confirm safety
 
@@ -77,6 +77,7 @@ Nothing is written without a read-back and a **clean yes**. At a read-back the t
 | Weekend or outside hours | Explains and re-asks | `test_weekend_and_closed` |
 | Unknown doctor | Lists the available doctors | `test_unknown_doctor` |
 | Unintelligible or silent | Reprompt; give up politely after 3 | `test_reprompt_then_give_up`, `test_no_progress_turns_give_up` |
+| Date of birth in the future, or typed `30-12-1990` | Explain it's in the future and re-ask (counts toward the 3 strikes); dashed dates parse, and a first number over 12 is read as day-first | `test_future_dob_is_explained_not_just_reprompted`, `test_dob_dashes_and_unambiguous_day_first` |
 | "Repeat that" | Replays the last reply | `test_repeat` |
 | Asks for help | Explains and re-asks the current question | `test_help_reasks` |
 | Switches intent (book to cancel) | Flow changes, slots kept where relevant | `test_switch_book_to_cancel`, `test_switch_cancel_to_reschedule_keeps_ref` |

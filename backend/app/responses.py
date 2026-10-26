@@ -53,6 +53,7 @@ TEMPLATES: dict[str, str | tuple[str, ...]] = {
         "Sorry, I didn't catch that.",
         "Sorry, I still didn't get that.",
     ),
+    "future_dob": "That date is in the future, so it can't be your date of birth.",
     "emergency": "This sounds like an emergency. Please hang up now and call"
     f" {EMERGENCY_NUMBER}, or go to the nearest emergency room.",
     "goodbye": f"Thanks for calling {CLINIC_NAME}. Take care, goodbye!",

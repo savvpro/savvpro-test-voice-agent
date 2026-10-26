@@ -10,7 +10,7 @@ from typing import Literal
 from app import scheduling as sch
 from app.clinic import CLOSE, DOCTORS, OPEN, SLOT_MINUTES, doctor_by_id, doctors_for
 from app.nlu import Entities, Intent, Parsed, Slot, parse
-from app.parsing import _DAYS, _MONTHS
+from app.parsing import _DAYS, _MONTHS, parse_dob
 from app.responses import render
 
 Flow = Literal["book", "reschedule", "cancel"]
@@ -182,6 +182,8 @@ def _turn(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -> Reply
         s.expecting = Slot.DOCTOR.value
         return "unknown_doctor", render("unknown_doctor", doctors=_doctor_list())
     if not (new or started or cleared):
+        if s.expecting == Slot.DOB.value and parse_dob(low):  # a real date, just not yet past
+            return _reprompt(s, conn, now, "future_dob")
         return _reprompt(s, conn, now)
     if s.flow is None:
         s.step = "greeting"
@@ -257,13 +259,13 @@ def _clear_requested(s: CallState, low: str) -> bool:
     return bool(keys)
 
 
-def _reprompt(s: CallState, conn: Conn, now: datetime) -> Reply:
+def _reprompt(s: CallState, conn: Conn, now: datetime, action: str = "reprompt") -> Reply:
     s.failures += 1
     if s.failures >= 3:
         s.ended = True
         return "give_up", render("give_up")
-    question = _prompt(s, conn, now)[1]
-    return "reprompt", render("reprompt", failures=s.failures - 1) + " " + question
+    question = _prompt(s, conn, now)[1].removeprefix("Thanks. ").removeprefix("Sure. ")
+    return action, render(action, failures=s.failures - 1) + " " + question
 
 
 def _ask(s: CallState, action: str, slot: Slot | None, lead: str = "", **kw: object) -> Reply:

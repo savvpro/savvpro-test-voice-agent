@@ -61,3 +61,11 @@ def test_dob() -> None:
         assert parse_dob(text) == date(1990, 3, 4), text
     assert parse_dob("March 4") is None
     assert parse_dob("March 4 2999", TODAY) is None
+
+
+def test_dob_dashes_and_unambiguous_day_first() -> None:
+    assert parse_dob("03-04-1990") == date(1990, 3, 4)  # US month-day
+    assert parse_dob("12-30-1990") == date(1990, 12, 30)
+    assert parse_dob("30-12-1990") == date(1990, 12, 30)  # day > 12 can only be day-first
+    assert parse_dob("30/12/1990") == date(1990, 12, 30)
+    assert parse_dob("13-13-1990") is None
