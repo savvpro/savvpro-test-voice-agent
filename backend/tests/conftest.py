@@ -14,5 +14,6 @@ def conn() -> Iterator[sqlite3.Connection]:
 
     c = db.connect(":memory:")
     db.init_db(c)
+    db.seed(c, TODAY)
     yield c
     c.close()
