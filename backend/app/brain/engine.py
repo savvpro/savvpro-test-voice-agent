@@ -1,9 +1,10 @@
 """Explicit conversation transitions. All effects are delegated to BookingPort."""
+import re
 from datetime import date, datetime
 from typing import Protocol
 
-from app.brain.language import extract, normalize, recognize
-from app.catalog import BUSINESS_INFO, SERVICES
+from app.brain.language import Recognition, extract, normalize, recognize
+from app.catalog import ADDRESS_INFO, BUSINESS_INFO, HOURS_INFO, SERVICE_INFO, SERVICES
 from app.schemas import AppointmentView, Decision, Entities, Intent, Message, SessionView, State
 
 
@@ -31,16 +32,21 @@ class Engine:
     def turn(self, context: SessionView, text: str) -> SessionView:
         c = context.model_copy(deep=True)
         previous = c.state
+        if not c.last_booking_reference:
+            c.last_booking_reference = self.recent_reference(c)
         active = c.current_intent in (Intent.CREATE, Intent.AVAILABILITY, Intent.CANCEL, Intent.RESCHEDULE) and c.state not in (State.COMPLETED, State.BOOKED)
         recognition = recognize(text, active)
         parsed = extract(text, self.now,
-                         expecting_name=active and c.missing_information == ["name"],
+                         expecting_name=active and c.missing_information == ["name"] and recognition.intent == Intent.UNKNOWN,
                          expecting_time=active and "time" in c.missing_information)
         found = parsed.entities.model_dump(exclude_none=True)
+        used_context_reference = False
         c.history.append(Message(role="user", text=text))
         c.revision += 1
 
         def finish(reply: str, rule: str, action: str, explanation: str, *, clarify: bool = False) -> SessionView:
+            if used_context_reference:
+                explanation += " Reused the last verified booking reference from this session; no reference was guessed from a name or another session."
             c.reply = reply
             if clarify:
                 c.clarification_count += 1
@@ -79,18 +85,57 @@ class Engine:
             return finish("Thanks for calling Northline Studio. Goodbye!", recognition.rule, "end", "Ended without applying any pending changes.")
         if recognition.intent == Intent.REPEAT:
             return finish(c.reply, recognition.rule, "repeat", "Repeated the previous reply without changing the proposal.")
+        if recognition.rule == "booking.reference_help":
+            if c.last_booking_reference:
+                try:
+                    appointment = self.bookings.lookup(c.last_booking_reference)
+                except BookingError:
+                    c.last_booking_reference = None
+                else:
+                    if c.state == State.IDENTIFYING and c.current_intent in (Intent.RESCHEDULE, Intent.CANCEL):
+                        # Also recovers sessions persisted by older versions that
+                        # discarded the reference when changing workflow.
+                        c.entities.reference = appointment.reference
+                        recognition = Recognition(c.current_intent, "context.reference_recovered")
+                        used_context_reference = True
+                    else:
+                        suffix = " " + self.prompt(c) if active else " You can say 'reschedule it to 5 PM' or 'cancel it'."
+                        return finish(f"Your booking reference is {appointment.reference}. It is on your booking receipt and in this conversation. You don't need to copy it to change this booking here." + suffix, recognition.rule, "show_reference", "Retrieved the session's known reference from the database without changing any appointment.")
+            if recognition.rule == "booking.reference_help":
+                return finish("Look for NL- followed by eight letters or digits on your booking receipt or in the earlier confirmation message. I don't have a verified booking reference in this session. Please paste it here to find an existing appointment.", recognition.rule, "explain_reference", "No verified reference was available in this session; did not search other customers or guess an appointment.", clarify=True)
+        if recognition.rule == "booking.status_question":
+            if active and c.current_intent == Intent.CREATE:
+                reply = "Not yet. Your appointment has not been booked. " + self.prompt(c)
+            elif c.current_intent == Intent.AVAILABILITY:
+                reply = "Not yet. I checked availability, but haven't made a new booking from those results. " + (self.availability_prompt(c) if c.available_slots else self.prompt(c))
+            elif c.proposed_action:
+                reply = f"Not yet. The proposed {c.proposed_action} has not been applied. " + self.prompt(c)
+            elif c.last_booking_reference:
+                try:
+                    appointment = self.bookings.lookup(c.last_booking_reference)
+                    reply = f"Your appointment is {appointment.status}. Reference {appointment.reference}: {appointment.service_name} on {appointment.starts_at[:10]} at {appointment.starts_at[11:16]} (studio time)."
+                except BookingError as error:
+                    reply = str(error)
+            else:
+                reply = "I haven't booked an appointment in this session. " + self.prompt(c)
+            return finish(reply, recognition.rule, "show_booking_status", "Answered from the pending proposal or database record; a status question never authorizes a write.")
         if recognition.intent == Intent.INFO:
-            reply = BUSINESS_INFO
-            if "how" in normalize(text) and ("cancel" in normalize(text) or "reschedule" in normalize(text)):
-                reply += " To change or cancel a booking, give its NL booking reference. I will ask for confirmation first."
+            reply = self.business_reply(text)
             if active:
                 reply += " Your current request is saved. " + self.prompt(c)
             return finish(reply, recognition.rule, "answer_question", "Answered from the static business catalog and preserved conversation context.")
         if recognition.rule == "action.multiple_requests":
             return finish("Please choose one action: book, check availability, reschedule, or cancel.", recognition.rule, "clarify_intent", "Multiple requested actions cannot safely share a confirmation.", clarify=True)
-        if recognition.intent == Intent.DENY:
+        cancel_draft = recognition.intent == Intent.CANCEL and active and c.current_intent in (Intent.CREATE, Intent.AVAILABILITY) and re.fullmatch(r"(?:please )?cancel(?: it| that| this)?", normalize(text))
+        if recognition.intent == Intent.DENY or cancel_draft:
             reset()
             return finish("I haven't made any changes. What would you like to do next?", recognition.rule, "ask_intent", "Declined or negated the proposed action; nothing was written.")
+
+        if recognition.intent == Intent.CONFIRM and c.current_intent == Intent.AVAILABILITY and c.state == State.COMPLETED and c.available_slots:
+            # "Yes" accepts the offer to begin booking, not a database write.
+            recognition = Recognition(Intent.CREATE, "context.accept_available_slot")
+        if recognition.intent == Intent.RESCHEDULE and active and c.current_intent in (Intent.CREATE, Intent.AVAILABILITY) and not parsed.entities.reference:
+            recognition = Recognition(Intent.MODIFY, "context.draft_correction")
 
         if recognition.intent == Intent.CONFIRM and not found and not parsed.issues:
             if c.state != State.CONFIRMING or not c.proposed_action:
@@ -124,6 +169,7 @@ class Engine:
                     c.missing_information = [error.field]
                 return finish(str(error) + " " + self.prompt(c), "commit.rejected", "clarify", "Revalidated at commit; rejected the action without claiming success.", clarify=True)
             c.last_committed_action = c.proposed_action
+            c.last_booking_reference = c.appointment.reference
             c.proposed_action = None
             c.missing_information = []
             return finish(f"{verb}. Reference {c.appointment.reference}. " + self.describe(c.entities) + ". Please keep your reference.", "commit.confirmed", "show_receipt", "Explicit confirmation authorized the database operation; the API returns only after the transaction commits.")
@@ -131,13 +177,20 @@ class Engine:
         action_intents = (Intent.CREATE, Intent.AVAILABILITY, Intent.CANCEL, Intent.RESCHEDULE)
         if recognition.intent in action_intents and (not active or recognition.intent != c.current_intent):
             # Turning an availability result into a booking retains the queried details.
-            carry = c.entities.model_copy(deep=True) if c.current_intent == Intent.AVAILABILITY and recognition.intent == Intent.CREATE and c.state == State.COMPLETED else None
+            carry_details = (c.current_intent == Intent.AVAILABILITY and recognition.intent == Intent.CREATE and (active or c.state == State.COMPLETED)) or (c.current_intent == Intent.CREATE and recognition.intent == Intent.AVAILABILITY and active)
+            carry = c.entities.model_copy(deep=True) if carry_details else None
+            reference = c.last_booking_reference if recognition.intent in (Intent.RESCHEDULE, Intent.CANCEL) and not parsed.entities.reference else None
             reset()
             if carry:
                 c.entities = carry
             c.current_intent = recognition.intent
+            if reference:
+                c.entities.reference = reference
+                used_context_reference = True
             active = True
         if not active:
+            if c.current_intent == Intent.AVAILABILITY and c.state == State.COMPLETED and c.available_slots:
+                return finish(self.availability_prompt(c), "recovery.availability_followup", "clarify_booking_offer", "Kept the checked slot after an unclear transcript. Did not fuzzy-match the speech to an action or write a booking.", clarify=True)
             return finish("I can book a haircut or beard trim, check availability, reschedule, cancel, or explain our services. Which would you like?", "fallback.unknown", "ask_intent", "No supported active task was identified; no action taken.", clarify=True)
 
         # Fresh entities override only their own fields. Every correction clears authorization.
@@ -175,6 +228,7 @@ class Engine:
                 c.missing_information = ["reference"]
                 return finish(str(error) + " Please check the reference.", "existing.not_found", "ask_reference", "No active appointment matched the supplied reference.", clarify=True)
             fresh_target = c.appointment is None or c.appointment.reference != appointment.reference
+            c.last_booking_reference = appointment.reference
             if fresh_target:
                 c.appointment = appointment
                 c.target_version = appointment.version
@@ -185,6 +239,11 @@ class Engine:
                 c.appointment = appointment
                 c.target_version = appointment.version
                 c.proposed_action = None
+            if c.current_intent == Intent.RESCHEDULE:
+                if c.entities.time and not c.entities.date and "date" not in parsed.issues and c.missing_information != ["date"]:
+                    c.entities.date = appointment.starts_at[:10]
+                elif c.entities.date and not c.entities.time and not c.entities.period and "time" not in parsed.issues and c.missing_information != ["time"]:
+                    c.entities.time = appointment.starts_at[11:16]
             if c.current_intent == Intent.CANCEL:
                 c.entities.service = appointment.service
                 c.entities.date = appointment.starts_at[:10]
@@ -222,7 +281,7 @@ class Engine:
             if c.current_intent == Intent.AVAILABILITY:
                 c.available_slots = self.bookings.slots(c.entities)
                 c.state = State.COMPLETED if c.available_slots else State.COLLECTING
-                reply = "Available starts: " + ", ".join(c.available_slots[:8]) + ". Say book to begin a booking." if c.available_slots else "There are no available starts for that date and period. Try another date."
+                reply = "Available starts: " + ", ".join(c.available_slots[:8]) + ". Would you like to book?" if c.available_slots else "There are no available starts for that date and period. Try another date."
                 if not c.available_slots:
                     c.entities.date = None
                     c.missing_information = ["date"]
@@ -242,6 +301,42 @@ class Engine:
         c.missing_information = []
         c.proposed_action = "reschedule" if c.current_intent == Intent.RESCHEDULE else "create"
         return finish(f"{'Reschedule to' if c.current_intent == Intent.RESCHEDULE else 'Book'} {self.describe(c.entities)}? Say yes to confirm, or no to discard.", "proposal.ready", "request_confirmation", "All required details are present and availability was checked again. A later explicit confirmation is required.")
+
+    @staticmethod
+    def business_reply(text: str) -> str:
+        """Select brief catalog answers instead of reading every business fact."""
+        t = normalize(text)
+        if re.search(r"\bhow (?:(?:do|can) i |to )(?:cancel|reschedule)\b", t):
+            return "Tell me to reschedule or cancel your appointment. I can use the booking we discussed here; for another booking, give its NL reference. I'll ask you to confirm the change first."
+        if re.search(r"\bhow (?:(?:do|can) i |to )(?:book|make)\b", t):
+            return "Tell me which service, day, and time you want. I'll check the slot, ask your name, and have you confirm before booking."
+        parts = []
+        if re.search(r"\b(?:services|offer|prices?|cost|how much)\b", t):
+            parts.append(SERVICE_INFO)
+        if re.search(r"\b(?:hours|open|close)\b", t):
+            parts.append(HOURS_INFO)
+        if re.search(r"\b(?:address|where are you)\b", t):
+            parts.append(ADDRESS_INFO)
+        return " ".join(parts) or BUSINESS_INFO
+
+    @staticmethod
+    def recent_reference(c: SessionView) -> str | None:
+        """Recover old session payloads using only their own authoritative output."""
+        if c.appointment:
+            return c.appointment.reference
+        for message in reversed(c.history):
+            if message.role == "assistant":
+                receipt = re.match(r"^(?:Booked|Rescheduled|Cancelled)\. Reference (NL-[A-Z0-9]{8})\.", message.text)
+                if receipt:
+                    return receipt[1]
+        return None
+
+    @staticmethod
+    def availability_prompt(c: SessionView) -> str:
+        service = SERVICES[c.entities.service].name if c.entities.service in SERVICES else "that service"
+        when = f" on {c.entities.date}" if c.entities.date else ""
+        when += f" at {c.entities.time}" if c.entities.time else ""
+        return f"I still have availability for {service}{when}. Did you want to book? Say 'book it' or 'yes' to continue; nothing has been booked yet."
 
     @staticmethod
     def describe(entities: Entities) -> str:

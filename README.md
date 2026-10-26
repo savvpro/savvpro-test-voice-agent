@@ -93,6 +93,10 @@ Tap the microphone for **each** spoken turn, or type:
 
 Choose a Monday–Saturday date within 180 days. If tomorrow is Sunday or a slot is taken, choose another day/time. Also try “Check beard trim availability Friday afternoon”, “What are your prices?”, “Repeat”, “Start over”, and “Order a pizza”.
 
+Everyday requests such as “All right, make a booking for 4 PM”, “Can I get a haircut?”, and “Yeah, book it” are supported. A booking and an availability check retain the same collected service/day/time when switching between them. After availability, “yes” begins collecting booking details; the final proposal still requires another explicit confirmation. Unclear speech gets a question about the slot already discussed rather than losing that context.
+
+Within the same session, “change the booking time from 4 PM to 5 PM”, “move it to 5 PM”, or “cancel it” uses the last verified booking, with availability/version checks and a new confirmation. Time-only changes retain the existing date. An explicit reference selects another booking; new sessions still require a reference. Ask “Where can I find the booking reference?” for help or “Have you booked it?” for the actual status. Pending-draft corrections/cancellation affect the draft, even when an older confirmed booking exists.
+
 Time expressions such as “at five”, “five thirty”, and “half past four” require AM/PM clarification. Reply with the **full** time, for example “five thirty PM”. Dates support today, tomorrow, day after tomorrow, weekdays, next weekday, and `YYYY-MM-DD`. A bare weekday is the nearest match including today; “next Monday” is the upcoming Monday strictly after today. Conflicting values and numeric slash dates are clarified. Month-name dates and unrestricted English are outside this small grammar. Supply a fictional name as a separate answer to the name question.
 
 Northline Studio opens **Monday–Saturday 10:00–19:00**, with one chair:

@@ -17,9 +17,13 @@ SERVICES = {
 # One chair, Monday–Saturday 10:00–19:00. Sunday closed. Prices in synthetic PKR.
 OPEN_HOUR = 10
 CLOSE_HOUR = 19
-BUSINESS_INFO = (
+SERVICE_INFO = (
     "Northline Studio offers Classic Haircut (30 minutes, PKR 1,800), Beard Trim "
-    "(20 minutes, PKR 900), and Haircut + Beard (50 minutes, PKR 2,500). "
-    "We open Monday through Saturday, 10 AM to 7 PM, and close on Sunday. "
-    "Our fictional address is 12 Example Lane. All appointments use the studio timezone."
+    "(20 minutes, PKR 900), and Haircut + Beard (50 minutes, PKR 2,500)."
 )
+HOURS_INFO = (
+    "We open Monday through Saturday, 10 AM to 7 PM, and close on Sunday. "
+    "All appointments use the studio timezone."
+)
+ADDRESS_INFO = "Our fictional address is 12 Example Lane."
+BUSINESS_INFO = " ".join((SERVICE_INFO, HOURS_INFO, ADDRESS_INFO))

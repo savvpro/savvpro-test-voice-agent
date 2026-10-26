@@ -22,33 +22,42 @@ class Recognition:
 
 def recognize(text: str, active: bool = False) -> Recognition:
     t = normalize(text)
+    # Discourse markers do not change the request: "All right, make a booking".
+    t = re.sub(r"^(?:(?:all right|alright|well|so|uh|um)[,\s]+)+", "", t)
     rules = [
         (Intent.END, "control.end", r"(?:goodbye|bye|end (?:the )?(?:call|conversation)|stop|hang up)"),
         (Intent.REPEAT, "control.repeat", r"(?:repeat(?: that)?|say that again|pardon|what did you say)"),
         (Intent.DENY, "confirmation.deny", r"(?:no(?: thanks| thank you)?|nope|not yet|do not|don't|do not (?:book|cancel)|don't (?:book|cancel)|never mind|nevermind|forget it)"),
-        (Intent.CONFIRM, "confirmation.explicit", r"(?:yes(?: please)?|yep|confirm(?: it| booking| cancellation| reschedule)?|go ahead|that's correct|that is correct|correct|please confirm)"),
+        (Intent.CONFIRM, "confirmation.explicit", r"(?:(?:yes|yeah|yep|sure|okay|ok)(?: please)?|sounds good|confirm(?: it| booking| cancellation| reschedule)?|go ahead|that's correct|that is correct|correct|please confirm)"),
     ]
     for intent, rule, pattern in rules:
         if re.fullmatch(pattern, t):
             return Recognition(intent, rule)
-    if re.search(r"\b(?:do not|don't|never)\s+(?:want to\s+)?(?:cancel|book|reschedule)\b", t):
+    if re.search(r"\b(?:do not|don't|never)\s+(?:want (?:you )?to\s+)?(?:cancel|book|reschedule|make (?:a|an) (?:booking|appointment))\b|\b(?:do not|don't) want (?:a|an) (?:haircut|beard trim|appointment)\b", t):
         return Recognition(Intent.DENY, "action.negated")
-    if re.search(r"\b(?:hours|prices?|cost|how much|services|address|where are you|when do you open|what time do you (?:open|close))\b", t) or re.search(r"\bhow (?:do|can) i (?:cancel|book|reschedule)\b", t):
+    if re.search(r"\breference\b", t) and re.search(r"\b(?:where|find|what|don't know|do not know|cannot see|can't see|don't have)\b", t):
+        return Recognition(Intent.INFO, "booking.reference_help")
+    if re.search(r"\b(?:have you (?:booked|scheduled|reserved|cancelled|canceled|rescheduled)|did you (?:book|schedule|reserve|cancel|reschedule)|is (?:my|the|that) (?:booking|appointment) (?:confirmed|booked|cancelled|canceled)|booking status)\b", t):
+        return Recognition(Intent.INFO, "booking.status_question")
+    if re.search(r"\b(?:hours|prices?|cost|how much|services|address|where are you|when do you open|what time do you (?:open|close)|what do you offer)\b", t) or re.search(r"\bhow (?:(?:do|can) i |to )(?:cancel|book|reschedule|make (?:a|an) (?:booking|appointment))\b", t):
         return Recognition(Intent.INFO, "business.question")
     actions = []
-    if re.search(r"\b(?:cancel|remove|delete)\s+(?:(?:my|the|an|this|a)\s+)?(?:appointment|booking|reservation|nl[- ]?[a-z0-9]{8})\b|^cancel$", t):
+    if re.search(r"\b(?:cancel|remove|delete)\s+(?:(?:my|the|an|this|a)\s+)?(?:appointment|booking|reservation|it|that|nl[- ]?[a-z0-9]{8})\b|^cancel$", t):
         actions.append(Intent.CANCEL)
     if re.search(r"\b(?:reschedule|move)\b|\bchange\s+(?:my|the|an)\s+(?:appointment|booking)\b", t):
         actions.append(Intent.RESCHEDULE)
     if re.search(r"\b(?:availability|available|openings?|free slots?)\b", t):
         actions.append(Intent.AVAILABILITY)
-    if re.search(r"^(?:please )?(?:book|schedule|reserve)\b|\b(?:to|can you|could you|please|let's|and) (?:book|schedule|reserve)\b|\b(?:want|need|like)\s+(?:a|an)\s+(?:haircut|beard trim|appointment)\b", t):
+    booking_command = r"^(?:(?:yes|yeah|yep|okay|ok|sure|please)[,\s]+)*(?:book|schedule|reserve)\b"
+    booking_request = r"\b(?:to|can you|could you|please|let's|and) (?:book|schedule|reserve)\b|\b(?:make|arrange)\s+(?:a|an|my|the)\s+(?:booking|appointment|reservation)\b"
+    service_request = r"\b(?:want|need|like|can i|could i)\s+(?:you to\s+|to\s+)?(?:(?:make|book|get|have|schedule|reserve)\s+)?(?:a|an)\s+(?:haircut|hair cut|beard trim|appointment)\b"
+    if re.search(booking_command, t) or re.search(booking_request, t) or re.search(service_request, t):
         actions.append(Intent.CREATE)
     if len(set(actions)) > 1:
         return Recognition(Intent.UNKNOWN, "action.multiple_requests")
     if actions:
         return Recognition(actions[0], "action." + actions[0].name.lower())
-    if re.search(r"\b(?:actually|instead|meant|make it|change that|change (?:the )?(?:time|date|service|name)|start over|restart)\b", t):
+    if t in ("i said", "no i said") or re.search(r"\b(?:actually|instead|meant|make it|change that|change (?:the )?(?:time|date|service|name)|start over|restart)\b", t):
         return Recognition(Intent.MODIFY, "context.correction")
     return Recognition(Intent.UNKNOWN, "context.details" if active else "fallback.unknown")
 
@@ -74,6 +83,10 @@ def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting
         e.reference = "NL-" + ref[1].upper()
     # References contain arbitrary letters/digits; never parse them as names/times.
     clean = re.sub(r"\bnl[- ]?[a-z0-9]{8}\b", "", t)
+    # In an explicit directional change, the source is not a second requested
+    # value. Alternatives without a direction still trigger ambiguity below.
+    if re.search(r"\b(?:change|move|reschedule|switch)\b", clean):
+        clean = re.sub(r"\bfrom\s+.+?\s+to\s+", "to ", clean, count=1)
     haircut = bool(re.search(r"\b(?:haircut|hair cut|classic cut|trim my hair)\b", clean))
     beard = bool(re.search(r"\b(?:beard|beard trim)\b", clean))
     if re.search(r"\b(?:combo|both)\b", clean) or (haircut and beard):
@@ -169,12 +182,15 @@ def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting
     if re.search(r"\b(?:at|to)\s+\d{1,2}:\d{1}(?!\d)", time_text):
         issues["time"] = "Please give the complete time, for example 5:30 PM."
 
-    name_match = re.search(r"\b(?:my name is|name is|name's|i am|i'm|under the name)\s+([a-z][a-z '\-]{0,79})", t)
+    name_match = re.search(r"\b(?:my name is|name is|name's|i am|i'm|under the name|call me)\s+([a-z][a-z '\-]{0,79})", t)
     candidate = name_match[1] if name_match else (text.strip() if expecting_name else "")
     # Full-string names only; corrections, requests and entities cannot become names.
     if candidate and not (dates or candidates or e.service or e.reference or issues):
         candidate = re.sub(r"[.!?]+$", "", candidate).strip()
-        reserved = r"\b(?:yes|no|actually|tomorrow|today|book|cancel|reschedule|instead|meant|please|unknown|hello|hi|thanks|restart|repeat|stop|help|want|need|weather|pizza|what|why|how|when|where|change|make|confirm|afternoon|evening|morning|don't|not|know|maybe|whatever|anything|tell|show|order|sing|play|can|could|would|is|are|does)\b"
+        if expecting_name:
+            candidate = re.sub(r"^(?:(?:and|uh|um|erm|well|okay|ok|it's|it is)[,\s]+)+", "", candidate, flags=re.IGNORECASE)
+            candidate = re.sub(r"[,\s]+(?:please|thanks|thank you)$", "", candidate, flags=re.IGNORECASE)
+        reserved = r"\b(?:and|or|yes|yeah|sure|no|actually|tomorrow|today|book|cancel|reschedule|instead|meant|please|unknown|hello|hi|thanks|restart|repeat|stop|help|want|need|weather|pizza|what|why|how|when|where|change|make|confirm|afternoon|evening|morning|don't|not|know|maybe|whatever|anything|tell|show|order|sing|play|can|could|would|is|are|does)\b"
         if re.fullmatch(r"[^\W\d_]+(?:[ '\-][^\W\d_]+){0,3}", candidate, re.UNICODE) and not re.search(reserved, normalize(candidate)) and 2 <= len(candidate) <= 80:
             e.name = candidate.title()
     for key in issues:

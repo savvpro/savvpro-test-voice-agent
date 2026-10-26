@@ -80,6 +80,7 @@ class SessionView(BaseModel):
     clarification_count: int = 0
     reply: str = "Welcome to Northline Studio. I can book, check availability, reschedule, or cancel an appointment. How can I help?"
     appointment: AppointmentView | None = None
+    last_booking_reference: str | None = None
     target_version: int | None = None
     available_slots: list[str] = Field(default_factory=list)
     revision: int = 0

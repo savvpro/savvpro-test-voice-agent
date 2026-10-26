@@ -40,6 +40,7 @@ export type Conversation = {
   clarification_count: number;
   reply: string;
   appointment: Appointment | null;
+  last_booking_reference: string | null;
   available_slots: string[];
   revision: number;
 };

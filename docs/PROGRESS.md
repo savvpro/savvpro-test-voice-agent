@@ -20,19 +20,27 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 
 | Check | Actual result |
 | --- | --- |
-| `.venv/Scripts/python -m pytest` | **82 passed**, one upstream Starlette TestClient/httpx deprecation warning; no failures |
+| `.venv/Scripts/python -m pytest` | **117 passed** after the spoken-conversation follow-up, one upstream Starlette TestClient/httpx deprecation warning; no failures |
 | `npm run build` in frontend | Passed production compilation, type validation and static-page generation; Next.js 15.5.28 |
 | `npm run typecheck` | Passed |
 | `PLAYWRIGHT_CHANNEL=msedge npm run test:e2e` (PowerShell environment equivalent) | **6 passed**, using installed headless Edge and a real isolated fixed-clock backend |
 | `npm audit --audit-level=high` | **0 vulnerabilities** after PostCSS 8.5.31 override |
 | `.venv/Scripts/python -m pip check` | No broken requirements |
 | `git diff --check` | Passed; Git emitted its normal Windows LF/CRLF notice |
-| Source/documentation credential-pattern scan | 40 files scanned, 0 findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
+| Source/documentation credential-pattern scan | 41 files scanned after the follow-up, 0 findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
 | Assessment preservation | `TASK.md` blob hash exactly matches HEAD; branch remains `candidate-TUAHASHAIKH` |
 
 Backend tests include actual state transitions, relative/spoken date/time parsing, uncertainty, corrections, service duration, opening/closing boundaries, explicit confirmations, conflicts, two independent application instances confirming concurrently, repeated request receipts, stale revisions/appointment versions, isolation, persistence after restart, UTC storage, configured business timezone, rollback after simulated commit failure, and prevention of partial rescheduling after caught validation errors.
 
 Browser tests cover typed booking with correction and raw trace, rescheduling/cancellation, a response intentionally lost after a real commit followed by reload/retry, mocked recognition/synthesis sequencing, unsupported voice/mobile overflow, and mocked microphone-permission denial with typed recovery. The production frontend and backend are real; only browser speech is mocked where explicitly noted. Desktop and 390-pixel mobile screenshots were generated and inspected. Test servers were stopped by suite teardown.
+
+## Follow-up: real spoken-conversation feedback
+
+The user's transcript exposed narrow booking phrases, filler words included in names, generic recovery after a misheard booking request, and loss of a known reference during rescheduling. Added 35 regression cases, including the complete reported conversation, directional time changes, status questions, legacy session-reference recovery, session isolation, explicit-reference priority, negation, draft cancellation safety, and protection against restoring rejected dates/times. The initial targeted suite reproduced 24 failures before the fixes; the final full backend run passed all 117 cases. Frontend typecheck passed with the extended session contract.
+
+The follow-up retains a session's last verified reference, supports ordinary booking requests, asks targeted clarification after unclear availability follow-ups, cleans bounded name fillers, and selects brief topic-specific business replies. All booking writes still require explicit confirmation. No LLM or fuzzy transcription-to-action guess was introduced.
+
+The earlier production build and six browser-test results above predate this follow-up. The user had running app servers on ports 3000/8000; those were preserved, and the browser suite was not rerun against its conflicting default ports. The new spoken-conversation cases exercise the actual HTTP API and database with an isolated fixed clock. Frontend executable behavior was unchanged; its session type gained the remembered reference field.
 
 ## Remaining manual actions and limits
 
