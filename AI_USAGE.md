@@ -2,15 +2,36 @@
 
 VoxDesk was implemented with OpenAI Codex in the candidate's local workspace. Codex assisted with architecture, Python/TypeScript implementation, tests, debugging, dependency review, interface review, and documentation. No other AI coding tool was used by this agent. The runtime application makes no LLM calls and needs no LLM credentials. Browser speech recognition and synthesis handle audio only; Python rules determine every action.
 
-## Authentic usage evidence — candidate action required
+## Recorded usage and screenshot
 
-This session does not expose a reliable token-usage meter or downloadable usage log to the coding agent. **Actual token counts: unavailable; to be filled from the candidate's authentic Codex usage records.** No counts or screenshots have been fabricated. Attach real screenshots/logs before submitting.
+**Recorded: 2026-10-26 17:36:04 PKT (Asia/Karachi, UTC+05:00).** The functional Python backend and Next.js frontend were already complete at initial implementation commit `bde1b5f`. Subsequent work refined the working product through real conversation feedback, parser corrections and regression tests.
 
-| Date (Asia/Karachi) | Tool / model shown in UI | Task / prompt summary | Input tokens | Output tokens | Total tokens | Evidence file or link |
-| --- | --- | --- | --- | --- | --- | --- |
-| 2026-10-26 | OpenAI Codex / record displayed model | Foundation, deterministic engine, booking API, frontend, tests and docs | Pending authentic data | Pending authentic data | Pending authentic data | Candidate to attach |
+![Candidate-supplied Codex usage screenshot showing 49% five-hour quota and 92% weekly quota remaining](docs/evidence/codex-usage-2026-10-26.png)
 
-Record usage after each working session. Keep screenshots free of secrets and real personal data. Do not estimate numbers as actual usage.
+The original screenshot is preserved without editing. It shows **49% of the five-hour quota remaining** and **92% of the weekly quota remaining**, alongside the labels `7:49 PM` and `Nov 2`. These account-level quota percentages do not measure this project's token count. The recorded time above comes from the current UTC clock converted to Pakistan time.
+
+Authentic counters were subsequently found in the primary local Codex session log, replacing the earlier unavailable-count placeholder. The latest counter at the cutoff is dated **2026-10-26 17:34:34 PKT**:
+
+| Tool / model recorded in session | Input tokens | Output tokens | Total tokens |
+| --- | ---: | ---: | ---: |
+| OpenAI Codex / gpt-6.1-sol | 14,840,089 | 175,628 | **15,015,717** |
+
+The input counter includes **14,599,936 cached input tokens**. The log separately reports **64,523 reasoning output tokens** within output usage. These are cumulative session counters across repeated context processing; cached/reasoning figures are not added again to the total. This snapshot covers the primary coding session; automatic approval-review sessions and work after the cutoff are excluded. It is not a billing statement or a conversion of the quota screenshot.
+
+The [filtered JSON usage log and commit list](docs/evidence/codex-usage-2026-10-26.json) preserve the original token-count fields, event timestamp, source filename/line, screenshot checksum and Git scope. Raw conversation logs and unrelated account files are not included.
+
+## Completed work and later refinement
+
+**20 project commits** were completed from assessment baseline `1e8a7dc` through `ca1d325`, excluding three upstream commits and the later commit adding this evidence:
+
+| Phase | Commits | Delivered result |
+| --- | ---: | --- |
+| Functional backend and frontend, `aa682c2` through `bde1b5f` | 14 | Python decision engine, real availability and persistent booking/rescheduling/cancellation, transaction/retry protection, Next.js interface, browser STT/TTS, Decision Inspector, tests and documentation. Initial recorded validation: 82 backend tests, 6 browser tests, frontend build and typecheck passed. |
+| Later polishing and robustness fixes, `6d79132` through `ca1d325` | 6 | Broader spoken phrasing, retained booking references and details, availability handoff, calendar dates, name extraction and occupied-slot recovery. Latest backend validation: 274 tests passed. |
+
+The initial 14 commits were organized after implementation at the candidate's request and use their actual creation timestamps. They are component-based commits, not a reconstructed timeline of live development. The six later fixes address functional conversation defects as well as polish; frontend build/browser results above predate those backend refinements.
+
+The main problems were overly narrow phrase matching, lost conversation context, dates leaking into time parsing, and instruction words being stored as names. Smaller issues included a TypeScript build failure, an unsafe rescheduling mutation order, browser-test setup/locator errors and a dependency audit finding. The corrections and checks are recorded below. Real microphone recognition quality remains a device-level check; parser tests do not establish audio accuracy.
 
 ## Review and corrections
 

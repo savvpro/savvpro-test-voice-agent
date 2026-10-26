@@ -1,0 +1,179 @@
+{
+  "recorded_at_utc": "2026-10-26T12:36:04+00:00",
+  "recorded_at_asia_karachi": "2026-10-26T17:36:04+05:00",
+  "scope": "Primary VS Code coding session only; automatic approval-review sessions excluded. Cumulative local counters, not a billing statement or quota conversion. Documentation after this cutoff is excluded.",
+  "source_file": "rollout-2026-10-26T14-48-43-01a1779c-bed1-7441-85b0-4402c7e7b9e8.jsonl",
+  "session_started_at": "2026-10-26T09:48:43.741Z",
+  "session_source": "vscode",
+  "models_recorded": [
+    "gpt-6.1-sol"
+  ],
+  "token_count_event": {
+    "source_line": 873,
+    "timestamp": "2026-10-26T12:34:34.868Z",
+    "type": "event_msg",
+    "payload": {
+      "type": "token_count",
+      "info": {
+        "total_token_usage": {
+          "input_tokens": 14840089,
+          "cached_input_tokens": 14599936,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 175628,
+          "reasoning_output_tokens": 64523,
+          "total_tokens": 15015717
+        },
+        "last_token_usage": {
+          "input_tokens": 119276,
+          "cached_input_tokens": 117888,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 539,
+          "reasoning_output_tokens": 197,
+          "total_tokens": 119815
+        },
+        "model_context_window": 475000
+      }
+    }
+  },
+  "screenshot": {
+    "file": "codex-usage-2026-10-26.png",
+    "sha256": "492d9f60c6c28a042bd56ba8fcc6d85204e67a5372526cc6facec99a5358726d",
+    "original_filename": "Screenshot 2026-10-26 173133.png",
+    "original_file_modified_at_asia_karachi": "2026-10-26T17:31:34.052689+05:00",
+    "five_hour_remaining_percent": 49,
+    "weekly_remaining_percent": 92,
+    "other_visible_quota_labels": [
+      "7:49 PM",
+      "Nov 2"
+    ],
+    "note": "Original screenshot copied without editing. Percentages are remaining account quota, not project token totals."
+  },
+  "git_baseline": "1e8a7dc",
+  "git_head": "ca1d325",
+  "project_commits_at_snapshot": 20,
+  "initial_implementation_commits": 14,
+  "later_refinement_commits": 6,
+  "commit_count_note": "Excludes three upstream commits and the subsequent usage-evidence documentation commit. Initial implementation commits were grouped after development, not created progressively during original implementation.",
+  "commits": [
+    {
+      "commit": "aa682c2",
+      "timestamp": "2026-10-26T15:52:20+05:00",
+      "subject": "chore: add dependency locks and local development configuration",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "ec71189",
+      "timestamp": "2026-10-26T15:52:20+05:00",
+      "subject": "feat: define studio catalog and conversation contracts",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "26da1e1",
+      "timestamp": "2026-10-26T15:52:20+05:00",
+      "subject": "feat: add transactional SQLite persistence and turn receipts",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "a3dd46e",
+      "timestamp": "2026-10-26T15:52:20+05:00",
+      "subject": "feat: parse caller intents and entities with deterministic rules",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "6a392c8",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "feat: implement explainable conversation state transitions",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "8038f47",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "feat: validate availability and manage appointment changes",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "7ed2258",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "feat: expose session and appointment APIs with safe retries",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "bf55d5b",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "test: cover deterministic brain and transactional booking workflows",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "800e45d",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "chore: scaffold Next.js workspace and styling tools",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "1d7655c",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "feat: add typed frontend contracts and backend API client",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "9e5f886",
+      "timestamp": "2026-10-26T15:52:21+05:00",
+      "subject": "feat: add browser voice recognition and synthesis controls",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "aee36b5",
+      "timestamp": "2026-10-26T15:52:22+05:00",
+      "subject": "feat: build receptionist workspace and live decision inspector",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "3a220c7",
+      "timestamp": "2026-10-26T15:52:22+05:00",
+      "subject": "test: verify connected browser flows and voice recovery",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "bde1b5f",
+      "timestamp": "2026-10-26T15:52:22+05:00",
+      "subject": "docs: document setup architecture verification and AI usage",
+      "phase": "initial implementation"
+    },
+    {
+      "commit": "6d79132",
+      "timestamp": "2026-10-26T16:07:52+05:00",
+      "subject": "fix: make spoken booking conversations retain context",
+      "phase": "later refinement and fixes"
+    },
+    {
+      "commit": "918c6f9",
+      "timestamp": "2026-10-26T16:30:01+05:00",
+      "subject": "fix: preserve spoken time choices across availability handoff",
+      "phase": "later refinement and fixes"
+    },
+    {
+      "commit": "918bace",
+      "timestamp": "2026-10-26T16:47:25+05:00",
+      "subject": "fix: parse spoken calendar dates before clock times",
+      "phase": "later refinement and fixes"
+    },
+    {
+      "commit": "39b12b8",
+      "timestamp": "2026-10-26T16:58:33+05:00",
+      "subject": "fix: extract customer names from spoken instructions",
+      "phase": "later refinement and fixes"
+    },
+    {
+      "commit": "bfa5d5a",
+      "timestamp": "2026-10-26T17:20:35+05:00",
+      "subject": "fix: retain inline customer names through detail corrections",
+      "phase": "later refinement and fixes"
+    },
+    {
+      "commit": "ca1d325",
+      "timestamp": "2026-10-26T17:24:07+05:00",
+      "subject": "fix: recognize name prepositions before slot conflicts",
+      "phase": "later refinement and fixes"
+    }
+  ]
+}

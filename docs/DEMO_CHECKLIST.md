@@ -28,6 +28,6 @@ Use fictional names. Start both servers as documented. Automated tests **do not 
 ## Submission evidence
 
 - [ ] Run Pytest, frontend typecheck/build and browser tests.
-- [ ] Add authentic Codex token counts and logs/screenshots to `AI_USAGE.md`.
+- [x] Add authentic Codex token counts and logs/screenshots to `AI_USAGE.md` (2026-10-26, 17:36:04 PKT; filtered session counters and original screenshot).
 - [ ] Verify candidate branch, unchanged `TASK.md`, and no committed secrets/real data.
 - [ ] Push/open the assessment PR only after explicit authorization.

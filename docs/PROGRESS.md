@@ -12,7 +12,7 @@
 
 ## Status — 2026-10-26, Asia/Karachi
 
-Implementation milestones 1–4 are complete. Milestone 5 automated checks and documentation are complete; physical voice verification and authentic AI usage evidence remain candidate actions before submission.
+Implementation milestones 1–4 are complete. Milestone 5 automated checks and documentation are complete; authentic AI usage evidence has been added; physical voice verification remains a candidate action before submission.
 
 The backend persists appointments, sessions and turn receipts. One SQLite transaction per mutating turn protects both booking changes and their reported outcome. The interface includes turn-based browser voice, full typed fallback, actual decision metadata, booking confirmation/receipts, available starts, narrow-screen layouts and safe retries through reloads.
 
@@ -27,7 +27,7 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 | `npm audit --audit-level=high` | **0 vulnerabilities** after PostCSS 8.5.31 override |
 | `.venv/Scripts/python -m pip check` | No broken requirements |
 | `git diff --check` | Passed; Git emitted its normal Windows LF/CRLF notice |
-| Source/documentation credential-pattern scan | 45 files scanned after the sixth follow-up, 0 findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
+| Source/documentation credential-pattern scan | 46 text files scanned after adding usage evidence, 0 findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
 | Assessment preservation | `TASK.md` blob hash exactly matches HEAD; branch remains `candidate-TUAHASHAIKH` |
 
 Backend tests include actual state transitions, relative/spoken date/time parsing, uncertainty, corrections, service duration, opening/closing boundaries, explicit confirmations, conflicts, two independent application instances confirming concurrently, repeated request receipts, stale revisions/appointment versions, isolation, persistence after restart, UTC storage, configured business timezone, rollback after simulated commit failure, and prevention of partial rescheduling after caught validation errors.
@@ -75,7 +75,7 @@ The transcript's "for the name Muhammadaha" was unsupported, so no name was avai
 ## Remaining manual actions and limits
 
 - Run [DEMO_CHECKLIST.md](DEMO_CHECKLIST.md) with a real microphone and speakers in Chrome/Edge. Actual audio capture, recognition accuracy and audible playback were **not** physically verified by the coding agent.
-- Fill [AI_USAGE.md](../AI_USAGE.md) with authentic token usage and logs/screenshots. This tool session exposes no reliable token meter; no values were invented.
+- Review the authentic screenshot and filtered local-session token counters in [AI_USAGE.md](../AI_USAGE.md), recorded on 2026-10-26 at 17:36:04 PKT. The snapshot covers 20 project commits; append later usage separately if needed. No quota percentage was converted into token counts.
 - Review the submission and explicitly authorize pushing/opening the assessment PR when ready. The user authorized focused local commits after implementation; no push, PR or deployment was performed by the agent.
 - The intentionally small English grammar and local-demo limitations are documented in README/DESIGN. The non-failing Starlette/httpx warning is from installed upstream test-client integration.
 
