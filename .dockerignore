@@ -2,6 +2,8 @@
 .venv
 .env
 .env.*
+**/.env
+**/.env.*
 .artifacts
 .superpowers
 .taste-skill

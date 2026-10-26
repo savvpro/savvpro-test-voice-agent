@@ -9,6 +9,7 @@ The assistant searches 24 fictional found items, asks distinguishing questions, 
 ## Quick start with Docker
 
 1. Copy .env.example to .env at this repository root and set GROQ_API_KEY.
+   You can also keep the key in backend/.env; both Docker and local startup support that location.
 2. Run:
 
 ~~~sh

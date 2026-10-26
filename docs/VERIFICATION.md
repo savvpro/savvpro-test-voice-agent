@@ -17,7 +17,9 @@ Recorded 2026-10-26. All work remains uncommitted at the user's request.
 
 The browser test uses real Chromium MediaRecorder encoding and our real HTTP/database/decision pipeline. Groq and audible playback boundaries use controlled test responses to avoid billable requests and hardware dependence. Separate backend HTTP-boundary tests verify the exact Groq endpoint, model, authentication, audio forwarding, provider errors, silence handling, and unchanged conversation state on failed transcription.
 
-A real GROQ_API_KEY had not yet been supplied in root .env at the last check. Therefore a live Groq transcription and physical microphone/speaker session have not been claimed. Add the key and restart the service to use live STT. This is configuration, not missing application code.
+The user subsequently supplied GROQ_API_KEY in backend/.env. Compose now loads that file without exposing its contents, and the running container was recreated successfully. A real Groq whisper-large-v3 test using three synthetic WAV recordings completed the full description -> identification -> spoken confirmation transcript -> persisted pending claim flow. All three transcriptions were accurate for the scripted fictional phrases. The live test called our actual HTTP endpoints and did not mock the provider. Verification helper: scripts/verify_live_voice.py; generated samples remain gitignored under .artifacts/.
+
+This verifies live provider integration and persisted outcomes. A physical microphone/speaker session is still separate hardware evidence; synthetic speech is not represented as a physical-device test.
 
 AI token exports/screenshots remain external evidence not available through this coding session. AI_USAGE.md records this limitation rather than inventing counts.
 
