@@ -52,13 +52,16 @@ export default function Home() {
   const cache = useMemo(() => createSessionCache(setStorageWarning), []);
   const [pending, setPending] = useState<PendingTurn | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [speechLanguage, setSpeechLanguage] = useState("en-US");
   const [traceOpen, setTraceOpen] = useState(false);
   const [showServices, setShowServices] = useState(false);
   const messageList = useRef<HTMLDivElement>(null);
+  const messageInput = useRef<HTMLInputElement>(null);
+  const restoreInputFocus = useRef(false);
   const locked = useRef(true);
   const latest = useRef<Conversation | null>(null);
   const sendRef = useRef<(text: string) => void>(() => {});
-  const voice = useVoice((text) => sendRef.current(text));
+  const voice = useVoice((text) => sendRef.current(text), speechLanguage);
 
   const accept = useCallback(
     (result: Conversation) => {
@@ -125,14 +128,29 @@ export default function Home() {
   }, [initialize]);
   useEffect(() => {
     const list = messageList.current;
-    list?.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+    list?.scrollTo({
+      top: list.scrollHeight,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
   }, [conversation?.revision, busy, voice.interim]);
+
+  useEffect(() => {
+    if (!busy && !pending && restoreInputFocus.current) {
+      messageInput.current?.focus({ preventScroll: true });
+      restoreInputFocus.current = false;
+    }
+  }, [busy, pending]);
 
   const submit = useCallback(
     async (text: string, retry?: PendingTurn) => {
       const current = latest.current;
       if (!text.trim() || locked.current || !current || (pending && !retry))
         return;
+      restoreInputFocus.current = Boolean(
+        document.activeElement?.closest(".composer"),
+      );
       voice.stopListening();
       voice.stopSpeaking();
       const request = retry || {
@@ -392,6 +410,7 @@ export default function Home() {
                       voice.stopSpeaking();
                     }}
                     aria-pressed={voiceEnabled}
+                    aria-label={`Spoken replies ${voiceEnabled ? "on" : "off"}`}
                     disabled={!voice.canSpeak}
                   >
                     {voiceEnabled ? (
@@ -399,8 +418,34 @@ export default function Home() {
                     ) : (
                       <VolumeX size={13} />
                     )}
-                    Spoken replies {voiceEnabled ? "on" : "off"}
+                    <span className="desktop-only">Spoken </span>replies{" "}
+                    {voiceEnabled ? "on" : "off"}
                   </button>
+                  <button
+                    disabled={
+                      !voice.canSpeak || busy || !conversation || voice.speaking
+                    }
+                    onClick={() =>
+                      conversation && voice.speak(conversation.reply)
+                    }
+                  >
+                    <Volume2 size={15} /> Listen again
+                  </button>
+                  <label className="language-setting">
+                    <span className="sr-only">Speech language</span>
+                    <select
+                      aria-label="Speech language"
+                      value={speechLanguage}
+                      disabled={busy || voice.listening || voice.speaking}
+                      onChange={(event) =>
+                        setSpeechLanguage(event.target.value)
+                      }
+                    >
+                      <option value="en-US">English (US)</option>
+                      <option value="en-GB">English (UK)</option>
+                      <option value="en-PK">English (Pakistan)</option>
+                    </select>
+                  </label>
                   {voice.speaking && (
                     <button onClick={voice.stopSpeaking}>
                       <Square size={11} />
@@ -519,6 +564,7 @@ export default function Home() {
                 >
                   <MessageSquare size={17} />
                   <input
+                    ref={messageInput}
                     aria-label="Your message"
                     placeholder="Or type your message here…"
                     value={draft}
@@ -681,7 +727,19 @@ export default function Home() {
                   </div>
                   <div className="slot-list">
                     {conversation?.available_slots.map((slot) => (
-                      <span key={slot}>{slot}</span>
+                      <button
+                        key={slot}
+                        disabled={disabled}
+                        aria-label={`Book at ${slot}`}
+                        onClick={() => {
+                          const [hour, minute] = slot.split(":").map(Number);
+                          void submit(
+                            `book it at ${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}`,
+                          );
+                        }}
+                      >
+                        {slot}
+                      </button>
                     ))}
                   </div>
                   <p>Availability can change until a booking is confirmed.</p>

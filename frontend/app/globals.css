@@ -33,6 +33,7 @@ input {
 }
 button:focus-visible,
 a:focus-visible,
+select:focus-visible,
 input:focus-visible {
   outline: 2px solid var(--accent);
 }
@@ -141,7 +142,7 @@ p {
   display: grid;
   place-items: center;
   color: #dadbc9;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 .workspace {
@@ -165,7 +166,7 @@ p {
   gap: 17px;
 }
 .version {
-  font-size: 9px;
+  font-size: 12px;
   color: #a4a9ae;
   border: 1px solid #37393c;
   padding: 4px 6px;
@@ -178,7 +179,7 @@ p {
   align-items: center;
   gap: 20px;
   color: #a0a5ab;
-  font-size: 11px;
+  font-size: 12px;
 }
 .topbar-right > span {
   display: flex;
@@ -202,7 +203,7 @@ p {
   background: var(--line);
 }
 .synthetic-tag {
-  font-size: 11px;
+  font-size: 12px;
 }
 main {
   max-width: 1440px;
@@ -217,7 +218,7 @@ main {
   gap: 20px;
 }
 .eyebrow {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1.6px;
   font-weight: 600;
   color: #91979e;
@@ -243,7 +244,7 @@ h1 {
   align-items: center;
   border-radius: 7px;
   padding: 10px 13px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .secondary {
   border: 1px solid #3a3d40;
@@ -260,6 +261,7 @@ h1 {
   align-items: start;
 }
 .panel {
+  min-width: 0;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -277,7 +279,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1.3px;
   font-weight: 600;
   color: #b9bec3;
@@ -293,7 +295,7 @@ h1 {
   border: 1px solid #344337;
   border-radius: 20px;
   padding: 5px 8px;
-  font-size: 9px;
+  font-size: 12px;
   color: #bdcebf;
   white-space: nowrap;
 }
@@ -367,7 +369,7 @@ h1 {
 }
 .assistant-stage > p {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 8px;
 }
 .waveform {
@@ -410,7 +412,7 @@ h1 {
   box-shadow: 0 0 0 7px #edc4b610;
 }
 .mic-hint {
-  font-size: 10px;
+  font-size: 12px;
   color: #9ca39e;
   margin-top: 12px;
 }
@@ -426,7 +428,7 @@ h1 {
   border: 0;
   background: transparent;
   color: #8c948f;
-  font-size: 10px;
+  font-size: 12px;
   padding: 4px;
 }
 .voice-settings button:hover {
@@ -438,7 +440,7 @@ h1 {
   border-top: 1px solid var(--line);
   padding: 15px 22px 0;
   color: #969ca2;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1px;
 }
 .conversation-divider span:last-child {
@@ -470,7 +472,7 @@ h1 {
   border: 1px solid #3a4c3f;
   border-radius: 8px;
   color: #bcd5c1;
-  font-size: 11px;
+  font-size: 12px;
   flex-shrink: 0;
 }
 .user .message-avatar {
@@ -479,7 +481,7 @@ h1 {
   color: #c6c7d5;
 }
 .message-author {
-  font-size: 10px;
+  font-size: 12px;
   color: #d2d6da;
   display: flex;
   gap: 8px;
@@ -487,7 +489,7 @@ h1 {
   margin: 2px 0 7px;
 }
 .message-author > span {
-  font-size: 7px;
+  font-size: 12px;
   color: #8fab99;
   letter-spacing: 0.7px;
   padding: 2px 4px;
@@ -498,7 +500,7 @@ h1 {
   min-width: 0;
 }
 .message-body p {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.8;
   color: #b9c0c6;
   white-space: pre-wrap;
@@ -512,7 +514,7 @@ h1 {
   display: flex;
   gap: 8px;
   color: #b2c8b9;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
   margin-bottom: 16px;
 }
@@ -546,7 +548,7 @@ h1 {
   border: 0;
   color: var(--text);
   font: inherit;
-  font-size: 11px;
+  font-size: 16px;
   outline: none;
 }
 .composer input::placeholder {
@@ -570,7 +572,7 @@ h1 {
   align-items: center;
   justify-content: space-between;
   color: #969ca2;
-  font-size: 9px;
+  font-size: 12px;
   margin-top: 10px;
   gap: 8px;
 }
@@ -583,7 +585,7 @@ h1 {
   border: 1px solid #3b3e41;
   border-radius: 3px;
   padding: 0 3px;
-  font-size: 9px;
+  font-size: 12px;
 }
 .inspector-column {
   display: flex;
@@ -597,7 +599,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 8px;
+  font-size: 12px;
   color: #98bca4;
   letter-spacing: 0.6px;
 }
@@ -614,7 +616,7 @@ h1 {
   letter-spacing: -0.2px;
 }
 .inspector-intro p {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 7px;
 }
@@ -630,13 +632,13 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: 7px;
-  font-size: 8px;
+  font-size: 12px;
   color: #a3aba7;
   letter-spacing: 1px;
   font-weight: 500;
 }
 .mini-label > span {
-  font-size: 7px;
+  font-size: 12px;
   color: #858f89;
   letter-spacing: 0.8px;
 }
@@ -660,7 +662,7 @@ h1 {
   box-shadow: 0 0 0 4px #b4d4bd10;
 }
 .state-meta {
-  font-size: 9px;
+  font-size: 12px;
   color: #9cab9f;
   margin-top: 8px;
 }
@@ -673,7 +675,7 @@ h1 {
   align-items: center;
   gap: 7px;
   color: #ced5d0;
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 12px;
   overflow-wrap: anywhere;
 }
@@ -683,7 +685,7 @@ h1 {
 .rule-name {
   display: inline-block;
   margin-top: 9px;
-  font-size: 9px;
+  font-size: 12px;
   color: #8e9c94;
   word-break: break-all;
 }
@@ -703,14 +705,14 @@ h1 {
 }
 .entity > span {
   display: block;
-  font-size: 8px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: #8e9894;
 }
 .entity strong {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 400;
   color: #969b9f;
   margin-top: 6px;
@@ -734,13 +736,13 @@ h1 {
   color: #bdc9c0;
 }
 .explanation p {
-  font-size: 11px;
+  font-size: 12px;
   color: #adb7b0;
   line-height: 1.8;
   margin-top: 11px;
 }
 .next-action {
-  font-size: 9px;
+  font-size: 12px;
   color: #b7c8bc;
   display: flex;
   gap: 6px;
@@ -757,7 +759,7 @@ h1 {
   border-top: 1px solid var(--line);
   background: #1b1e20;
   color: #a4aaa8;
-  font-size: 10px;
+  font-size: 12px;
   text-align: left;
 }
 .trace-toggle:hover {
@@ -770,7 +772,7 @@ h1 {
   transform: rotate(90deg);
 }
 .raw-trace {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.7;
   padding: 16px 20px;
   overflow: auto;
@@ -804,7 +806,7 @@ h1 {
   font-weight: 500;
 }
 .booking-heading p {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 5px;
 }
@@ -816,12 +818,12 @@ h1 {
   color: #78847c;
 }
 .booking-empty p {
-  font-size: 10px;
+  font-size: 12px;
   color: #abb3ad;
   margin-top: 10px;
 }
 .booking-empty > span {
-  font-size: 9px;
+  font-size: 12px;
   color: #949e97;
   margin-top: 6px;
   text-align: center;
@@ -830,7 +832,7 @@ h1 {
 .timezone {
   border-top: 1px solid var(--line);
   padding-top: 12px;
-  font-size: 9px;
+  font-size: 12px;
   color: #939f96;
   display: flex;
   gap: 6px;
@@ -841,7 +843,7 @@ h1 {
   flex-direction: column;
   gap: 8px;
   margin: 19px 0 15px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .booking-detail > span {
   color: #aeb8b1;
@@ -862,7 +864,7 @@ h1 {
   display: flex;
   gap: 6px;
   align-items: center;
-  font-size: 9px;
+  font-size: 12px;
   color: #b6af96;
   margin-top: 6px;
 }
@@ -892,14 +894,14 @@ h1 {
 .rules-note p {
   display: flex;
   flex-direction: column;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.7;
   color: #929b95;
 }
 .rules-note strong {
   font-weight: 400;
   color: #b6c1b9;
-  font-size: 10px;
+  font-size: 12px;
   margin-bottom: 3px;
 }
 .quick-start {
@@ -911,7 +913,7 @@ h1 {
   margin: 25px 0 31px;
 }
 .quick-start > span {
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 1px;
   color: #858e89;
   margin-right: 5px;
@@ -924,7 +926,7 @@ h1 {
   background: #191d1a;
   border-radius: 6px;
   color: #b4bfb7;
-  font-size: 10px;
+  font-size: 12px;
   padding: 9px 10px;
 }
 .quick-start button:hover {
@@ -942,7 +944,7 @@ footer {
   border-top: 1px solid var(--line);
   padding: 19px 0 24px;
   color: #8d9690;
-  font-size: 9px;
+  font-size: 12px;
   gap: 15px;
 }
 footer span,
@@ -952,7 +954,7 @@ footer button {
   gap: 7px;
 }
 footer button {
-  font-size: 9px;
+  font-size: 12px;
   color: #9aa39c;
   background: none;
   border: 0;
@@ -970,7 +972,7 @@ footer button {
   border-radius: 7px;
   margin: 8px 20px 13px;
   padding: 12px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
 }
 .error-box button {
@@ -983,12 +985,12 @@ footer button {
   align-items: center;
   gap: 6px;
   align-self: start;
-  font-size: 10px;
+  font-size: 12px;
 }
 .pending-note {
   padding: 0 20px 12px;
   color: #c2ab8d;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.7;
 }
 .confirmation-actions {
@@ -999,7 +1001,7 @@ footer button {
   margin-bottom: 12px;
 }
 .confirmation-actions > span {
-  font-size: 9px;
+  font-size: 12px;
   color: #aebdb3;
   margin-right: auto;
 }
@@ -1012,7 +1014,7 @@ footer button {
   border: 1px solid #b9d9c4;
   border-radius: 5px;
   padding: 6px 8px;
-  font-size: 9px;
+  font-size: 12px;
 }
 .confirmation-actions button.decline {
   border-color: #3e4641;
@@ -1034,7 +1036,7 @@ footer button {
   font-weight: 500;
 }
 .service-banner p {
-  font-size: 10px;
+  font-size: 12px;
   color: #a6b5a9;
   margin-top: 7px;
 }
@@ -1045,12 +1047,12 @@ footer button {
   justify-content: center;
 }
 .service-list > span {
-  font-size: 11px;
+  font-size: 12px;
 }
 .service-list small {
   display: block;
   color: #a2b3a7;
-  font-size: 9px;
+  font-size: 12px;
   margin-top: 6px;
 }
 .icon-button {
@@ -1072,16 +1074,16 @@ footer button {
   max-height: 130px;
   overflow: auto;
 }
-.slot-list span {
+.slot-list button {
   border: 1px solid #3b4d40;
   background: #253329;
   border-radius: 4px;
   padding: 5px 7px;
-  font-size: 10px;
+  font-size: 12px;
   color: #c1d8c7;
 }
 .availability-card p {
-  font-size: 9px;
+  font-size: 12px;
   color: #929f95;
   line-height: 1.6;
   margin-top: 11px;
@@ -1215,7 +1217,7 @@ footer button {
     gap: 12px;
   }
   .version {
-    font-size: 7px;
+    font-size: 12px;
   }
   .topbar-right {
     gap: 7px;
@@ -1225,7 +1227,7 @@ footer button {
     display: none !important;
   }
   .synthetic-tag {
-    font-size: 9px;
+    font-size: 12px;
   }
   main {
     padding: 25px 15px 0;
@@ -1236,7 +1238,7 @@ footer button {
     gap: 8px;
   }
   .eyebrow {
-    font-size: 7px;
+    font-size: 12px;
     letter-spacing: 1px;
     gap: 5px;
   }
@@ -1245,13 +1247,13 @@ footer button {
     line-height: 1.35;
   }
   .page-heading p {
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.7;
     max-width: 210px;
   }
   .new-session {
     padding: 8px;
-    font-size: 9px;
+    font-size: 12px;
     margin-top: 22px;
     white-space: nowrap;
     gap: 5px;
@@ -1264,6 +1266,7 @@ footer button {
   }
   .inspector-column {
     display: flex;
+    align-items: stretch;
   }
   .panel-top {
     padding: 16px;
@@ -1282,14 +1285,14 @@ footer button {
     padding: 12px;
   }
   .composer-foot {
-    font-size: 8px;
+    font-size: 12px;
   }
   .quick-start {
     gap: 7px;
     margin-bottom: 24px;
   }
   .quick-start button {
-    font-size: 9px;
+    font-size: 12px;
     padding: 8px;
     gap: 5px;
   }
@@ -1312,7 +1315,7 @@ footer button {
     right: 25px;
   }
   footer {
-    font-size: 8px;
+    font-size: 12px;
     align-items: flex-start;
     line-height: 1.6;
   }
@@ -1366,4 +1369,142 @@ footer button {
 }
 .proposal-status {
   color: #e4d5aa;
+}
+
+/* Controls remain operable by touch and keyboard at every viewport. */
+button,
+select {
+  min-height: 44px;
+}
+.composer button,
+.icon-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.voice-settings {
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.voice-settings button {
+  font-size: 12px;
+  padding: 8px;
+}
+.language-setting select {
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid #49554d;
+  border-radius: 6px;
+  background: #202923;
+  color: #d3dfd6;
+  padding: 6px;
+  max-width: 100%;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.slot-list button:hover,
+.slot-list button:focus-visible {
+  background: #3d5945;
+  border-color: #a0c6ad;
+}
+.slot-list {
+  max-height: 180px;
+}
+@media (max-width: 570px) {
+  .page-heading h1 {
+    font-size: 20px;
+  }
+  main {
+    padding-top: 16px;
+  }
+  .page-heading {
+    margin-bottom: 16px;
+  }
+  .page-heading p {
+    display: none;
+  }
+  .new-session {
+    margin-top: 8px;
+  }
+  .panel-top {
+    padding: 12px;
+  }
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  .pill {
+    font-size: 11px;
+    padding: 5px 7px;
+  }
+  .assistant-stage {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 12px;
+  }
+  .assistant-stage .orb-wrap,
+  .assistant-stage h2,
+  .assistant-stage > p,
+  .assistant-stage .waveform {
+    display: none;
+  }
+  .mic-button {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+  .mic-hint {
+    grid-column: 2;
+    margin-top: 0;
+    font-size: 12px;
+  }
+  .voice-settings {
+    grid-column: 2;
+    justify-content: flex-start;
+    margin-top: 0;
+    gap: 4px;
+  }
+  .voice-settings button,
+  .language-setting select {
+    padding: 4px;
+    font-size: 12px;
+  }
+  .messages {
+    height: clamp(160px, 25svh, 240px);
+  }
+  .message-body p {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .composer-foot {
+    flex-wrap: wrap;
+    font-size: 11px;
+  }
+  .booking-card {
+    order: -1;
+    width: 100%;
+  }
+  .availability-card {
+    order: -2;
+    width: 100%;
+  }
+  .inspector {
+    width: 100%;
+  }
+  .confirmation-actions > span {
+    display: none;
+  }
+  .confirmation-actions button {
+    font-size: 13px;
+  }
 }

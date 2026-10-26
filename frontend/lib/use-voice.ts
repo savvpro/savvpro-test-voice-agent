@@ -21,7 +21,7 @@ type SpeechWindow = Window & {
   webkitSpeechRecognition?: new () => Recognition;
 };
 
-export function useVoice(onFinal: (text: string) => void) {
+export function useVoice(onFinal: (text: string) => void, language = "en-US") {
   const [supported, setSupported] = useState(false);
   const [canSpeak, setCanSpeak] = useState(false);
   const [listening, setListening] = useState(false);
@@ -76,29 +76,38 @@ export function useVoice(onFinal: (text: string) => void) {
         );
         return;
       }
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      utterance.rate = 0.98;
-      spoken.current = utterance;
-      setSpeaking(true);
-      utterance.onend = () => {
-        if (spoken.current === utterance) {
+      setError("");
+      try {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = language;
+        utterance.rate = 0.98;
+        spoken.current = utterance;
+        setSpeaking(true);
+        utterance.onend = () => {
+          if (spoken.current === utterance) {
+            setSpeaking(false);
+            spoken.current = null;
+          }
+        };
+        utterance.onerror = (event) => {
+          if (spoken.current !== utterance) return;
           setSpeaking(false);
           spoken.current = null;
-        }
-      };
-      utterance.onerror = (event) => {
-        if (spoken.current !== utterance) return;
-        setSpeaking(false);
+          if (event.error !== "canceled" && event.error !== "interrupted")
+            setError(
+              "Your browser could not speak this reply. You can read it in the conversation or try Listen again.",
+            );
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch {
         spoken.current = null;
-        if (event.error !== "canceled" && event.error !== "interrupted")
-          setError(
-            "Your browser could not speak this reply. You can read it in the conversation or try Listen again.",
-          );
-      };
-      window.speechSynthesis.speak(utterance);
+        setSpeaking(false);
+        setError(
+          "Your browser could not speak this reply. Read it in the conversation or choose Listen again.",
+        );
+      }
     },
-    [stopListening, stopSpeaking],
+    [language, stopListening, stopSpeaking],
   );
 
   const startListening = useCallback(() => {
@@ -115,7 +124,7 @@ export function useVoice(onFinal: (text: string) => void) {
     setError("");
     setInterim("");
     const instance = new Constructor();
-    instance.lang = "en-US";
+    instance.lang = language;
     instance.continuous = false;
     instance.interimResults = true;
     recognition.current = instance;
@@ -172,7 +181,7 @@ export function useVoice(onFinal: (text: string) => void) {
         "Could not start the microphone. Check its permissions or type your message.",
       );
     }
-  }, [stopListening]);
+  }, [language, stopListening]);
 
   return {
     supported,
