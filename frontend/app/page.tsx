@@ -17,6 +17,8 @@ import {
   LoaderCircle,
   MessageSquare,
   Mic,
+  PanelLeftClose,
+  PanelLeftOpen,
   RotateCcw,
   Scissors,
   ShieldCheck,
@@ -60,6 +62,7 @@ export default function Home() {
     "voice",
   );
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useState(false);
   const messageList = useRef<HTMLDivElement>(null);
   const messageInput = useRef<HTMLInputElement>(null);
   const restoreInputFocus = useRef(false);
@@ -250,8 +253,14 @@ export default function Home() {
   }
 
   return (
-    <div className="app-shell">
-      <aside className="rail" aria-label="Application">
+    <div
+      className={`app-shell ${navigationOpen ? "navigation-expanded" : "navigation-collapsed"}`}
+    >
+      <aside
+        id="workspace-navigation"
+        className="rail"
+        aria-label="Application"
+      >
         <a className="brand-symbol" href="/" aria-label="VoxDesk home">
           <span className="brand-icon">
             <AudioLines size={23} />
@@ -260,6 +269,23 @@ export default function Home() {
             voxdesk<small>WORKSPACE</small>
           </span>
         </a>
+        <button
+          className="rail-toggle"
+          aria-label={
+            navigationOpen ? "Collapse navigation" : "Expand navigation"
+          }
+          title={navigationOpen ? "Collapse navigation" : "Expand navigation"}
+          aria-expanded={navigationOpen}
+          aria-controls="workspace-navigation"
+          onClick={() => setNavigationOpen(!navigationOpen)}
+        >
+          {navigationOpen ? (
+            <PanelLeftClose size={18} />
+          ) : (
+            <PanelLeftOpen size={18} />
+          )}
+          <span>Collapse sidebar</span>
+        </button>
         <div className="rail-rule" />
         <span className="rail-label">WORKSPACE</span>
         <button
@@ -286,6 +312,7 @@ export default function Home() {
         </button>
         <button
           className="rail-button"
+          title="Studio services"
           onClick={() => setShowServices(!showServices)}
           aria-label="View studio services"
           aria-expanded={showServices}
@@ -300,10 +327,28 @@ export default function Home() {
           </span>
         </div>
       </aside>
+      {navigationOpen && (
+        <button
+          className="navigation-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setNavigationOpen(false)}
+        />
+      )}
       <div className="workspace">
         <header className="topbar">
+          <button
+            className="icon-button mobile-navigation-toggle"
+            aria-label={
+              navigationOpen ? "Collapse navigation" : "Expand navigation"
+            }
+            aria-expanded={navigationOpen}
+            aria-controls="workspace-navigation"
+            onClick={() => setNavigationOpen(!navigationOpen)}
+          >
+            <PanelLeftOpen size={18} />
+          </button>
           <div className="wordmark">
-            Northline Studio<span className="version">VOICE WORKSPACE</span>
+            Northline Studio<span className="version">Voice workspace</span>
           </div>
           <div className="topbar-right">
             <span className="connection-status">
@@ -317,14 +362,6 @@ export default function Home() {
                     ? "Connecting to backend"
                     : "Backend unavailable"}
               </span>
-            </span>
-            <span className="topbar-divider" />
-            <span
-              className="synthetic-tag"
-              aria-label="Synthetic demo"
-              title="Synthetic demo"
-            >
-              <ShieldCheck size={13} /> <span>Synthetic demo</span>
             </span>
             <button
               className="icon-button mobile-view-toggle"
@@ -361,26 +398,29 @@ export default function Home() {
             </button>
           </div>
         </header>
-        <main>
+        <main className={showingInspector ? "with-inspector" : undefined}>
           <section className="page-heading">
             <div>
-              <div className="eyebrow">
-                NORTHLINE STUDIO <ChevronRight size={12} /> VOICE WORKSPACE
-              </div>
               <h1>
-                {activeView === "voice" ? (
-                  <>
-                    A good conversation.
-                    <br className="mobile-only" /> A clear decision.
-                  </>
-                ) : (
-                  "Your appointment"
-                )}
+                {activeView === "voice"
+                  ? "Voice receptionist"
+                  : "Your appointment"}
               </h1>
               <p>
-                {activeView === "voice"
-                  ? "Your front desk, ready to listen. Every step explained."
-                  : "The details collected in your conversation, in one place."}
+                {activeView === "voice" ? (
+                  <>
+                    <span
+                      className={`status-dot ${voice.listening ? "pulse" : ""}`}
+                    />
+                    <span className="conversation-status">{status}</span>
+                    <span aria-hidden="true">·</span>
+                    {conversation
+                      ? `${conversation.revision} turns`
+                      : "Starting session"}
+                  </>
+                ) : (
+                  "Your draft and saved appointment, in one place."
+                )}
               </p>
             </div>
             <button
@@ -439,27 +479,6 @@ export default function Home() {
               className="conversation-panel panel"
               aria-label="Voice conversation"
             >
-              <div className="panel-top">
-                <div className="conversation-heading">
-                  <div className="section-label">
-                    <Headphones size={15} /> LIVE RECEPTIONIST
-                  </div>
-                </div>
-                <span className="pill">
-                  <span
-                    className={`status-dot ${voice.listening ? "pulse" : ""}`}
-                  />
-                  {status}
-                </span>
-              </div>
-              <div className="conversation-divider">
-                <span>CONVERSATION</span>
-                <span>
-                  {conversation
-                    ? `${conversation.revision} turns`
-                    : "Starting session"}
-                </span>
-              </div>
               <div
                 ref={messageList}
                 className="messages"
@@ -488,6 +507,62 @@ export default function Home() {
                         {message.role === "assistant" && <span>VOXDESK</span>}
                       </span>
                       <p>{message.text}</p>
+                      {message.role === "assistant" &&
+                        i === conversation.history.length - 1 &&
+                        decision?.matched_rule === "commit.confirmed" &&
+                        conversation.appointment && (
+                          <section
+                            className="conversation-receipt"
+                            aria-label="Latest appointment receipt"
+                          >
+                            <dl>
+                              <div>
+                                <dt>Reference</dt>
+                                <dd>
+                                  <code>
+                                    {conversation.appointment.reference}
+                                  </code>
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Service</dt>
+                                <dd>{conversation.appointment.service_name}</dd>
+                              </div>
+                              <div>
+                                <dt>Customer</dt>
+                                <dd>
+                                  {conversation.appointment.customer_name}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Date</dt>
+                                <dd>
+                                  {conversation.appointment.starts_at.slice(
+                                    0,
+                                    10,
+                                  )}{" "}
+                                  ·{" "}
+                                  {conversation.appointment.starts_at.slice(
+                                    11,
+                                    16,
+                                  )}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Status</dt>
+                                <dd>
+                                  <span className="receipt-status">
+                                    {conversation.appointment.status}
+                                  </span>
+                                </dd>
+                              </div>
+                            </dl>
+                            <small>
+                              All times in {conversation.appointment.timezone}.
+                              Please keep your reference.
+                            </small>
+                          </section>
+                        )}
                     </div>
                   </div>
                 ))}
@@ -588,7 +663,7 @@ export default function Home() {
                   <input
                     ref={messageInput}
                     aria-label="Your message"
-                    placeholder="Or type your message here…"
+                    placeholder="Type a message, or tap the mic to speak"
                     value={draft}
                     maxLength={1000}
                     onChange={(e) => setDraft(e.target.value)}
@@ -870,7 +945,6 @@ export default function Home() {
             </div>
           </section>
           <div className="quick-start" hidden={activeView !== "voice"}>
-            <span>TRY A CONVERSATION</span>
             {[
               "Check beard trim availability Friday",
               "What are your services and prices?",
@@ -888,7 +962,9 @@ export default function Home() {
           </div>
           <footer>
             <span>
-              <AudioLines size={13} />
+              <span className="synthetic-tag">
+                <ShieldCheck size={11} /> Synthetic demo
+              </span>
               Built for conversations. Designed for clarity.
             </span>
             <button onClick={() => setShowServices(!showServices)}>
