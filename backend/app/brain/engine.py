@@ -3,7 +3,7 @@ import re
 from datetime import date, datetime
 from typing import Protocol
 
-from app.brain.language import Recognition, extract, normalize, recognize
+from app.brain.language import Recognition, confirms_action, extract, intent_text, normalize, recognize
 from app.catalog import ADDRESS_INFO, BUSINESS_INFO, HOURS_INFO, SERVICE_INFO, SERVICES
 from app.schemas import AppointmentView, Decision, Entities, Intent, Message, SessionView, State
 
@@ -75,7 +75,7 @@ class Engine:
             c.current_intent = Intent.UNKNOWN
             c.state = State.IDLE
 
-        if normalize(text) in ("start over", "restart", "restart conversation"):
+        if intent_text(text) in ("start over", "restart", "restart conversation"):
             reset()
             return finish("Let's start over. Would you like to book, check availability, reschedule, or cancel?", "control.restart", "ask_intent", "Discarded the uncommitted proposal; existing appointments remain stored.")
         if recognition.intent == Intent.END:
@@ -125,17 +125,30 @@ class Engine:
                 reply += " Your current request is saved. " + self.prompt(c)
             return finish(reply, recognition.rule, "answer_question", "Answered from the static business catalog and preserved conversation context.")
         if recognition.rule == "action.multiple_requests":
+            c.proposed_action = None
+            if c.state == State.CONFIRMING:
+                c.state = State.RESCHEDULING if c.current_intent == Intent.RESCHEDULE else State.COLLECTING
             return finish("Please choose one action: book, check availability, reschedule, or cancel.", recognition.rule, "clarify_intent", "Multiple requested actions cannot safely share a confirmation.", clarify=True)
-        cancel_draft = recognition.intent == Intent.CANCEL and active and c.current_intent in (Intent.CREATE, Intent.AVAILABILITY) and re.fullmatch(r"(?:please )?cancel(?: it| that| this)?", normalize(text))
+        cancel_draft = recognition.intent == Intent.CANCEL and active and c.current_intent in (Intent.CREATE, Intent.AVAILABILITY) and re.fullmatch(r"(?:please )?cancel(?: it| that| this)?", intent_text(text))
         if recognition.intent == Intent.DENY or cancel_draft:
             reset()
             return finish("I haven't made any changes. What would you like to do next?", recognition.rule, "ask_intent", "Declined or negated the proposed action; nothing was written.")
 
-        if recognition.intent == Intent.CONFIRM and c.current_intent == Intent.AVAILABILITY and c.state == State.COMPLETED and c.available_slots:
-            # "Yes" accepts the offer to begin booking, not a database write.
+        availability_result = c.current_intent == Intent.AVAILABILITY and c.state == State.COMPLETED and bool(c.available_slots)
+        accept_offer = recognition.intent == Intent.CONFIRM and availability_result
+        accept_with_details = recognition.rule == "confirmation.with_details" and bool(found or parsed.issues)
+        if c.current_intent == Intent.AVAILABILITY and (accept_offer or accept_with_details):
+            # "Yes, do it at 4:30 PM" accepts the booking offer and contributes
+            # its selected time; it never bypasses review/confirmation.
             recognition = Recognition(Intent.CREATE, "context.accept_available_slot")
+        elif availability_result and recognition.intent in (Intent.UNKNOWN, Intent.MODIFY) and (found or parsed.issues):
+            # A date/time answer after a completed availability query is still
+            # part of that query. Merge and recheck it rather than discarding it.
+            active = True
         if recognition.intent == Intent.RESCHEDULE and active and c.current_intent in (Intent.CREATE, Intent.AVAILABILITY) and not parsed.entities.reference:
             recognition = Recognition(Intent.MODIFY, "context.draft_correction")
+        if c.state == State.CONFIRMING and c.proposed_action and not found and not parsed.issues and recognition.intent == c.current_intent and confirms_action(text, c.current_intent):
+            recognition = Recognition(Intent.CONFIRM, "confirmation.explicit_action")
 
         if recognition.intent == Intent.CONFIRM and not found and not parsed.issues:
             if c.state != State.CONFIRMING or not c.proposed_action:

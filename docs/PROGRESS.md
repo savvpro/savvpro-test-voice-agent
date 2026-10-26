@@ -20,14 +20,14 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 
 | Check | Actual result |
 | --- | --- |
-| `.venv/Scripts/python -m pytest` | **117 passed** after the spoken-conversation follow-up, one upstream Starlette TestClient/httpx deprecation warning; no failures |
+| `.venv/Scripts/python -m pytest` | **156 passed** after both spoken-conversation follow-ups, one upstream Starlette TestClient/httpx deprecation warning; no failures |
 | `npm run build` in frontend | Passed production compilation, type validation and static-page generation; Next.js 15.5.28 |
 | `npm run typecheck` | Passed |
 | `PLAYWRIGHT_CHANNEL=msedge npm run test:e2e` (PowerShell environment equivalent) | **6 passed**, using installed headless Edge and a real isolated fixed-clock backend |
 | `npm audit --audit-level=high` | **0 vulnerabilities** after PostCSS 8.5.31 override |
 | `.venv/Scripts/python -m pip check` | No broken requirements |
 | `git diff --check` | Passed; Git emitted its normal Windows LF/CRLF notice |
-| Source/documentation credential-pattern scan | 41 files scanned after the follow-up, 0 findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
+| Source/documentation credential-pattern scan | 42 files scanned after the second follow-up, 0 findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
 | Assessment preservation | `TASK.md` blob hash exactly matches HEAD; branch remains `candidate-TUAHASHAIKH` |
 
 Backend tests include actual state transitions, relative/spoken date/time parsing, uncertainty, corrections, service duration, opening/closing boundaries, explicit confirmations, conflicts, two independent application instances confirming concurrently, repeated request receipts, stale revisions/appointment versions, isolation, persistence after restart, UTC storage, configured business timezone, rollback after simulated commit failure, and prevention of partial rescheduling after caught validation errors.
@@ -41,6 +41,14 @@ The user's transcript exposed narrow booking phrases, filler words included in n
 The follow-up retains a session's last verified reference, supports ordinary booking requests, asks targeted clarification after unclear availability follow-ups, cleans bounded name fillers, and selects brief topic-specific business replies. All booking writes still require explicit confirmation. No LLM or fuzzy transcription-to-action guess was introduced.
 
 The earlier production build and six browser-test results above predate this follow-up. The user had running app servers on ports 3000/8000; those were preserved, and the browser suite was not rerun against its conflicting default ports. The new spoken-conversation cases exercise the actual HTTP API and database with an isolated fixed clock. Frontend executable behavior was unchanged; its session type gained the remembered reference field.
+
+## Second follow-up: incomplete time claims and availability handoff
+
+The next transcript exposed “around 40” being ignored during availability, “Yes do it at 4:30 PM” losing the selected time, “I said yes book it” failing intent recognition, spaced “4 30 PM to 5 30 PM” failing extraction, and “Make a new booking” being rejected after cancellation. Added 39 cases, including the full conversation through booking, rescheduling, cancellation and a separate new booking. The initial targeted run reproduced 25 failures; 5 of its initial 30 cases already passed. The final full suite passed **156 tests**.
+
+The fix normalizes bounded repair prefixes consistently, supports spaced hour/minute tokens, rejects unparsed numeric time claims, and merges/rechecks details supplied after availability. Affirmatives with changed details never directly commit a write; exact matching affirmative action phrases can confirm an already complete proposal. New tests also protect against stale availability, compound action authorization, negation, name pollution and repaired cancellation targeting an older booking. Garbled services/actions remain clarification cases rather than guessed commands.
+
+One intermediate Pytest attempt failed with a transient MemoryError during import/error reporting; a direct backend import succeeded and subsequent targeted/full runs completed. An early assertion also expected an internal confirmation rule instead of the public `commit.confirmed` decision; it was corrected to assert the actual API decision and `CONFIRM` intent. No frontend code or dependencies changed in this follow-up. The user's running app servers were preserved, and browser/audio checks were not rerun.
 
 ## Remaining manual actions and limits
 

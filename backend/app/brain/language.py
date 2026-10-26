@@ -14,6 +14,28 @@ def normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip(" .!?\t\n")
 
 
+def intent_text(text: str) -> str:
+    """Remove bounded spoken repair prefixes without stripping negation."""
+    t = re.sub(r"[,;]+", " ", normalize(text))
+    t = re.sub(r"\s+", " ", t).strip()
+    return re.sub(r"^(?:(?:all right|alright|well|so|uh|um|i said|i already told you(?: that)?)[,\s]+)+", "", t)
+
+
+AFFIRMATIVE = r"(?:yes|yeah|yep|sure|okay|ok)"
+BOOKING_OBJECT = r"(?:(?:a|an|my|the)\s+)?(?:(?:new|another)\s+)?(?:booking|appointment|reservation)"
+
+
+def confirms_action(text: str, intent: Intent) -> bool:
+    """A bounded affirmative action phrase may confirm an existing proposal."""
+    verbs = {Intent.CREATE: r"(?:book|reserve|schedule)",
+             Intent.RESCHEDULE: r"(?:reschedule|move)", Intent.CANCEL: "cancel"}
+    verb = verbs.get(intent)
+    if not verb:
+        return False
+    target = r"(?:it|(?:this|that)(?: (?:slot|appointment|booking))?)"
+    return bool(re.fullmatch(rf"{AFFIRMATIVE}(?: please)? {verb} {target}(?: please)?", intent_text(text)))
+
+
 @dataclass
 class Recognition:
     intent: Intent
@@ -21,25 +43,23 @@ class Recognition:
 
 
 def recognize(text: str, active: bool = False) -> Recognition:
-    t = normalize(text)
-    # Discourse markers do not change the request: "All right, make a booking".
-    t = re.sub(r"^(?:(?:all right|alright|well|so|uh|um)[,\s]+)+", "", t)
+    t = intent_text(text)
     rules = [
         (Intent.END, "control.end", r"(?:goodbye|bye|end (?:the )?(?:call|conversation)|stop|hang up)"),
         (Intent.REPEAT, "control.repeat", r"(?:repeat(?: that)?|say that again|pardon|what did you say)"),
         (Intent.DENY, "confirmation.deny", r"(?:no(?: thanks| thank you)?|nope|not yet|do not|don't|do not (?:book|cancel)|don't (?:book|cancel)|never mind|nevermind|forget it)"),
-        (Intent.CONFIRM, "confirmation.explicit", r"(?:(?:yes|yeah|yep|sure|okay|ok)(?: please)?|sounds good|confirm(?: it| booking| cancellation| reschedule)?|go ahead|that's correct|that is correct|correct|please confirm)"),
+        (Intent.CONFIRM, "confirmation.explicit", rf"(?:{AFFIRMATIVE}(?: please)?(?: (?:do it|go ahead))?|sounds good|confirm(?: it| booking| cancellation| reschedule)?|(?:please )?do it|go ahead|that's correct|that is correct|correct|please confirm)"),
     ]
     for intent, rule, pattern in rules:
         if re.fullmatch(pattern, t):
             return Recognition(intent, rule)
-    if re.search(r"\b(?:do not|don't|never)\s+(?:want (?:you )?to\s+)?(?:cancel|book|reschedule|make (?:a|an) (?:booking|appointment))\b|\b(?:do not|don't) want (?:a|an) (?:haircut|beard trim|appointment)\b", t):
+    if re.search(rf"\b(?:do not|don't|never)\s+(?:want (?:you )?to\s+)?(?:cancel|book|reschedule|(?:make|arrange)\s+{BOOKING_OBJECT})\b|\b(?:do not|don't) want (?:a|an) (?:haircut|beard trim|appointment)\b", t):
         return Recognition(Intent.DENY, "action.negated")
     if re.search(r"\breference\b", t) and re.search(r"\b(?:where|find|what|don't know|do not know|cannot see|can't see|don't have)\b", t):
         return Recognition(Intent.INFO, "booking.reference_help")
     if re.search(r"\b(?:have you (?:booked|scheduled|reserved|cancelled|canceled|rescheduled)|did you (?:book|schedule|reserve|cancel|reschedule)|is (?:my|the|that) (?:booking|appointment) (?:confirmed|booked|cancelled|canceled)|booking status)\b", t):
         return Recognition(Intent.INFO, "booking.status_question")
-    if re.search(r"\b(?:hours|prices?|cost|how much|services|address|where are you|when do you open|what time do you (?:open|close)|what do you offer)\b", t) or re.search(r"\bhow (?:(?:do|can) i |to )(?:cancel|book|reschedule|make (?:a|an) (?:booking|appointment))\b", t):
+    if re.search(r"\b(?:hours|prices?|cost|how much|services|address|where are you|when do you open|what time do you (?:open|close)|what do you offer)\b", t) or re.search(rf"\bhow (?:(?:do|can) i |to )(?:cancel|book|reschedule|(?:make|arrange)\s+{BOOKING_OBJECT})\b", t):
         return Recognition(Intent.INFO, "business.question")
     actions = []
     if re.search(r"\b(?:cancel|remove|delete)\s+(?:(?:my|the|an|this|a)\s+)?(?:appointment|booking|reservation|it|that|nl[- ]?[a-z0-9]{8})\b|^cancel$", t):
@@ -49,7 +69,7 @@ def recognize(text: str, active: bool = False) -> Recognition:
     if re.search(r"\b(?:availability|available|openings?|free slots?)\b", t):
         actions.append(Intent.AVAILABILITY)
     booking_command = r"^(?:(?:yes|yeah|yep|okay|ok|sure|please)[,\s]+)*(?:book|schedule|reserve)\b"
-    booking_request = r"\b(?:to|can you|could you|please|let's|and) (?:book|schedule|reserve)\b|\b(?:make|arrange)\s+(?:a|an|my|the)\s+(?:booking|appointment|reservation)\b"
+    booking_request = rf"\b(?:to|can you|could you|please|let's|and) (?:book|schedule|reserve)\b|\b(?:make|arrange)\s+{BOOKING_OBJECT}\b"
     service_request = r"\b(?:want|need|like|can i|could i)\s+(?:you to\s+|to\s+)?(?:(?:make|book|get|have|schedule|reserve)\s+)?(?:a|an)\s+(?:haircut|hair cut|beard trim|appointment)\b"
     if re.search(booking_command, t) or re.search(booking_request, t) or re.search(service_request, t):
         actions.append(Intent.CREATE)
@@ -57,6 +77,10 @@ def recognize(text: str, active: bool = False) -> Recognition:
         return Recognition(Intent.UNKNOWN, "action.multiple_requests")
     if actions:
         return Recognition(actions[0], "action." + actions[0].name.lower())
+    if re.match(rf"^{AFFIRMATIVE}\s+(?:please\s+)?(?:(?:do it|go ahead)\b|(?:at|around|about|on|for|today|tomorrow)\b)", t):
+        # An affirmative with details can revise a proposal, never directly
+        # confirm it. The engine applies the details and requests fresh review.
+        return Recognition(Intent.MODIFY, "confirmation.with_details")
     if t in ("i said", "no i said") or re.search(r"\b(?:actually|instead|meant|make it|change that|change (?:the )?(?:time|date|service|name)|start over|restart)\b", t):
         return Recognition(Intent.MODIFY, "context.correction")
     return Recognition(Intent.UNKNOWN, "context.details" if active else "fallback.unknown")
@@ -143,15 +167,18 @@ def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting
     # Convert spoken times before running one numeric grammar.
     time_text = re.sub(r"\bhalf past (" + NUMBER_PATTERN + r")\b", lambda m: f"{NUMBERS.get(m[1], m[1])}:30", date_clean)
     time_text = re.sub(r"\bquarter past (" + NUMBER_PATTERN + r")\b", lambda m: f"{NUMBERS.get(m[1], m[1])}:15", time_text)
-    time_text = re.sub(r"\b(" + "|".join(NUMBERS) + r") (thirty|fifteen|forty five)\b",
-                       lambda m: f"{NUMBERS[m[1]]}:{ {'thirty': '30', 'fifteen': '15', 'forty five': '45'}[m[2]]}", time_text)
+    time_text = re.sub(r"\b(" + NUMBER_PATTERN + r") (thirty|fifteen|forty five)\b",
+                       lambda m: f"{NUMBERS.get(m[1], m[1])}:{ {'thirty': '30', 'fifteen': '15', 'forty five': '45'}[m[2]]}", time_text)
     for word, number in NUMBERS.items():
         time_text = re.sub(rf"\b{word}\b", str(number), time_text)
     time_text = time_text.replace("o'clock", "")
+    # Speech recognition commonly omits a colon: "five 30 PM" -> "5:30 PM".
+    # Never join alternatives such as "4 or 5 PM" or guess a missing digit.
+    time_text = re.sub(r"(?<![\w:/-])(\d{1,2})\s+(\d{2})(?![\w:/-])", r"\1:\2", time_text)
     candidates: set[tuple[int, int, str]] = set()
     for match in re.finditer(r"(?<![\w/-])(\d{1,2})(?::(\d{2}))?\s*(am|pm)?(?![\w/-])", time_text):
         prefix = time_text[:match.start()]
-        has_context = bool(match[2] or match[3] or re.search(r"\b(?:at|to|make it|for)\s*$", prefix) or expecting_time or re.fullmatch(r"\s*\d{1,2}\s*(?:instead)?\s*", time_text))
+        has_context = bool(match[2] or match[3] or re.search(r"\b(?:at|to|make it|for|around|about|approximately|roughly)\s*$", prefix) or expecting_time or re.fullmatch(r"\s*\d{1,2}\s*(?:instead)?\s*", time_text))
         if has_context:
             candidates.add((int(match[1]), int(match[2] or 0), match[3] or ""))
     times = set()
@@ -179,11 +206,13 @@ def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting
     elif times:
         e.time = next(iter(times))
         e.period = None
+    if not e.time and "time" not in issues and re.search(r"\b(?:at|around|about|approximately|roughly)\s+(?:\d|thirteen\b|fourteen\b|fifteen\b|sixteen\b|seventeen\b|eighteen\b|nineteen\b|twenty\b|thirty\b|forty\b|fifty\b)", time_text):
+        issues["time"] = "I couldn't interpret that time. Please say the full time, such as 4:30 PM."
     if re.search(r"\b(?:at|to)\s+\d{1,2}:\d{1}(?!\d)", time_text):
         issues["time"] = "Please give the complete time, for example 5:30 PM."
 
     name_match = re.search(r"\b(?:my name is|name is|name's|i am|i'm|under the name|call me)\s+([a-z][a-z '\-]{0,79})", t)
-    candidate = name_match[1] if name_match else (text.strip() if expecting_name else "")
+    candidate = name_match[1] if name_match else (intent_text(text) if expecting_name else "")
     # Full-string names only; corrections, requests and entities cannot become names.
     if candidate and not (dates or candidates or e.service or e.reference or issues):
         candidate = re.sub(r"[.!?]+$", "", candidate).strip()
