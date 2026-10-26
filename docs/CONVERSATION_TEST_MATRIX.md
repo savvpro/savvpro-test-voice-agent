@@ -1,6 +1,6 @@
 # Conversation validation matrix
 
-The deterministic brain needs more than examples that mirror reported transcripts. These contrast sets vary intent, exclusions, target scope and repair order. They were authored by the same coding agent; independent human evaluation is still pending. Current executed totals are **398 backend tests and 26 browser tests**; see [PROGRESS.md](PROGRESS.md) for environments and limits.
+The deterministic brain needs more than examples that mirror reported transcripts. These contrast sets vary intent, exclusions, target scope and repair order. They were authored by the same coding agent; independent human evaluation is still pending. Current executed totals are **398 backend tests and 28 browser tests**; see [PROGRESS.md](PROGRESS.md) for environments and limits.
 
 | Family | Contrasts / failure cases | Automated evidence |
 | --- | --- | --- |
@@ -16,6 +16,7 @@ The deterministic brain needs more than examples that mirror reported transcript
 | Browser failure recovery | Blocked reads/writes/removals, malformed cached request, lost committed response without storage, unreadable response, offline/retry indicators | [recovery.spec.ts](../frontend/tests/recovery.spec.ts) |
 | Authoritative appointment | Appointment view keeps saved fields separate from a proposed move; abandoning a proposal preserves saved details | [recovery.spec.ts](../frontend/tests/recovery.spec.ts) |
 | Workspace and first-turn suggestions | Navigation and Inspector resize independently; drafts survive navigation; mobile drawer dismisses; two centered suggestions disappear after a turn, stay hidden on reload and return for New session | [workspace.spec.ts](../frontend/tests/workspace.spec.ts) |
+| Appointment card and management | Empty/draft/confirmed/cancelled cards; actual saved duration/catalog price; no Appointment Inspector toggle; reschedule/cancel return to chat and preserve saved details until confirmation | [workspace.spec.ts](../frontend/tests/workspace.spec.ts), [recovery.spec.ts](../frontend/tests/recovery.spec.ts) |
 | Studio services workspace | Dedicated active tab instead of a popup; catalog and combo saving; desktop/mobile themes; unsent draft preserved; service booking returns to chat without bypassing collection/confirmation | [workspace.spec.ts](../frontend/tests/workspace.spec.ts) |
 | Interaction and speech adapter | Keyboard focus, keyboard slot choice with the Inspector closed, 360/390/768px layouts, touch heights, replay/language and synthesis failure | [accessibility.spec.ts](../frontend/tests/accessibility.spec.ts) |
 

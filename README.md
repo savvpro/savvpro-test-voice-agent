@@ -118,7 +118,7 @@ The centered chat is the main workspace. The sidebar starts as an icon rail and 
 
 **Studio services** in the sidebar opens a dedicated catalog with prices, durations, the combo saving and opening hours. **Book** starts the selected service in the conversation; dates, times and confirmation still go through the same backend workflow. **Start a conversation** returns to chat and preserves an unsent draft.
 
-**Studio services** in the sidebar opens a dedicated catalog with prices, durations, the combo saving and opening hours. **Book** starts the selected service in the conversation; dates, times and confirmation still go through the same backend workflow. **Start a conversation** returns to chat and preserves an unsent draft.
+**Appointment** shows a centered empty state, a draft as details arrive, or a saved card with status, reference, service, local date/time, customer, duration and catalog price. The empty-state booking shortcut and saved **Reschedule**/**Cancel booking** buttons return to chat and use the normal confirmation flow. Proposed changes remain separate from saved details; cancelled appointments keep their receipt and hide management buttons. The Decision Inspector button appears only in chat; Appointment keeps **Back to conversation**.
 
 Microphone, spoken-reply toggle, **Listen again**, **Speech language** and stop-audio controls live in the chat bar. US, UK and Pakistan English depend on browser support. Tap the mic for each turn; typing restores focus to the input. The theme button switches between warm neutral light/dark palettes and remembers the preference when storage works. A storage warning means the live tab remains usable, but recovery after closing/reloading may be unavailable.
 

@@ -24,7 +24,7 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 | `npm run build` in isolated frontend copy | Passed production compilation, type validation and static-page generation; Next.js 15.5.28. Preserved the running development build. |
 | `npm run typecheck` | Passed |
 | `npm run format:check` | Passed for frontend source, components, tests and configuration |
-| `PLAYWRIGHT_CHANNEL=msedge npm run test:e2e` (PowerShell environment equivalent) | **26 passed**, using the committed runner, an isolated production build, ports 3011/8011 and a real fixed-clock disposable backend. User servers on 3000/8000 were preserved. |
+| `PLAYWRIGHT_CHANNEL=msedge npm run test:e2e` (PowerShell environment equivalent) | **28 passed**, using the committed runner, an isolated production build, ports 3011/8011 and a real fixed-clock disposable backend. User servers on 3000/8000 were preserved. |
 | Browser target protection | Runner refused a production build targeting a different backend port before launching test servers |
 | `npm audit --audit-level=high` | **0 vulnerabilities** after PostCSS 8.5.31 override |
 | `.venv/Scripts/python -m pip check` | No broken requirements |
@@ -36,6 +36,14 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 Backend tests include actual state transitions, relative/spoken date/time parsing, uncertainty, corrections, service duration, opening/closing boundaries, explicit confirmations, conflicts, two independent application instances confirming concurrently, repeated request receipts, stale revisions/appointment versions, isolation, persistence after restart, UTC storage, configured business timezone, rollback after simulated commit failure, and prevention of partial rescheduling after caught validation errors.
 
 Browser tests cover typed booking/corrections and raw trace, rescheduling/cancellation, a lost response after a real commit followed by reload/retry, storage exceptions and corrupt data, same-tab retry without storage, saved/proposed separation, network status/recovery, unreadable responses, keyboard focus and selectable slots. Responsive checks cover 360/390/768 pixels and minimum control sizes. Speech API tests cover sequencing, permission denial, replay/language selection and synchronous synthesis failure. The production frontend and backend are real; speech APIs and explicit fault scenarios are mocked. Desktop/mobile screenshots were generated and inspected. Test servers were stopped by suite teardown.
+
+## Appointment card redesign
+
+Updated Appointment to the supplied empty/saved card layout: centered empty state and booking shortcut; draft details; status/reference header, service, readable business-local date/time, customer, actual saved duration and current catalog price; management actions and timezone. Back to conversation is in the page header. At the candidate's follow-up request, the Decision Inspector button is hidden on Appointment and remains available in chat.
+
+Reschedule and Cancel booking send ordinary turns with the saved reference, then return to chat. A separate proposed-change region preserves the original saved fields until explicit confirmation. Cancelling keeps the saved receipt and removes management controls. The empty-state shortcut starts collection through the existing booking flow. No backend or dependency changes were required.
+
+Added two complete browser cases at 390px and 1440px covering empty/draft/saved/cancelled cards, both theme screenshots, Inspector-button absence, booking shortcut, saved duration/price, reschedule rejection and cancellation confirmation. Existing date assertions now check semantic time attributes, preserving exact saved timestamps independently of the new readable presentation. The production build/type validation, formatting and **28 browser tests passed**; screenshots were inspected. A test run interrupted before completion was rerun rather than reported as successful. The unchanged backend's latest result remains 398 passed. Physical audio and remote CI remain pending; commits are local only.
 
 ## Dedicated Studio services workspace
 
