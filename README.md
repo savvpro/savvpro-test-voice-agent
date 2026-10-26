@@ -1,83 +1,120 @@
-# Step-by-Step Guide: How to Fork, Clone, and Submit Your Assessment
+# Bright Smile Dental – Voice Assistant
 
-**Repository:** https://github.com/savvpro/savvpro-test-voice-agent
+A voice assistant that does a real phone job from start to end: **booking, moving and cancelling
+dental appointments**. The caller talks, the browser turns speech into text, a Python "brain"
+decides what to do, and the browser reads the reply out loud.
 
----
+```
+Caller speaks -> Speech to text (browser) -> Brain (Python rules) -> Text to speech (browser) -> Caller hears
+```
 
-## Step 1: Fork the Repository
+The brain is plain code (regexes, lookup tables, a state machine). **No GPT, Claude, Gemini or any
+other AI model makes decisions.** See [DESIGN.md](DESIGN.md) for how it works.
 
-1. Go to the repository: https://github.com/savvpro/savvpro-test-voice-agent
-2. Click the **Fork** button in the top-right corner.
-3. This will create a copy of the repository in your GitHub account.
+## Requirements
 
----
+- Python 3.10+
+- Node.js 18+
+- Chrome or Edge for voice input (Web Speech API). Other browsers can still use the text box.
+- No API keys or accounts are needed. All data is fake.
 
-## Step 2: Clone Your Fork
+## Get the project
 
-1. Open your forked repository in your GitHub account.
-2. Click the green **Code** button and copy the URL.
-3. Run the following commands:
+Fork `savvpro/savvpro-test-voice-agent` on GitHub, then clone your fork:
 
 ```bash
-git clone https://github.com/your-username/savvpro-test-voice-agent.git
+git clone https://github.com/<your-github-username>/savvpro-test-voice-agent.git
 cd savvpro-test-voice-agent
+git switch -c candidate-<your-github-username>
 ```
 
----
+Replace `<your-github-username>` with your GitHub username. Run these commands from the repository root. The examples below use PowerShell.
 
-## Step 3: Read the Task
+## Run it
 
-Open and read **TASK.md** carefully before writing any code.
+Backend (terminal 1, PowerShell):
 
-- TASK.md URL: https://github.com/savvpro/savvpro-test-voice-agent/blob/main/TASK.md
-
----
-
-## Step 4: Create a New Branch
-
-Branch pattern: `candidate-<your-github-username>`
-
-```bash
-git checkout -b candidate-<your-github-username>
+```powershell
+cd backend
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
-**Example:**
-```bash
-git checkout -b candidate-johndoe
+If PowerShell blocks virtual environment activation, you can run the environment's Python directly:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 
----
+Frontend (terminal 2, from the repository root):
 
-## Step 5: Complete the Task
+```powershell
+cd frontend
+npm install
+npm run dev
+```
 
-Build the full application on your branch.
+On Windows, `npm` commands run in PowerShell as written. Open http://localhost:5173, press
+**Start call**, allow the microphone, and talk.
+The right-hand panel shows what the assistant understood and which rule it used.
 
----
+## Submit your assessment
 
-## Step 6: Push Your Branch
+Commit and push your work to your candidate branch:
 
 ```bash
 git add .
 git commit -m "feat: complete voice-agent assessment"
-git push origin candidate-<your-github-username>
+git push -u origin candidate-<your-github-username>
 ```
 
----
+Then open a pull request from your fork's candidate branch to
+`savvpro/savvpro-test-voice-agent:main`. Follow the assessment instructions for the PR title and
+base/head repositories. Complete only this assessment; do not submit Test 1 as well.
 
-## Step 7: Create a Pull Request
+## Try these
 
-1. Go to your **forked** repository on GitHub (`https://github.com/your-username/savvpro-test-voice-agent`).
-2. Click **Compare & pull request** (GitHub will show this banner after you push your branch).
-3. Ensure the following settings in the PR form:
-   - **Base repository:** `savvpro/savvpro-test-voice-agent` ← the original repo
-   - **Base branch:** `main`
-   - **Head repository:** `your-username/savvpro-test-voice-agent` ← your fork
-   - **Compare branch:** `candidate-<your-github-username>`
-4. Use the title: `feat: complete voice-agent assessment`
-5. Submit the pull request.
+- "I'd like a cleaning next Tuesday afternoon" (then answer its questions)
+- "Cancel my appointment" -> name: "Sara Khan" (one fake demo appointment is created at startup)
+- Change your mind: say "actually make it 4 PM" when it asks you to confirm
+- Ask for a Sunday, a time in the past, or 3:30 PM and see how it reacts
 
-> 💡 **Tip:** If you don't see the banner, go to the original repo (`savvpro/savvpro-test-voice-agent`), click the **Pull requests** tab, then click **New pull request** → **compare across forks**.
+## Tests
 
----
+```powershell
+cd backend
+python -m pytest                      # NLU, dialogue flows, API
+cd ..\frontend
+npm test                              # API client
+npm run build                         # production frontend build
+```
 
-> ⚠️ **Important:** No submissions will be accepted after the deadline.
+Run the Python and frontend commands in separate terminals if you want to keep the backend server
+running while testing the frontend.
+
+## Project layout
+
+```
+backend/app/nlu.py        understands text: dates, times, services, names, intents
+backend/app/scheduler.py  fake appointment book and opening hours
+backend/app/brain.py      the dialogue manager (state machine) and its reasoning trace
+backend/app/main.py       FastAPI endpoints
+backend/tests/            pytest tests
+frontend/src/             React app (call screen, speech hook, API client)
+```
+
+## API
+
+| Method | Path | What it does |
+|---|---|---|
+| POST | `/api/sessions` | Start a call, returns the greeting |
+| POST | `/api/sessions/{id}/turn` | Send `{ "text": "..." }`, get the reply, state, slots and trace |
+| GET | `/api/health` | Health check |
+
+## Known limits
+
+Sessions and appointments live in memory (they reset when the server restarts). Voice input uses
+the browser's Web Speech API, which needs an internet connection in Chrome.
