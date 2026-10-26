@@ -1,3 +1,59 @@
+# Restaurant reservation assistant
+
+The React + Vite frontend provides a responsive chat interface, safe message
+retries, and reservation summaries. The Python backend contains a deterministic
+conversation brain, SQLite storage, and FastAPI conversation endpoints.
+See [the frontend guide](frontend/README.md) for setup and frontend tests,
+[the API guide](backend/API.md) for backend setup,
+request/response examples, retry behavior, and current limitations, and
+[the database guide](backend/DATABASE.md) for the fictional restaurant policy.
+
+Project documentation:
+
+* [DESIGN.md](DESIGN.md): architecture, FSM/parser rules, storage safeguards, and limitations.
+* [AI_USAGE.md](AI_USAGE.md): known Codex assistance; verified token totals and usage evidence are still missing.
+* [TESTING.md](TESTING.md): start commands, manual booking/voice checks, and edge cases.
+* [SUBMISSION.md](SUBMISSION.md): fresh verification results, requirement checklist, full file inventory, Git state, and submission commands.
+
+The implementation has been verified locally. The assignment is **not fully
+submission-ready** until genuine AI token usage evidence is supplied and the
+required pull request is opened after approval. Real-device microphone/audio
+quality also remains a manual verification item.
+
+Verified local tools: Python 3.13.7, Node 24.11.1, npm 11.6.2. First-time Windows
+setup, Terminal 1:
+
+```powershell
+Set-Location 'D:\savvpro-test-voice-agent\backend'
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+On later runs, use only the server command from that directory. Keep one backend
+worker; reloads/restarts lose active conversations but retain SQLite bookings.
+The server initializes its database automatically. In Terminal 2:
+
+```powershell
+Set-Location 'D:\savvpro-test-voice-agent\frontend'
+npm ci
+npm run dev
+```
+
+Open `http://127.0.0.1:5173`. Vite proxies `/api` to FastAPI on port 8000.
+Backend interactive API docs are at `http://127.0.0.1:8000/docs`.
+No application API keys are required. See TESTING.md for a scratch-database option.
+
+From `backend`, run `.\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider`.
+From `frontend`, use `npm test`, `npm run build`, and `npm run test:e2e`.
+If using the backend venv for browser tests, set `PYTHON` to its executable as
+shown in TESTING.md. Automated database/API/browser tests use temporary files.
+
+Optional browser voice controls are included: dictate a message, review/edit the
+recognized text, then Send; enable spoken replies to hear future assistant
+messages. Text chat remains available. See the frontend guide for browser
+support, microphone permissions, manual voice checks, and privacy limitations.
+
 # Step-by-Step Guide: How to Fork, Clone, and Submit Your Assessment
 
 **Repository:** https://github.com/savvpro/savvpro-test-voice-agent
