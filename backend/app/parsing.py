@@ -48,7 +48,6 @@ ORDINAL_WORDS: dict[str, int] = {
     **{f"twenty-{w}": 20 + i for i, w in enumerate(_UNITS, start=1)},
     "thirty-first": 31,
 }
-_ORD_RE = re.compile(r"\b(" + "|".join(sorted(ORDINAL_WORDS, key=len, reverse=True)) + r")\b")
 
 _MONTH = (
     r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|"
@@ -66,9 +65,58 @@ _THE_DAY = re.compile(r"\b(\d{1,2})(?:st|nd|rd|th)\b")
 _WEEKDAY = re.compile(r"\b(?:(next|this)\s+)?(" + "|".join(_DAYS) + r")\b")
 
 
+_MONTH_NC = "(?:" + _MONTH[1:]
+_ORD = "|".join(sorted(ORDINAL_WORDS, key=len, reverse=True))
+# an ordinal word is a day only after "the"/a month, or before "of <month>" ("the first one" is not)
+_ORD_AFTER = re.compile(
+    rf"\b(the|{_MONTH_NC})\s+({_ORD})\b(?!\s+(?:one|available|time|visit|slot|option|appointment))"
+)
+_ORD_OF = re.compile(rf"\b({_ORD})\s+of\s+(?={_MONTH_NC}\b)")
+_TENS = {
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
+}
+_TEEN_N = {
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+}
+_U = "|".join(number_words)
+_YEAR = re.compile(
+    rf"\b(nineteen|twenty)\s+(?:(?:oh|zero)\s+({_U})|({'|'.join(_TENS)})(?:[\s-]+({_U}))?"
+    rf"|({'|'.join(_TEEN_N)}))\b"
+)
+_YEAR2K = re.compile(rf"\btwo thousand(?:\s+(?:and\s+)?({_U}))?\b")
+
+
+def _year(m: re.Match[str]) -> str:
+    rest = (
+        number_words.get(m[2] or "", 0)
+        or _TENS.get(m[3] or "", 0) + number_words.get(m[4] or "", 0)
+        or _TEEN_N.get(m[5] or "", 0)
+    )
+    return str((1900 if m[1] == "nineteen" else 2000) + rest)
+
+
 def _norm(text: str) -> str:
-    """Lowercase, and turn ordinal words into digits ('fourteenth' -> '14th')."""
-    return _ORD_RE.sub(lambda m: f"{ORDINAL_WORDS[m.group(1)]}th", text.lower())
+    """Lowercase; spoken years -> digits; day ordinal words -> digits ('fourteenth' -> '14th')."""
+    t = _YEAR.sub(_year, text.lower())
+    t = _YEAR2K.sub(lambda m: str(2000 + number_words.get(m[1] or "", 0)), t)
+    t = _ORD_AFTER.sub(lambda m: f"{m[1]} {ORDINAL_WORDS[m[2]]}th", t)
+    return _ORD_OF.sub(lambda m: f"{ORDINAL_WORDS[m[1]]}th of ", t)
 
 
 def _ymd(t: str) -> tuple[int | None, int, int] | None:
@@ -134,15 +182,23 @@ def parse_dob(text: str, today: date | None = None) -> date | None:
 
 
 _NUM = "|".join(number_words)
-_AMPM = re.compile(r"\b(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\b")
+_HR = r"(?<!\d)(1[0-2]|0?[1-9])"
+_AMPM = re.compile(rf"{_HR}(?:[:\s]([0-5]\d))?\s*([ap])\.?m\b")
+_IN_THE = re.compile(rf"{_HR}(?::([0-5]\d))?\s+in the (morning|afternoon)\b")
 _HHMM = re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b")
-_OCLOCK = re.compile(rf"\b(\d{{1,2}}|{_NUM})\s+o'?clock\b")
-_HALF = re.compile(rf"\b(half|quarter)\s+(past|to|after)\s+(\d{{1,2}}|{_NUM})\b")
-_AT = re.compile(r"\bat\s+(\d{1,2})\b")
+_OCLOCK = re.compile(r"\b(\d{1,2})\s+o'?clock\b")
+_HALF = re.compile(r"\b(half|quarter)\s+(past|to|after)\s+(\d{1,2})\b")
+_AT = re.compile(r"\bat\s+(\d{1,2})(?:[:\s]([0-5]\d)\b)?")
+_HOUR_W = re.compile(rf"\b({_NUM})\b")
+_MIN_W = re.compile(r"\b(forty[- ]five|fifteen|thirty)\b")
 
 
-def _hour(w: str) -> int:
-    return number_words.get(w) or int(w)
+def spoken_numbers(t: str) -> str:
+    """Hour words one..twelve and minute words fifteen/thirty/forty-five -> digits."""
+    t = _MIN_W.sub(
+        lambda m: "45" if m[1].startswith("forty") else {"fifteen": "15", "thirty": "30"}[m[1]], t
+    )
+    return _HOUR_W.sub(lambda m: str(number_words[m[1]]), t)
 
 
 def _bare(h: int) -> int:
@@ -151,24 +207,25 @@ def _bare(h: int) -> int:
 
 
 def parse_time(text: str) -> time | PartOfDay | None:
-    t = text.lower()
+    t = spoken_numbers(text.lower())
     try:
         if m := _AMPM.search(t):
-            h = int(m[1]) % 12 + (12 if m[3] == "p" else 0)
-            return time(h, int(m[2] or 0))
+            return time(int(m[1]) % 12 + (12 if m[3] == "p" else 0), int(m[2] or 0))
+        if m := _IN_THE.search(t):
+            return time(int(m[1]) % 12 + (12 if m[3] == "afternoon" else 0), int(m[2] or 0))
         if m := _HHMM.search(t):
             h, mi = int(m[1]), int(m[2])
             return time(_bare(h), mi)
         if m := _OCLOCK.search(t):
-            return time(_bare(_hour(m[1])))
+            return time(_bare(int(m[1])))
         if m := _HALF.search(t):
             delta = {"half": 30, "quarter": 15}[m[1]] * (-1 if m[2] == "to" else 1)
-            mins = _bare(_hour(m[3])) * 60 + delta
+            mins = _bare(int(m[3])) * 60 + delta
             return time(mins // 60, mins % 60)
         if re.search(r"\bnoon\b", t):
             return time(12)
         if m := _AT.search(t):
-            return time(_bare(int(m[1])))
+            return time(_bare(int(m[1])), int(m[2] or 0))
     except ValueError:
         return None
     if "morning" in t:

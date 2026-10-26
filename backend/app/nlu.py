@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from app.clinic import DOCTORS, SPECIALTY_SYNONYMS
-from app.parsing import _DAYS, _MONTHS, PartOfDay, parse_date, parse_dob, parse_time
+from app.parsing import _DAYS, _MONTHS, PartOfDay, parse_date, parse_dob, parse_time, spoken_numbers
 
 
 class Intent(StrEnum):
@@ -74,7 +74,7 @@ _INTENTS: list[tuple[Intent, re.Pattern[str]]] = [
     (
         Intent.EMERGENCY,
         re.compile(
-            r"chest pain|(can'?t|cannot|can not) breathe|trouble breathing|heavy bleeding|"
+            r"chest pain|bleeding (heavily|badly)|(can'?t|cannot|can not) breathe|trouble breathing|heavy bleeding|"
             r"bleeding a lot|unconscious|passed out|\bstroke\b|heart attack|overdose|suicidal|"
             r"kill myself"
         ),
@@ -98,11 +98,12 @@ _INTENTS: list[tuple[Intent, re.Pattern[str]]] = [
     (
         Intent.AFFIRM,
         re.compile(
-            r"\b(yes|yeah|yep|yup|correct|that'?s right|(?<!not )sure|sounds good|please do|ok|okay)\b"
+            r"(?<!not )\b(yes|yeah|yep|yup|correct|that'?s right|sure|sounds good|please do|ok|okay)\b"
         ),
     ),
 ]
 
+_FILLER = re.compile(r"^\W*(?:(?:uh|um|er|erm|well|oh|hi|hello|hey)\b\W*)+", re.IGNORECASE)
 _CLN = re.compile(r"\bC\s?L\s?N[\s-]?([A-Z0-9])\s?([A-Z0-9])\s?([A-Z0-9])\s?([A-Z0-9])\b")
 _DR = re.compile(r"\b(?:dr\.?|doctor)\s+([a-z'-]+)")
 _ANY = re.compile(r"\bany ?(doctor|one|body)\b|\bfirst available\b|\bdoesn'?t matter\b")
@@ -122,13 +123,13 @@ _CHOICES = {
     "three": 3,
     "last": -1,
 }
+_IM_PATTERN = re.compile(r"\bi(?:'m| am)\s+([a-z'-]+(?:\s+[a-z'-]+){0,3})", re.IGNORECASE)
 _NAME_PATTERNS = [
     re.compile(r"\bmy name(?:'s| is)\s+([a-z'-]+(?:\s+[a-z'-]+){0,3})", re.IGNORECASE),
     re.compile(r"\bname'?s\s+([a-z'-]+(?:\s+[a-z'-]+){0,3})", re.IGNORECASE),
     re.compile(
         r"^\W*(?:(?:hi|hello|hey)\W+)?this is\s+([a-z'-]+(?:\s+[a-z'-]+){0,3})", re.IGNORECASE
     ),
-    re.compile(r"\bi(?:'m| am)\s+([a-z'-]+(?:\s+[a-z'-]+){0,3})", re.IGNORECASE),
 ]
 # Words that end a captured name ("I'm looking", "Sara and I", "Sara tomorrow").
 _NON_NAME = (
@@ -218,19 +219,22 @@ def parse(text: str, today: dt.date, expecting: Slot | None = None) -> Parsed:
     if m := _CLN.search(text.upper()):
         ent.ref = "CLN-" + "".join(m.groups())
         text = (text[: m.start()] + " " + text[m.end() :]).strip()
+    text = _FILLER.sub("", text)
     low = text.lower()
 
     intent = next((i for i, rx in _INTENTS if rx.search(low)), Intent.UNKNOWN)
 
     # dates: anything with a past 4-digit year (or anything when asked for DOB) is a DOB
-    dob = parse_dob(low)
+    dob = parse_dob(low, today)
     if dob and (expecting == Slot.DOB or dob < today):
         ent.dob = dob
-    elif expecting != Slot.DOB:
+    elif expecting not in (Slot.DOB, Slot.CHOICE):
         ent.date = parse_date(low, today)
 
     if expecting != Slot.DOB:
-        tlow = re.sub(r"\bgood (morning|afternoon|evening)\b", " ", low)
+        tlow = spoken_numbers(re.sub(r"\bgood (morning|afternoon|evening)\b", " ", low))
+        if expecting in (Slot.TIME, Slot.CHOICE):  # "2 30" means 2:30 here
+            tlow = re.sub(r"(?<!\d)(\d{1,2}) (\d{2})(?!\d)", r"at \1:\2", tlow)
         if expecting == Slot.TIME and re.fullmatch(r"\d{1,2}", tlow.strip()):
             tlow = f"at {tlow.strip()}"
         t = parse_time(tlow)
@@ -250,13 +254,20 @@ def parse(text: str, today: dt.date, expecting: Slot | None = None) -> Parsed:
             None,
         )
 
-    for rx in _NAME_PATTERNS:
+    patterns = [*_NAME_PATTERNS, _IM_PATTERN] if expecting == Slot.NAME else _NAME_PATTERNS
+    for rx in patterns:
         if (m := rx.search(text)) and (name := _clean_name(m[1])):
             ent.name = name
             break
     if ent.name is None and expecting == Slot.NAME and intent == Intent.UNKNOWN:
         bare = re.sub(r"[.,!?]", "", text).strip()
-        if re.fullmatch(r"[A-Za-z'\- ]+", bare) and len(bare.split()) <= 4 and not ent.as_dict():
+        words = bare.lower().split()
+        if (
+            re.fullmatch(r"[A-Za-z'\- ]+", bare)
+            and 0 < len(words) <= 4
+            and not all(w in _NON_NAME for w in words)
+            and not ent.as_dict()
+        ):
             ent.name = bare.title()
 
     return Parsed(intent, ent)
