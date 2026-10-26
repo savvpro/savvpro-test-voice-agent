@@ -1,0 +1,80 @@
+# Vocabulary the NLU uses for rules, fuzzy matching and entity extraction.
+# All entries are lowercase and already in normalized form (see normalizer.py).
+
+departments:
+  General Medicine:
+    synonyms: [general medicine, general physician, general practitioner, gp, general doctor,
+               family doctor, family physician, physician, medicine department, medical specialist,
+               normal doctor, simple doctor, regular doctor, general checkup, medical checkup]
+    symptoms: [fever, flu, cold, cough, infection, checkup, check up, body pain, weakness, sugar,
+               diabetes, typhoid, stomach, vomiting]
+  Cardiology:
+    synonyms: [cardiology, cardio, cardiologist, cardiac, heart doctor, heart specialist,
+               heart department, dil ka doctor]
+    symptoms: [heart, blood pressure, bp, palpitations, cholesterol, ecg]
+  Dermatology:
+    synonyms: [dermatology, derma, dermatologist, skin doctor, skin specialist, skin department]
+    symptoms: [skin, acne, pimples, rash, eczema, hair fall, hair loss, allergy, itching]
+  Pediatrics:
+    synonyms: [pediatrics, paediatrics, pediatric, paediatric, pediatrician, paediatrician,
+               child specialist, children doctor, childrens doctor, kids doctor, child doctor,
+               baby doctor, bachon ka doctor]
+    symptoms: [child, children, kid, kids, baby, infant, toddler, vaccination]
+  Orthopedics:
+    synonyms: [orthopedics, orthopaedics, orthopedic, orthopaedic, ortho, orthopedist,
+               bone doctor, bone specialist, joint specialist, haddi ka doctor]
+    symptoms: [bone, bones, joint, joints, back pain, knee, knee pain, fracture, sprain, shoulder,
+               neck pain, arthritis]
+  ENT:
+    synonyms: [ent, e n t, ear nose throat, ear nose and throat, ent specialist, ear doctor,
+               throat doctor, nose doctor]
+    symptoms: [ear, ears, nose, throat, sore throat, sinus, tonsils, hearing, earache]
+  Gynecology:
+    synonyms: [gynecology, gynaecology, gynae, gyne, gynae doctor, gynecologist, gynaecologist,
+               lady doctor, women doctor, womens doctor, obstetrics, obgyn]
+    symptoms: [pregnancy, pregnant, periods, ultrasound, delivery]
+
+# Departments callers ask for that the clinic does NOT offer.
+unknown_departments: [dentist, dental, dentistry, teeth, tooth, eye doctor, eye specialist,
+                      ophthalmology, ophthalmologist, optician, psychiatry, psychiatrist,
+                      psychologist, neurology, neurologist, oncology, oncologist, urology,
+                      urologist, nephrology, kidney doctor, physiotherapy, physiotherapist,
+                      radiology, plastic surgery]
+
+# Vague times of day -> [start, end) in clinic hours.
+time_of_day:
+  early morning: ["09:00", "10:30"]
+  late morning: ["10:30", "13:00"]
+  morning: ["09:00", "13:00"]
+  subah: ["09:00", "13:00"]
+  before lunch: ["09:00", "13:00"]
+  after lunch: ["14:00", "17:00"]
+  afternoon: ["14:00", "17:00"]
+  dopahar: ["14:00", "17:00"]
+  late afternoon: ["15:20", "17:00"]
+  evening: ["15:00", "17:00"]
+  shaam: ["15:00", "17:00"]
+
+# Dropped by the normalizer. Keep this list to pure hesitation sounds:
+# words like "like" or "actually" carry meaning ("I'd like", "actually make it Friday").
+fillers: [um, umm, ummm, uh, uhh, uhm, er, erm, ah, ahh, hmm, hmmm, hm, mm, mmm]
+
+# Phrases for the fuzzy intent fallback (token_set_ratio).
+intent_keywords:
+  book_appointment: [book appointment, make appointment, new appointment, book a slot,
+                     see a doctor, appointment chahiye, take appointment, get appointment]
+  reschedule_appointment: [reschedule appointment, move my appointment, change my appointment,
+                           postpone appointment, shift my appointment, reschedule booking]
+  cancel_appointment: [cancel my appointment, cancel booking, cancel my booking,
+                       cancel appointment, cancle appointment, delete my appointment]
+  check_availability: [free slots, available slots, any availability, open slots,
+                       next available, is the doctor available, anything free]
+  clinic_hours: [opening hours, timings, what time open, when are you open, clinic timing,
+                 closing time, open on sunday]
+  clinic_location: [address, location, where is the clinic, directions, how to reach]
+  list_departments: [which departments, what departments, list of departments,
+                     what specialists, which specialties]
+  list_doctors: [which doctors, list of doctors, doctors available, who are the doctors,
+                 doctor names]
+  human_agent: [talk to human, real person, speak to receptionist, connect to staff, operator]
+  emergency: [emergency, chest pain, cant breathe, heavy bleeding, ambulance, unconscious]

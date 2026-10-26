@@ -1,0 +1,38 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Data & models
+*.db
+*.sqlite3
+backend/models/*
+!backend/models/.gitkeep
+# The NLU model is small (<1 MB) and committed so the app runs without a training step.
+!backend/models/nlu.joblib
+
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# local working files
+PLAN.md
+CLAUDE.md
+.claude/
+notes/

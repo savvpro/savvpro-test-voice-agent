@@ -1,0 +1,17 @@
+from enum import StrEnum
+
+
+class State(StrEnum):
+    GREETING = "GREETING"
+    IDENTIFY_TASK = "IDENTIFY_TASK"
+    LOOKUP_BOOKING = "LOOKUP_BOOKING"
+    COLLECT_SLOTS = "COLLECT_SLOTS"
+    OFFER_SLOTS = "OFFER_SLOTS"
+    CONFIRM = "CONFIRM"
+    DONE = "DONE"
+    HANDOFF = "HANDOFF"
+    EMERGENCY = "EMERGENCY"
+    END = "END"
+
+
+TERMINAL_STATES = frozenset({State.HANDOFF, State.EMERGENCY, State.END})
