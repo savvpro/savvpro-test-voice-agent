@@ -53,3 +53,15 @@ it('offers a new call on 404', async () => {
   expect(await screen.findByText(/This call has ended or expired/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Start new call' })).toBeInTheDocument()
 })
+
+it.each([
+  [new TypeError('Failed to fetch'), /Can’t reach the clinic line/, true],
+  [new api.ApiError(500, 'Internal error'), /Something went wrong on our side/, true],
+  [new api.ApiError(422, 'Unprocessable'), /Something went wrong on our side/, false],
+])('error notice for %s', async (err, text, retry) => {
+  vi.mocked(api.sendTurn).mockRejectedValue(err)
+  await startAndSend('hi')
+  expect(await screen.findByText(text)).toBeInTheDocument()
+  if (err instanceof api.ApiError) expect(screen.queryByText(/Can’t reach/)).not.toBeInTheDocument()
+  expect(!!screen.queryByRole('button', { name: 'Retry' })).toBe(retry)
+})

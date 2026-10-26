@@ -67,3 +67,7 @@ def test_seed_idempotent(conn: sqlite3.Connection) -> None:
     assert conn.execute("SELECT COUNT(*) FROM appointments").fetchone()[0] == n
     es = s.find_upcoming(conn, NOW, name="Emily Stone", dob=date(1992, 2, 29))
     assert [a.ref for a in es] == ["CLN-ES01", "CLN-ES02"]
+
+
+def test_refs_avoid_confusable_characters() -> None:
+    assert not set(s._REF_CHARS) & set("0O1I")

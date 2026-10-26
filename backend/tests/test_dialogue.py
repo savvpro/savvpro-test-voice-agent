@@ -1,4 +1,5 @@
 import sqlite3
+from dataclasses import asdict
 from datetime import datetime
 
 from app import dialogue
@@ -232,9 +233,9 @@ def test_state_roundtrip(conn: sqlite3.Connection) -> None:
     assert state.offers
 
 
-def test_decision_as_dict(conn: sqlite3.Connection) -> None:
+def test_decision_fields(conn: sqlite3.Connection) -> None:
     [(_, d)] = talk(conn, "book with Dr Patel")
-    assert d.as_dict() == {
+    assert asdict(d) == {
         "intent": "book",
         "entities": {"doctor_id": "patel"},
         "state": "collecting",
@@ -397,3 +398,35 @@ def test_repeating_taken_slot_while_offering_explains(conn: sqlite3.Connection) 
     state, turns = run(conn, *taken)
     assert turns[-1][1].action == "offer_slots" and "taken" in turns[-1][0]
     assert state.failures == 0
+
+
+# ---------- final review: hedged yes never executes; evening ----------
+
+
+def test_hedged_yes_at_cancel_never_cancels(conn: sqlite3.Connection) -> None:
+    for hedge in ("yes but keep it", "yes, wait", "yes actually", "yes hold on"):
+        turns = talk(conn, "cancel", "CLN-JC01", hedge)
+        assert turns[-1][1].action == "reprompt" and "Shall I cancel it?" in turns[-1][0]
+        assert find_upcoming(conn, NOW, ref="CLN-JC01") != []
+    turns = talk(conn, "cancel", "CLN-JC01", "yes but keep it", "yes")
+    assert turns[-1][1].action == "cancelled"
+
+
+def test_yes_actually_wait_hold_on_do_not_book(conn: sqlite3.Connection) -> None:
+    before = count(conn)
+    for hedge in ("yes actually", "yes, wait", "yeah hold on"):
+        turns = talk(conn, *BASE, hedge)
+        assert turns[-1][1].action == "ask_what_to_change"
+    assert count(conn) == before
+
+
+def test_evening_conflicts_with_earlier_readback(conn: sqlite3.Connection) -> None:
+    before = count(conn)
+    for base in (KHAN, BASE):  # 11 AM and 2 PM read-backs
+        state, turns = run(conn, *base, "yes, in the evening")
+        assert turns[-1][1].action == "offer_slots"
+        assert all(t[11:] >= "16:00" for _, t in state.offers[:1])
+    assert count(conn) == before
+    turns = talk(conn, "book with dr patel tomorrow at 4pm my name is sam lee", "march 4 1990",
+                 "yes, evening is good")  # fmt: skip
+    assert turns[-1][1].action == "booked"

@@ -4,7 +4,7 @@ import re
 from datetime import date, time, timedelta
 from typing import Literal
 
-PartOfDay = Literal["morning", "afternoon"]
+PartOfDay = Literal["morning", "afternoon", "evening"]
 
 number_words: dict[str, int] = {
     w: i
@@ -184,7 +184,7 @@ def parse_dob(text: str, today: date | None = None) -> date | None:
 _NUM = "|".join(number_words)
 _HR = r"(?<!\d)(1[0-2]|0?[1-9])"
 _AMPM = re.compile(rf"{_HR}(?:[:\s]([0-5]\d))?\s*([ap])\.?m\b")
-_IN_THE = re.compile(rf"{_HR}(?::([0-5]\d))?\s+in the (morning|afternoon)\b")
+_IN_THE = re.compile(rf"{_HR}(?::([0-5]\d))?\s+in the (morning|afternoon|evening)\b")
 _HHMM = re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b")
 _OCLOCK = re.compile(r"\b(\d{1,2})\s+o'?clock\b")
 _HALF = re.compile(r"\b(half|quarter)\s+(past|to|after)\s+(\d{1,2})\b")
@@ -212,7 +212,7 @@ def parse_time(text: str) -> time | PartOfDay | None:
         if m := _AMPM.search(t):
             return time(int(m[1]) % 12 + (12 if m[3] == "p" else 0), int(m[2] or 0))
         if m := _IN_THE.search(t):
-            return time(int(m[1]) % 12 + (12 if m[3] == "afternoon" else 0), int(m[2] or 0))
+            return time(int(m[1]) % 12 + (12 if m[3] != "morning" else 0), int(m[2] or 0))
         if m := _HHMM.search(t):
             h, mi = int(m[1]), int(m[2])
             return time(_bare(h), mi)
@@ -232,4 +232,6 @@ def parse_time(text: str) -> time | PartOfDay | None:
         return "morning"
     if "afternoon" in t:
         return "afternoon"
+    if "evening" in t:
+        return "evening"
     return None

@@ -7,7 +7,7 @@ from enum import StrEnum
 
 from app.clinic import CLOSE, OPEN, SLOT_MINUTES
 
-_REF_CHARS = string.ascii_uppercase + string.digits
+_REF_CHARS = "".join(c for c in string.ascii_uppercase + string.digits if c not in "0O1I")
 
 
 @dataclass(frozen=True)

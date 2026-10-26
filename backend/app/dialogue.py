@@ -25,7 +25,13 @@ _FLOWS: dict[Intent, Flow] = {
 # A flow word ("yes, book it") only confirms with a plain yes and no negation anywhere.
 _YES = re.compile(r"\b(yes|yeah|yep|yup)\b")
 _NEG = re.compile(r"\b(no|not|don'?t|never)\b")
-_CORRECTION = re.compile(r"\b(but|instead|rather|change|make it)\b")
+# "actually" hedges only straight after the yes ("yes, actually..."), not in "that's actually perfect"
+_CORRECTION = re.compile(
+    r"\b(but|instead|rather|change|make it|wait|hold on)\b"
+    r"|\b(yes|yeah|yep|yup|sure|ok|okay)\W+actually\b"
+)
+# where to look for openings; we close at 17:00, so "evening" means 4 PM onwards
+_POD_START = {"morning": time(9), "afternoon": time(13), "evening": time(16)}
 # ponytail: stop-list heuristic for "doctor <word>" that isn't a name; grow it as calls show misses
 _DR_WORD = re.compile(r"\b(?:dr\.?|doctor)\s+([a-z'-]+)")
 # fmt: off
@@ -65,9 +71,6 @@ class Decision:
     state: str
     action: str
     slots: dict[str, str]
-
-    def as_dict(self) -> dict[str, object]:
-        return asdict(self)
 
 
 # ---------- formatting ----------
@@ -321,7 +324,7 @@ def _collect(s: CallState, conn: Conn, now: datetime) -> Reply:
         return _ask(s, "ask_date", Slot.DATE)
     if t is None:
         if pod := sl.get("part_of_day"):
-            near = datetime.combine(day, time(9) if pod == "morning" else time(13))
+            near = datetime.combine(day, _POD_START[pod])
             return _offer(s, conn, now, doctors, near, "offer_slots")
         return _ask(s, "ask_time", Slot.TIME, day=_day(day))
 
@@ -467,7 +470,9 @@ def _on_confirming(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime)
             _finish(s)
             return "ask_intent", render("kept")
         return _what_to_change(s)
-    if _is_yes(p, low) and _CORRECTION.search(low) and s.flow != "cancel":
+    if _is_yes(p, low) and _CORRECTION.search(low):
+        if s.flow == "cancel":
+            return None  # "yes but keep it": never cancel on a hedged yes; reprompt re-asks
         s.failures = 0
         return _what_to_change(s)  # "sure, but make it 11" with nothing we could parse
     if _is_yes(p, low):
@@ -484,13 +489,19 @@ def _conflicts(s: CallState, ent: Entities) -> bool:
     for k, v in ent.as_dict().items():
         if k not in relevant or sl.get(k) == v:
             continue
-        if k == "part_of_day" and "time" in sl and (sl["time"] < "12:00") == (v == "morning"):
+        if k == "part_of_day" and "time" in sl and _in_part(sl["time"], v):
             continue  # "morning is great" for 11:00
         doctor = doctor_by_id(sl.get("doctor_id", ""))
         if k == "specialty" and doctor and doctor.specialty == v:
             continue  # "it's a checkup" for a GP
         return True
     return False
+
+
+def _in_part(hhmm: str, pod: str) -> bool:
+    return (
+        hhmm < "12:00" if pod == "morning" else hhmm >= ("16:00" if pod == "evening" else "12:00")
+    )
 
 
 def _is_yes(p: Parsed, low: str) -> bool:

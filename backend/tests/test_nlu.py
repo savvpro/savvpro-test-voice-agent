@@ -159,3 +159,9 @@ def test_affirm_negation_and_future_dob() -> None:
     assert parse("not ok", TODAY).intent != Intent.AFFIRM
     assert parse("not correct", TODAY).intent != Intent.AFFIRM
     assert parse("march 4 2999", TODAY, Slot.DOB).entities.dob is None
+
+
+def test_evening() -> None:
+    assert parse("yes, in the evening", TODAY).entities.part_of_day == "evening"
+    assert parse("good evening, tomorrow", TODAY).entities.part_of_day is None
+    assert parse("5 in the evening", TODAY).entities.time == time(17)

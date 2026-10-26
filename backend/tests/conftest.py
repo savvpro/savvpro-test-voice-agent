@@ -10,7 +10,7 @@ TODAY = NOW.date()
 
 @pytest.fixture
 def conn() -> Iterator[sqlite3.Connection]:
-    from app import db  # lands in a later task
+    from app import db
 
     c = db.connect(":memory:")
     db.init_db(c)

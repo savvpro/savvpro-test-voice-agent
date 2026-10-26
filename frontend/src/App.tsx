@@ -4,7 +4,19 @@ import BrainPanel from './components/BrainPanel'
 import Transcript, { type Message } from './components/Transcript'
 import { useSpeech } from './useSpeech'
 
-type Problem = { kind: 'expired' } | { kind: 'network'; retry: () => void } | null
+type Problem = { kind: 'expired' } | { kind: 'error'; message: string; retry?: () => void } | null
+
+// Only a failed fetch is a connection problem; 5xx may be transient, so offer Retry; 4xx won't change.
+function failure(e: unknown, retry: () => void): Problem {
+  if (!(e instanceof ApiError))
+    return { kind: 'error', message: 'Can’t reach the clinic line. Check your connection.', retry }
+  if (e.status === 404) return { kind: 'expired' }
+  return {
+    kind: 'error',
+    message: 'Something went wrong on our side. Please try again.',
+    retry: e.status >= 500 ? retry : undefined,
+  }
+}
 
 const MAX_SILENT = 3 // hands-free gives up after this many empty listens in a row
 
@@ -36,7 +48,7 @@ export default function App() {
     setDecisions([])
     setEnded(false)
     busyRef.current = false
-      setBusy(false)
+    setBusy(false)
     setProblem(null)
     setDraft('')
   }
@@ -80,8 +92,7 @@ export default function App() {
       if (sid !== session.current) return
       busyRef.current = false
       setBusy(false)
-      if (e instanceof ApiError && e.status === 404) setProblem({ kind: 'expired' })
-      else setProblem({ kind: 'network', retry: () => void submit(id, text, sid, false) })
+      setProblem(failure(e, () => void submit(id, text, sid, false)))
     }
   }
 
@@ -97,11 +108,11 @@ export default function App() {
       busyRef.current = false
       setBusy(false)
       await onReply(res, sid)
-    } catch {
+    } catch (e) {
       if (sid !== session.current) return
       busyRef.current = false
       setBusy(false)
-      setProblem({ kind: 'network', retry: () => void start() })
+      setProblem(failure(e, () => void start()))
     }
   }
 
@@ -151,10 +162,10 @@ export default function App() {
           <button className="btn primary" onClick={start}>Start new call</button>
         </div>
       )}
-      {problem?.kind === 'network' && (
+      {problem?.kind === 'error' && (
         <div className="notice" role="alert">
-          Can’t reach the clinic line. Check your connection.{' '}
-          <button className="btn" onClick={problem.retry}>Retry</button>
+          {problem.message}{' '}
+          {problem.retry && <button className="btn" onClick={problem.retry}>Retry</button>}
         </div>
       )}
       {hint && <p className="muted" role="status">{hint}</p>}
