@@ -1,0 +1,535 @@
+.manage-link {
+  font-size: 11px;
+  color: #526b57;
+  background: transparent;
+  border: 0;
+  text-decoration: underline;
+  padding: 12px 0 0;
+}
+.lookup {
+  flex-wrap: wrap;
+}
+.lookup input {
+  width: 130px;
+}
+.alternatives {
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.alternatives button {
+  padding: 9px;
+  font-size: 11px;
+}
+:root {
+  font-family: "DM Sans", sans-serif;
+  color: #193b32;
+  background: #f7f5ef;
+  font-synthesis: none;
+  font-weight: 400;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #b18b45;
+  outline-offset: 3px;
+}
+.shell {
+  max-width: 1440px;
+  margin: auto;
+  padding: 0 36px;
+}
+header {
+  height: 100px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #c9c5b7;
+  gap: 25px;
+}
+.brand {
+  font:
+    60px "Libre Caslon Display",
+    Georgia,
+    serif;
+  letter-spacing: -3px;
+}
+.location {
+  font-size: 10px;
+  letter-spacing: 2px;
+  line-height: 1.7;
+  border-left: 1px solid #b7b1a3;
+  padding-left: 25px;
+}
+.demo {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.intro {
+  text-align: center;
+  padding: 28px 0 25px;
+}
+h1 {
+  font:
+    56px/1.1 "Libre Caslon Display",
+    Georgia,
+    serif;
+  margin: 0 0 14px;
+  letter-spacing: -1px;
+}
+.intro > p {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #6b6d64;
+  margin: 0;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.9fr) minmax(310px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.panel {
+  background: #ffffffc9;
+  border: 1px solid #d4cfc1;
+  border-radius: 6px;
+}
+.concierge {
+  padding: 26px;
+  min-width: 0;
+}
+h2 {
+  font:
+    31px "Libre Caslon Display",
+    Georgia,
+    serif;
+  margin: 0;
+}
+h3 {
+  font:
+    25px "Libre Caslon Display",
+    Georgia,
+    serif;
+  margin: 25px 0 8px;
+}
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+.status {
+  font-size: 12px;
+  color: #3b7958;
+  margin: 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status > span {
+  width: 7px;
+  height: 7px;
+  background: #3c895c;
+  border-radius: 50%;
+}
+.icon-button {
+  background: none;
+  border: 0;
+  color: #486357;
+  padding: 7px;
+  display: inline-flex;
+  align-items: center;
+}
+.voice-area {
+  text-align: center;
+  padding: 27px 0 25px;
+}
+.mic-halo {
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 9px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f3f6f0;
+  box-shadow: inset 0 0 0 18px #f8f9f5;
+}
+.mic {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 3px solid #a9bfa6;
+  background: #183e32;
+  width: 89px;
+  height: 89px;
+  color: white;
+  box-shadow: 0 0 0 15px #e6ede1;
+}
+.listening {
+  animation: breathe 1.2s infinite;
+}
+.voice-area h2 {
+  font-size: 32px;
+}
+.voice-area p {
+  font:
+    17px/1.5 Georgia,
+    serif;
+  color: #6d7476;
+  margin: 10px 0 23px;
+}
+.suggestions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.suggestions button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 19px;
+  border: 1px solid #527361;
+  border-radius: 5px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: #193b32;
+}
+.suggestions button:hover {
+  background: #edf1e9;
+}
+.conversation-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #68706c;
+  margin: 0 0 10px;
+}
+.voice-settings {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.voice-settings select {
+  font-size: 11px;
+  color: #64726c;
+  background: transparent;
+  border: 0;
+  padding: 5px;
+}
+.transcript {
+  height: 184px;
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+}
+.message {
+  max-width: 91%;
+  background: #f5f4f1;
+  padding: 12px 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+}
+.message strong {
+  font-size: 11px;
+  font-weight: 600;
+}
+.message p {
+  font-size: 13px;
+  line-height: 1.65;
+  color: #364440;
+  margin: 4px 0 0;
+}
+.message.caller {
+  margin-left: auto;
+  background: #eaf0e6;
+}
+.message.caller strong {
+  color: #5a724d;
+}
+form {
+  display: flex;
+  gap: 9px;
+  margin-top: 14px;
+}
+input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid #d7d1c3;
+  padding: 13px;
+  border-radius: 4px;
+  background: white;
+  font-size: 13px;
+  color: #193b32;
+}
+input::placeholder {
+  color: #99988e;
+}
+.primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  background: #183e32;
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 13px 20px;
+}
+.primary:hover {
+  background: #28553f;
+}
+.speech-note {
+  font-size: 10px;
+  color: #8a8b81;
+  margin: 12px 0 0;
+}
+aside {
+  display: grid;
+  gap: 18px;
+}
+.details,
+.inspector {
+  padding: 24px;
+}
+dl {
+  margin: 12px 0 0;
+}
+dl > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e8e5dc;
+  min-height: 41px;
+  gap: 12px;
+  font-size: 12px;
+}
+dt {
+  color: #737b77;
+}
+dd {
+  margin: 0;
+  text-align: right;
+  text-transform: capitalize;
+  overflow-wrap: anywhere;
+}
+.package {
+  display: flex;
+  justify-content: space-between;
+  padding: 13px 0;
+  border-bottom: 1px solid #e8e5dc;
+  font-size: 12px;
+  color: #626d67;
+}
+.fine-print {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #92968c;
+}
+.inspector summary {
+  font:
+    27px "Libre Caslon Display",
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+.inspector dl > div {
+  border: 0;
+  min-height: 35px;
+}
+.inspector dd {
+  font-family: monospace;
+  font-size: 10px;
+  background: #f3f2ef;
+  border-radius: 4px;
+  padding: 7px 10px;
+  text-transform: none;
+}
+.inspector .state {
+  background: #eaf0e4;
+  color: #3c6542;
+}
+.inspector p {
+  font-size: 10px;
+  color: #93968c;
+  line-height: 1.7;
+  margin: 17px 0 0;
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #c9c5b7;
+  padding: 14px 0;
+  margin-top: 18px;
+  font-size: 10px;
+  color: #777d73;
+}
+.quote {
+  padding: 13px 0;
+}
+.quote span {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 6px 0;
+}
+.booking {
+  background: #edf2e8;
+  border-radius: 5px;
+  padding: 14px;
+  display: grid;
+  gap: 9px;
+  font-size: 12px;
+}
+.booking small {
+  font-size: 10px;
+}
+.error {
+  font-size: 12px;
+  padding: 10px;
+  background: #fff0e9;
+  color: #9d3b23;
+  border-radius: 4px;
+  line-height: 1.5;
+}
+.error button {
+  margin-left: 10px;
+}
+@keyframes breathe {
+  50% {
+    box-shadow: 0 0 0 8px #dce8d9;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media (min-width: 1500px) {
+  .intro {
+    padding: 40px 0;
+  }
+  .voice-area {
+    padding: 40px 0;
+  }
+  .transcript {
+    height: 210px;
+  }
+}
+@media (max-width: 850px) {
+  .shell {
+    padding: 0 18px;
+  }
+  header {
+    height: 83px;
+  }
+  .brand {
+    font-size: 46px;
+  }
+  .location {
+    font-size: 8px;
+    padding-left: 15px;
+  }
+  .demo {
+    font-size: 10px;
+  }
+  h1 {
+    font-size: 42px;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .concierge {
+    padding: 20px;
+  }
+  aside {
+    grid-template-columns: 1fr 1fr;
+  }
+  .intro {
+    padding: 27px 0;
+  }
+  .intro > p {
+    font-size: 9px;
+    letter-spacing: 2px;
+  }
+  .voice-area {
+    padding-top: 18px;
+  }
+  footer {
+    gap: 14px;
+  }
+}
+@media (max-width: 520px) {
+  .shell {
+    padding: 0 12px;
+  }
+  .location {
+    display: none;
+  }
+  .demo {
+    font-size: 11px;
+  }
+  h1 {
+    font-size: 38px;
+  }
+  .intro > p {
+    letter-spacing: 1px;
+  }
+  aside {
+    grid-template-columns: 1fr;
+  }
+  .suggestions button {
+    font-size: 11px;
+    padding: 11px;
+  }
+  .concierge {
+    padding: 17px;
+  }
+  h2 {
+    font-size: 28px;
+  }
+  .mic-halo {
+    width: 140px;
+    height: 140px;
+  }
+  .transcript {
+    height: 230px;
+  }
+  .message {
+    max-width: 97%;
+  }
+  .primary {
+    padding: 13px;
+  }
+  .speech-note {
+    line-height: 1.6;
+  }
+  footer {
+    font-size: 9px;
+  }
+}
