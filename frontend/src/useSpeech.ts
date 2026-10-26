@@ -32,7 +32,7 @@ export function useSpeech() {
         }
         r.onerror = () => {} // no-speech / aborted / not-allowed: resolve '' via onend
         r.onend = () => {
-          setListening(false)
+          if (rec.current === r) setListening(false)
           resolve(text)
         }
         setListening(true)
