@@ -88,6 +88,9 @@ class Engine:
             return finish("Thanks for calling Northline Studio. Goodbye!", recognition.rule, "end", "Ended without applying any pending changes.")
         if recognition.intent == Intent.REPEAT:
             return finish(c.reply, recognition.rule, "repeat", "Repeated the previous reply without changing the proposal.")
+        if recognition.rule == "control.thanks":
+            reply = "You're welcome. " + (self.prompt(c) if active else "Is there anything else I can help with?")
+            return finish(reply, recognition.rule, "acknowledge", "Acknowledged courtesy without ending the workflow, changing its details or authorizing a write.")
         if recognition.rule == "booking.reference_help":
             if c.last_booking_reference:
                 try:
@@ -135,9 +138,12 @@ class Engine:
         saved_target = parsed.entities.reference or re.search(r"\b(?:existing|confirmed|original|previous) (?:booking|appointment)\b", intent_text(text))
         cancel_draft = recognition.intent == Intent.CANCEL and active and c.current_intent in (Intent.CREATE, Intent.AVAILABILITY) and not saved_target
         if recognition.intent == Intent.DENY or cancel_draft:
-            saved_appointment = c.appointment if active and c.current_intent in (Intent.RESCHEDULE, Intent.CANCEL) else None
+            had_pending = active or bool(c.proposed_action)
+            saved_appointment = c.appointment if not active or c.current_intent in (Intent.RESCHEDULE, Intent.CANCEL) else None
             reset()
             c.appointment = saved_appointment
+            if not had_pending:
+                return finish("There is no pending request to discard. Existing appointments are unchanged. Is there anything else I can help with?", recognition.rule, "ask_intent", "No pending proposal existed; preserved the saved receipt and made no calendar changes.")
             return finish("I discarded the pending request. Existing appointments are unchanged. What would you like to do next?", recognition.rule, "ask_intent", "Discarded only the uncommitted proposal; no persisted appointment was changed.")
         if recognition.intent == Intent.CANCEL and active and c.current_intent == Intent.RESCHEDULE and not saved_target and re.fullmatch(r"(?:please )?cancel(?: it| this| that)?", intent_text(text)):
             c.proposed_action = None

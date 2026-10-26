@@ -8,6 +8,7 @@ from datetime import datetime
 
 from app.brain.calendar_dates import extract_dates
 from app.brain.clock_times import extract_clock
+from app.brain.control_phrases import AFFIRMATIVE, recognize_control
 from app.brain.services import extract_service
 from app.schemas import Entities, Intent
 
@@ -24,7 +25,6 @@ def intent_text(text: str) -> str:
     return re.sub(r"^(?:(?:all right|alright|well|so|uh|um|i said|i (?:already )?told you(?: that)?)[,\s]+)+", "", t)
 
 
-AFFIRMATIVE = r"(?:yes|yeah|yep|sure|okay|ok)"
 BOOKING_OBJECT = r"(?:(?:a|an|my|the)\s+)?(?:(?:new|another)\s+)?(?:booking|appointment|reservation)"
 NAME_PREPOSITION = r"(?:with|for) (?:the )?name"
 EXISTING_OBJECT = r"(?:(?:my|the|an|a|this|that|our)\s+)?(?:appointment|booking|reservation)"
@@ -58,16 +58,9 @@ class Recognition:
 
 def recognize(text: str, active: bool = False) -> Recognition:
     t = intent_text(text)
-    rules = [
-        (Intent.END, "control.end", r"(?:goodbye|bye|end (?:the )?(?:call|conversation)|stop|hang up)"),
-        (Intent.DENY, "context.discard_proposal", r"(?:please )?(?:cancel|discard|undo|forget) (?:(?:this|that|the|my) )?(?:change|reschedule|rescheduling|draft|proposal|new booking|new appointment)"),
-        (Intent.REPEAT, "control.repeat", r"(?:repeat(?: that)?|say that again|pardon|what did you say)"),
-        (Intent.DENY, "confirmation.deny", r"(?:no(?: thanks| thank you)?|nope|not yet|do not|don't|do not (?:book|cancel)|don't (?:book|cancel)|never mind|nevermind|forget it)"),
-        (Intent.CONFIRM, "confirmation.explicit", rf"(?:{AFFIRMATIVE}(?: please)?(?: (?:do it|go ahead))?|sounds good|confirm(?: it| booking| cancellation| reschedule)?|(?:please )?do it|go ahead|that's correct|that is correct|correct|please confirm)"),
-    ]
-    for intent, rule, pattern in rules:
-        if re.fullmatch(pattern, t):
-            return Recognition(intent, rule)
+    control = recognize_control(t)
+    if control:
+        return Recognition(*control)
     if re.search(rf"\b(?:do not|don't|never)\s+(?:want (?:you )?to\s+)?(?:cancel|book|reserve|schedule|reschedule|move|(?:change|adjust|update|shift)\s+(?:(?:my|the|this|that)\s+)?(?:booking|appointment|time|timing|date|day)|(?:make|arrange)\s+{BOOKING_OBJECT})\b|\b(?:do not|don't) want (?:a|an) (?:haircut|beard trim|appointment)\b", t):
         return Recognition(Intent.DENY, "action.negated")
     if re.search(r"\breference\b", t) and re.search(r"\b(?:where|find|what|don't know|do not know|cannot see|can't see|don't have)\b", t):
