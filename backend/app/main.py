@@ -65,6 +65,9 @@ def _save(conn: sqlite3.Connection, cid: str, state: dialogue.CallState, now: da
 
 def create_app(db_path: str | None = None) -> FastAPI:
     settings = get_settings()
+    log.setLevel(logging.INFO)
+    if not log.handlers:
+        log.addHandler(logging.StreamHandler())
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -90,8 +93,12 @@ def create_app(db_path: str | None = None) -> FastAPI:
     def start_call(request: Request) -> CallResponse:
         state, reply, decision = dialogue.start_call()
         cid = str(uuid.uuid4())
+        now = request.app.state.clock()
         with _lock:
-            _save(request.app.state.conn, cid, state, request.app.state.clock())
+            request.app.state.conn.execute(
+                "DELETE FROM calls WHERE updated_at < ?", ((now - EXPIRY).isoformat(),)
+            )
+            _save(request.app.state.conn, cid, state, now)
         return _response(cid, reply, decision, False)
 
     @app.post("/api/calls/{call_id}/turns", response_model=CallResponse)
@@ -110,6 +117,8 @@ def create_app(db_path: str | None = None) -> FastAPI:
                     row = None
                 if not row:
                     raise HTTPException(404, "Call not found or expired")
+                # a booking commits inside handle_turn; a crash before _save leaves stale
+                # call state but the booking is safe
                 state, reply, decision = dialogue.handle_turn(
                     dialogue.CallState.from_json(row["state"]), body.text, conn, now
                 )
@@ -117,10 +126,10 @@ def create_app(db_path: str | None = None) -> FastAPI:
             except HTTPException:
                 raise
             except Exception:
-                log.exception("turn failed call_id=%s", call_id)
+                log.exception("turn failed call_id=%r", call_id)
                 return JSONResponse({"detail": "Internal error"}, status_code=500)
         log.info(
-            "turn call_id=%s intent=%s action=%s state=%s",
+            "turn call_id=%r intent=%s action=%s state=%s",
             call_id,
             decision.intent,
             decision.action,

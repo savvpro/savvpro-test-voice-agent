@@ -12,9 +12,8 @@ from tests.conftest import NOW
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     app = create_app(":memory:")
+    app.state.clock = lambda: NOW
     with TestClient(app) as c:
-        app.state.clock = lambda: NOW
-        c.app = app
         yield c
 
 
@@ -100,3 +99,22 @@ def test_internal_error_is_500_json(
     r = turn(client, cid, "hi")
     assert r.status_code == 500 and r.json() == {"detail": "Internal error"}
     assert "secret" not in r.text and cid in caplog.text
+
+
+def test_turn_logged_without_raw_text(client: TestClient, caplog: pytest.LogCaptureFixture) -> None:
+    cid = start(client)
+    caplog.set_level("INFO", logger="clinic")
+    turn(client, cid, "my secret name is Zebediah")
+    msg = next(r.getMessage() for r in caplog.records if r.getMessage().startswith("turn "))
+    assert cid in msg and "intent=" in msg and "action=" in msg
+    assert "Zebediah" not in caplog.text
+
+
+def test_start_call_reaps_stale_calls(client: TestClient) -> None:
+    old = start(client)
+    client.app.state.clock = lambda: NOW + timedelta(hours=2)  # type: ignore[attr-defined]
+    start(client)
+    n = client.app.state.conn.execute(  # type: ignore[attr-defined]
+        "SELECT COUNT(*) FROM calls WHERE id=?", (old,)
+    ).fetchone()[0]
+    assert n == 0
