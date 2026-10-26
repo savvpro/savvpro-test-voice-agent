@@ -38,7 +38,8 @@ class Engine:
         recognition = recognize(text, active)
         parsed = extract(text, self.now,
                          expecting_name=active and c.missing_information == ["name"] and recognition.intent == Intent.UNKNOWN,
-                         expecting_time=active and "time" in c.missing_information)
+                         expecting_time=active and "time" in c.missing_information,
+                         expecting_date=active and "date" in c.missing_information)
         found = parsed.entities.model_dump(exclude_none=True)
         used_context_reference = False
         c.history.append(Message(role="user", text=text))
@@ -359,7 +360,7 @@ class Engine:
     @staticmethod
     def prompt(c: SessionView) -> str:
         prompts = {"service": "Would you like a Classic Haircut, Beard Trim, or Haircut + Beard?",
-                   "date": "Which date? You can say tomorrow, next Monday, or YYYY-MM-DD.",
+                   "date": "Which date? You can say tomorrow, next Monday, or a calendar date such as October 28 2026.",
                    "time": "What time, including AM or PM?", "name": "What fictional name should I use?",
                    "reference": "What is the NL booking reference?"}
         if c.missing_information:

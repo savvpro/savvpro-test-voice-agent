@@ -46,7 +46,7 @@ class Bookings:
             raise BookingError("Please provide a valid date in YYYY-MM-DD format.", "date")
         today = self.now.astimezone(self.settings.zone).date()
         if result < today:
-            raise BookingError("We can't book appointments in the past.", "date")
+            raise BookingError(f"{result.isoformat()} is in the past. Please choose a future date.", "date")
         if result > today + timedelta(days=180):
             raise BookingError("Bookings are available up to 180 days ahead.", "date")
         if result.weekday() == 6:

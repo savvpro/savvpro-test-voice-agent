@@ -4,8 +4,9 @@ There is intentionally no general-purpose NLU, probabilistic score, or LLM.
 """
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 
+from app.brain.calendar_dates import extract_dates
 from app.schemas import Entities, Intent
 
 
@@ -18,7 +19,7 @@ def intent_text(text: str) -> str:
     """Remove bounded spoken repair prefixes without stripping negation."""
     t = re.sub(r"[,;]+", " ", normalize(text))
     t = re.sub(r"\s+", " ", t).strip()
-    return re.sub(r"^(?:(?:all right|alright|well|so|uh|um|i said|i already told you(?: that)?)[,\s]+)+", "", t)
+    return re.sub(r"^(?:(?:all right|alright|well|so|uh|um|i said|i (?:already )?told you(?: that)?)[,\s]+)+", "", t)
 
 
 AFFIRMATIVE = r"(?:yes|yeah|yep|sure|okay|ok)"
@@ -92,13 +93,12 @@ class Extraction:
     issues: dict[str, str] = field(default_factory=dict)
 
 
-WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 NUMBERS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
            "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12}
 NUMBER_PATTERN = "(?:" + "|".join(NUMBERS) + r"|\d{1,2})"
 
 
-def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting_time: bool = False) -> Extraction:
+def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting_time: bool = False, expecting_date: bool = False) -> Extraction:
     result = Extraction()
     e, issues = result.entities, result.issues
     t = normalize(text)
@@ -126,38 +126,12 @@ def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting
         e.service = None
         issues["service"] = "We offer haircuts, beard trims, or the combination. Which would you like?"
 
-    dates: set[str] = set()
-    iso_matches = re.findall(r"\b\d{4}-\d{2}-\d{2}\b", clean)
-    for value in iso_matches:
-        try:
-            dates.add(datetime.strptime(value, "%Y-%m-%d").date().isoformat())
-        except ValueError:
-            issues["date"] = "That date does not exist. Please use a weekday or YYYY-MM-DD."
-    date_clean = re.sub(r"\b\d{4}-\d{2}-\d{2}\b", "", clean)
-    if re.search(r"\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b", date_clean):
-        issues["date"] = "Numeric dates can mean different things. Please use YYYY-MM-DD or a weekday."
-    relative = date_clean
-    if "day after tomorrow" in relative:
-        dates.add((now.date() + timedelta(days=2)).isoformat())
-        relative = relative.replace("day after tomorrow", "")
-    if re.search(r"\btomorrow\b", relative):
-        dates.add((now.date() + timedelta(days=1)).isoformat())
-    if re.search(r"\btoday\b", relative):
-        dates.add(now.date().isoformat())
-    if re.search(r"\byesterday\b", relative):
-        dates.add((now.date() - timedelta(days=1)).isoformat())
-    for index, day in enumerate(WEEKDAYS):
-        if re.search(rf"\b{day}\b", relative):
-            offset = (index - now.weekday()) % 7
-            if re.search(rf"\bnext {day}\b", relative) and offset == 0:
-                offset = 7
-            dates.add((now.date() + timedelta(days=offset)).isoformat())
-    if len(dates) > 1:
-        issues["date"] = "I heard more than one date. Please give one date for this appointment."
-    elif dates:
+    calendar = extract_dates(clean, now, expecting_date=expecting_date)
+    dates, date_clean = calendar.values, calendar.remainder
+    if calendar.issue:
+        issues["date"] = calendar.issue
+    if len(dates) == 1:
         e.date = next(iter(dates))
-    if re.search(r"\b(?:next week|next month|weekend|sometime|later)\b", clean) and not dates:
-        issues["date"] = "Which exact day? You can say tomorrow, next Monday, or YYYY-MM-DD."
 
     periods = set(re.findall(r"\b(morning|afternoon|evening)\b", clean))
     if len(periods) > 1:
