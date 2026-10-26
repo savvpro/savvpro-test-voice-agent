@@ -116,6 +116,10 @@ The centered chat is the main workspace. The sidebar starts as an icon rail and 
 
 **Explore availability** and **Services & pricing** are centered above the message field in a new session. Sending the first message hides them, including after a reload; **New session** brings them back. Typing an unsent draft leaves them visible.
 
+**Studio services** in the sidebar opens a dedicated catalog with prices, durations, the combo saving and opening hours. **Book** starts the selected service in the conversation; dates, times and confirmation still go through the same backend workflow. **Start a conversation** returns to chat and preserves an unsent draft.
+
+**Studio services** in the sidebar opens a dedicated catalog with prices, durations, the combo saving and opening hours. **Book** starts the selected service in the conversation; dates, times and confirmation still go through the same backend workflow. **Start a conversation** returns to chat and preserves an unsent draft.
+
 Microphone, spoken-reply toggle, **Listen again**, **Speech language** and stop-audio controls live in the chat bar. US, UK and Pakistan English depend on browser support. Tap the mic for each turn; typing restores focus to the input. The theme button switches between warm neutral light/dark palettes and remembers the preference when storage works. A storage warning means the live tab remains usable, but recovery after closing/reloading may be unavailable.
 
 Northline Studio opens **Monday–Saturday 10:00–19:00**, with one chair:

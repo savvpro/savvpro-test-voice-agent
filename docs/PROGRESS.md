@@ -24,7 +24,7 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 | `npm run build` in isolated frontend copy | Passed production compilation, type validation and static-page generation; Next.js 15.5.28. Preserved the running development build. |
 | `npm run typecheck` | Passed |
 | `npm run format:check` | Passed for frontend source, components, tests and configuration |
-| `PLAYWRIGHT_CHANNEL=msedge npm run test:e2e` (PowerShell environment equivalent) | **24 passed**, using the committed runner, an isolated production build, ports 3011/8011 and a real fixed-clock disposable backend. User servers on 3000/8000 were preserved. |
+| `PLAYWRIGHT_CHANNEL=msedge npm run test:e2e` (PowerShell environment equivalent) | **26 passed**, using the committed runner, an isolated production build, ports 3011/8011 and a real fixed-clock disposable backend. User servers on 3000/8000 were preserved. |
 | Browser target protection | Runner refused a production build targeting a different backend port before launching test servers |
 | `npm audit --audit-level=high` | **0 vulnerabilities** after PostCSS 8.5.31 override |
 | `.venv/Scripts/python -m pip check` | No broken requirements |
@@ -36,6 +36,12 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 Backend tests include actual state transitions, relative/spoken date/time parsing, uncertainty, corrections, service duration, opening/closing boundaries, explicit confirmations, conflicts, two independent application instances confirming concurrently, repeated request receipts, stale revisions/appointment versions, isolation, persistence after restart, UTC storage, configured business timezone, rollback after simulated commit failure, and prevention of partial rescheduling after caught validation errors.
 
 Browser tests cover typed booking/corrections and raw trace, rescheduling/cancellation, a lost response after a real commit followed by reload/retry, storage exceptions and corrupt data, same-tab retry without storage, saved/proposed separation, network status/recovery, unreadable responses, keyboard focus and selectable slots. Responsive checks cover 360/390/768 pixels and minimum control sizes. Speech API tests cover sequencing, permission denial, replay/language selection and synchronous synthesis failure. The production frontend and backend are real; speech APIs and explicit fault scenarios are mocked. Desktop/mobile screenshots were generated and inspected. Test servers were stopped by suite teardown.
+
+## Dedicated Studio services workspace
+
+Replaced the services popup with a third workspace view inspired by the supplied reference: catalog rows with duration, price and Book buttons; a calculated combo saving; a conversation shortcut; and an opening-hours/timezone panel. The sidebar highlights Services and mobile navigation closes after selecting it. Catalog values come from the business API; a Book click sends a regular service-specific turn and returns to chat, so missing details and explicit confirmation remain backend-controlled. Returning through Start a conversation preserves the draft. The existing chat and Inspector remain mounted.
+
+Two additional browser cases at 390px and 1440px verify navigation, absence of the popup, catalog data, both theme screenshots, draft preservation and booking handoff without an immediate receipt or confirmation. The production build/type validation, formatting and **26 browser tests passed**. Desktop and mobile screenshots were inspected. No backend code or dependencies changed; the latest backend result remains 398 passed from the preceding full run. No physical audio or remote CI execution is claimed. Local commits remain unpublished.
 
 ## Minimal chat layout and first-turn suggestions
 

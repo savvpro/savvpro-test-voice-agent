@@ -26,6 +26,7 @@ Use fictional names. Start both servers as documented. Automated tests **do not 
 - [ ] Say “thank you” mid-task and continue; say “nothing, thank you so much” to end.
 - [ ] Expand/collapse navigation and switch between chat and Appointment, preserving unsent input; use the labeled Decision inspector button to open/close the Inspector, and check both themes.
 - [ ] In a new session, check both centered suggestions above the input. Send a message, reload and verify they remain hidden; New session restores them.
+- [ ] Open Studio services on desktop/mobile; verify prices, durations, saving and opening hours. Return through Start a conversation with an unsent draft preserved; Book should collect details in chat and still require confirmation.
 - [ ] Say “five thirty”; clarify with “five thirty PM”.
 - [ ] Ask a business question mid-booking and continue without losing details.
 - [ ] Try Sunday, past dates, overlaps and a service finishing after 7 PM.
@@ -51,7 +52,7 @@ Not executed by the coding agent. Fill this in after using a physical microphone
 
 ## Submission evidence
 
-- [x] Run Pytest (**398 passed**), frontend typecheck/format/production build and browser tests (**24 passed**), locally on Python 3.13/Node 22. The latest UI-only follow-up reran frontend checks; the unchanged backend result is from the preceding full run.
+- [x] Run Pytest (**398 passed**), frontend typecheck/format/production build and browser tests (**26 passed**), locally on Python 3.13/Node 22. The latest UI-only follow-up reran frontend checks; the unchanged backend result is from the preceding full run.
 - [x] Configure CI for Python 3.11/3.13, frontend checks and isolated browser tests; check YAML and pinned actions locally.
 - [ ] Observe a successful remote CI run after publication is authorized.
 - [x] Add authentic Codex token counts and logs/screenshots to `AI_USAGE.md` (2026-10-26, 17:36:04 PKT; filtered session counters and original screenshot).
