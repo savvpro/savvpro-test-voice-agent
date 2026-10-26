@@ -20,14 +20,14 @@ The backend persists appointments, sessions and turn receipts. One SQLite transa
 
 | Check | Actual result |
 | --- | --- |
-| `.venv/Scripts/python -m pytest` | **202 passed** after three spoken-conversation follow-ups, one upstream Starlette TestClient/httpx deprecation warning; no failures |
+| `.venv/Scripts/python -m pytest` | **234 passed** after four spoken-conversation follow-ups, one upstream Starlette TestClient/httpx deprecation warning; no failures |
 | `npm run build` in frontend | Passed production compilation, type validation and static-page generation; Next.js 15.5.28 |
 | `npm run typecheck` | Passed |
 | `PLAYWRIGHT_CHANNEL=msedge npm run test:e2e` (PowerShell environment equivalent) | **6 passed**, using installed headless Edge and a real isolated fixed-clock backend |
 | `npm audit --audit-level=high` | **0 vulnerabilities** after PostCSS 8.5.31 override |
 | `.venv/Scripts/python -m pip check` | No broken requirements |
 | `git diff --check` | Passed; Git emitted its normal Windows LF/CRLF notice |
-| Source/documentation credential-pattern scan | 44 files scanned after the third follow-up, 0 findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
+| Source/documentation credential-pattern scan | 44 files scanned after the fourth follow-up, 0 findings for private-key/OpenAI/AWS/GitHub credential patterns; this is a limited pattern check, not a security guarantee |
 | Assessment preservation | `TASK.md` blob hash exactly matches HEAD; branch remains `candidate-TUAHASHAIKH` |
 
 Backend tests include actual state transitions, relative/spoken date/time parsing, uncertainty, corrections, service duration, opening/closing boundaries, explicit confirmations, conflicts, two independent application instances confirming concurrently, repeated request receipts, stale revisions/appointment versions, isolation, persistence after restart, UTC storage, configured business timezone, rollback after simulated commit failure, and prevention of partial rescheduling after caught validation errors.
@@ -55,6 +55,12 @@ One intermediate Pytest attempt failed with a transient MemoryError during impor
 The third transcript exposed unsupported "28th of October 2026", year-first month names, compact/spaced year-first digits, and malformed date numbers being mistaken for clock times. Added `calendar_dates.py` to recognize and mask complete calendar spans before time parsing. Invalid/incomplete date spans are also masked, so "2026 0 to 10" asks for a date while preserving the previously collected time. Named dates with no year use the business clock's current year; explicit incomplete or fully word-spoken years are clarified. Past-date rejection includes the exact interpreted date, so "2026 October 10" is visibly understood and rejected as past under the fixed October 26 test clock.
 
 Added 46 cases covering the reported conversation/recovery, named-month orderings, ordinal words, year-first numeric forms, dates with separate times, leap years, invalid dates, mismatched weekdays, compound requests, conflict revalidation and fresh confirmation. The initial targeted suite reproduced 35 failures with 2 passing cases; the final full backend run passed **202 tests**. No frontend code/dependencies changed, and existing browser/audio results remain historical. `TASK.md` and the candidate branch were preserved.
+
+## Fourth follow-up: spoken name instructions
+
+The user reported that "Use name Taha" became the stored customer name "Use Name Taha". Added 32 regression cases covering explicit request wrappers, courtesy/repair prefixes, bare names, Unicode names, apostrophes/hyphens, missing values, unrelated commands and alternatives. The initial targeted run reproduced 19 failures, with 13 cases already passing. An anchored name grammar now extracts the value before validation; bare-name fallback remains restricted to the name-collection context. API/database regressions verify the reported booking stores only "Taha", and changing a pending name still requires fresh confirmation.
+
+The final full backend suite passed **234 tests**. No frontend code or dependencies changed, existing stored appointments were not rewritten, and physical speech/browser checks were not rerun. The deterministic-brain rule, assessment file and candidate branch were preserved.
 
 ## Remaining manual actions and limits
 

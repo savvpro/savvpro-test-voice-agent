@@ -45,7 +45,7 @@ Service aliases map to three catalog IDs. Haircut plus beard means the combinati
 
 Time parsing supports AM/PM, unambiguous 24-hour values, noon/midnight, word hours, “five thirty”, “half past four” and “quarter past four”. Bare 1–12 hours require AM/PM rather than assuming the likely studio time. A same-utterance day period can disambiguate a time. Period-only availability is supported; booking requires an exact start. Multiple distinct values, invalid hours/minutes, invalid dates and numeric slash dates trigger field-specific clarification and clear the affected old value.
 
-Names are collected in a name context or through a name-introduction phrase, as a separate answer. Control/request words and other extracted details cannot become names. References match `NL-` plus eight alphanumeric characters; generated references use random synthetic hexadecimal values. Names are never used to guess a booking. This is a documented small English grammar, not unrestricted NLU.
+Names are collected in a name context or through a name-introduction phrase, as a separate answer. Anchored request wrappers such as “use name”, “put it under”, and “my name is” are removed before validating the entire name value. Bounded courtesy/repair prefixes and trailing politeness are removed; Unicode letters, apostrophes and hyphens remain supported. Bare names and the short “use Taha” form require the name-collection context. Control/request fragments, alternatives and other extracted details cannot become names. References match `NL-` plus eight alphanumeric characters; generated references use random synthetic hexadecimal values. Names are never used to guess a booking. This is a documented small English grammar, not unrestricted NLU.
 
 ### State machine and context
 

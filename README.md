@@ -101,6 +101,8 @@ Spoken repair prefixes (“I said…”, “I already told you…”) are unders
 
 Time expressions such as “at five”, “five thirty”, and “half past four” require AM/PM clarification. Reply with the **full** time, for example “five thirty PM”. Dates support relative days, weekdays, `YYYY-MM-DD`, “28th of October 2026”, “October twenty-eighth 2026”, “2026 October 28”, and year-first numeric forms `2026 10 28`, `2026 1028`, and `20261028`. A named month/day without a year uses the current business year and still undergoes past-date validation; it never silently rolls to the next year. A bare weekday is the nearest match including today; “next Monday” is the upcoming Monday strictly after today. Incomplete years, malformed date fragments, conflicting dates, weekday/date mismatches and ambiguous numeric date ordering are clarified. Supply a fictional name as a separate answer to the name question. Unrestricted English and years spoken entirely as words remain outside this small grammar.
 
+When asked for a name, reply with a fictional name alone or a phrase such as “Use name Taha”, “Please use the name Alex Example”, or “Put it under Alex Example”. The instruction words are removed before showing the confirmation and saving the name. Missing names or alternatives such as “Taha or John” require clarification. An explicit name correction to a pending proposal requires a fresh confirmation.
+
 Northline Studio opens **Monday–Saturday 10:00–19:00**, with one chair:
 
 | Service | Duration | Synthetic price |

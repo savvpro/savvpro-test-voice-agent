@@ -32,6 +32,8 @@ Observed issues from this implementation session:
 
 The third transcript exposed missing calendar-date formats and date numbers reaching the clock-time parser. The initial targeted run reproduced 35 failures out of 37 cases. A separate deterministic calendar grammar now consumes valid and invalid date spans before time extraction, with named-month/ordinal and year-first numeric support. Additional tests caught a partial word-ordinal match (“thirty third” becoming the third day); the grammar now consumes out-of-range day words and rejects them through calendar validation. The final full backend suite passed 202 tests. No physical speech recognition quality was inferred from these text/API regressions.
 
+The fourth transcript exposed “Use name Taha” being stored as “Use Name Taha”. The initial 32-case regression suite reproduced 19 failures, with 13 already passing. Anchored name-request wrappers now extract only the name, with bounded courtesy/repair cleanup and rejection of incomplete requests or alternatives. API/database tests verify the exact reported conversation and a pending name correction followed by fresh confirmation. The full backend suite passed 234 tests. Existing stored appointments were not migrated, and browser/audio checks were not rerun.
+
 Sandbox socket and Node write restrictions required approved command retries. Those environment errors were not reported as successful installs/checks. No test results, token counts, screenshots or physical voice verification were invented.
 
 Executed checks and remaining verification limits are documented in [docs/PROGRESS.md](docs/PROGRESS.md). Browser UI screenshots under ignored test artifacts demonstrate UI rendering only, not AI token usage or physical speech verification.

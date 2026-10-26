@@ -98,6 +98,34 @@ NUMBERS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
 NUMBER_PATTERN = "(?:" + "|".join(NUMBERS) + r"|\d{1,2})"
 
 
+def customer_name(text: str, *, expecting_name: bool) -> str | None:
+    """Extract an entire name slot using bounded, anchored request wrappers."""
+    candidate = intent_text(text)
+    candidate = re.sub(r"^(?:(?:actually|please)[,\s]+)+", "", candidate)
+    candidate = re.sub(r"^(?:could you|can you|would you|i want you to)\s+(?:please\s+)?", "", candidate)
+    explicit = re.fullmatch(
+        r"(?:use (?:(?:the|my) )?name(?: (?:is|of))?"
+        r"|put (?:it|(?:(?:the|my) )?(?:booking|appointment)) under(?: the name)?"
+        r"|under(?: the name)?|(?:my|the) name is|name is|name's|i am|i'm|call me)\s+(.+)",
+        candidate,
+    )
+    if explicit:
+        candidate = explicit[1]
+    elif expecting_name:
+        candidate = re.sub(r"^(?:(?:and|uh|um|erm|well|okay|ok|it's|it is)[,\s]+)+", "", candidate)
+        candidate = re.sub(r"^use\s+", "", candidate)
+    else:
+        return None
+    candidate = re.sub(r"[,\s]+(?:please|thanks|thank you)$", "", candidate).strip()
+    # Reject instruction fragments and alternatives rather than storing them.
+    reserved = r"\b(?:and|or|yes|yeah|yep|sure|okay|ok|no|actually|tomorrow|today|book|booking|appointment|cancel|reschedule|instead|meant|please|unknown|hello|hi|thanks|restart|repeat|stop|help|want|need|weather|pizza|what|why|how|when|where|change|make|confirm|correct|afternoon|evening|morning|don't|not|know|maybe|whatever|anything|tell|show|order|sing|play|can|could|would|is|are|does|use|name|put|under|previous|another|discount)\b"
+    if (2 <= len(candidate) <= 80
+            and re.fullmatch(r"[^\W\d_]+(?:[ '\-][^\W\d_]+){0,3}", candidate, re.UNICODE)
+            and not re.search(reserved, candidate)):
+        return candidate.title()
+    return None
+
+
 def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting_time: bool = False, expecting_date: bool = False) -> Extraction:
     result = Extraction()
     e, issues = result.entities, result.issues
@@ -185,17 +213,9 @@ def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting
     if re.search(r"\b(?:at|to)\s+\d{1,2}:\d{1}(?!\d)", time_text):
         issues["time"] = "Please give the complete time, for example 5:30 PM."
 
-    name_match = re.search(r"\b(?:my name is|name is|name's|i am|i'm|under the name|call me)\s+([a-z][a-z '\-]{0,79})", t)
-    candidate = name_match[1] if name_match else (intent_text(text) if expecting_name else "")
-    # Full-string names only; corrections, requests and entities cannot become names.
-    if candidate and not (dates or candidates or e.service or e.reference or issues):
-        candidate = re.sub(r"[.!?]+$", "", candidate).strip()
-        if expecting_name:
-            candidate = re.sub(r"^(?:(?:and|uh|um|erm|well|okay|ok|it's|it is)[,\s]+)+", "", candidate, flags=re.IGNORECASE)
-            candidate = re.sub(r"[,\s]+(?:please|thanks|thank you)$", "", candidate, flags=re.IGNORECASE)
-        reserved = r"\b(?:and|or|yes|yeah|sure|no|actually|tomorrow|today|book|cancel|reschedule|instead|meant|please|unknown|hello|hi|thanks|restart|repeat|stop|help|want|need|weather|pizza|what|why|how|when|where|change|make|confirm|afternoon|evening|morning|don't|not|know|maybe|whatever|anything|tell|show|order|sing|play|can|could|would|is|are|does)\b"
-        if re.fullmatch(r"[^\W\d_]+(?:[ '\-][^\W\d_]+){0,3}", candidate, re.UNICODE) and not re.search(reserved, normalize(candidate)) and 2 <= len(candidate) <= 80:
-            e.name = candidate.title()
+    # Other slot values and corrections cannot accidentally become names.
+    if not (dates or candidates or e.service or e.reference or issues):
+        e.name = customer_name(text, expecting_name=expecting_name)
     for key in issues:
         setattr(e, key, None)
     return result
