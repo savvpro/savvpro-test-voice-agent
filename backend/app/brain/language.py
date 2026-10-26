@@ -102,7 +102,9 @@ def customer_name(text: str, *, expecting_name: bool) -> str | None:
     """Extract an entire name slot using bounded, anchored request wrappers."""
     candidate = intent_text(text)
     candidate = re.sub(r"^(?:(?:actually|please)[,\s]+)+", "", candidate)
-    candidate = re.sub(r"^(?:could you|can you|would you|i want you to)\s+(?:please\s+)?", "", candidate)
+    request_prefix = r"^(?:could you|can you|would you|i want you to|you should|you can)\s+(?:please\s+)?"
+    requested = bool(re.match(request_prefix, candidate))
+    candidate = re.sub(request_prefix, "", candidate)
     explicit = re.fullmatch(
         r"(?:use (?:(?:the|my) )?name(?: (?:is|of))?"
         r"|put (?:it|(?:(?:the|my) )?(?:booking|appointment)) under(?: the name)?"
@@ -111,7 +113,7 @@ def customer_name(text: str, *, expecting_name: bool) -> str | None:
     )
     if explicit:
         candidate = explicit[1]
-    elif expecting_name:
+    elif expecting_name or (requested and candidate.startswith("use ")):
         candidate = re.sub(r"^(?:(?:and|uh|um|erm|well|okay|ok|it's|it is)[,\s]+)+", "", candidate)
         candidate = re.sub(r"^use\s+", "", candidate)
     else:
@@ -126,15 +128,56 @@ def customer_name(text: str, *, expecting_name: bool) -> str | None:
     return None
 
 
+def explicit_name_clause(text: str) -> tuple[str | None, str, str | None]:
+    """Consume marked names independently of calendar/service validation.
+
+    Inline clauses require a creation request, a name marker, and a bounded
+    separator before subsequent details. Unmarked words never infer a name.
+    """
+    original = clean = normalize(text)
+    whole_name = customer_name(text, expecting_name=False)
+    if whole_name:
+        return whole_name, "", None
+    if recognize(text).intent != Intent.CREATE:
+        return None, clean, None
+    marker = r"\b(?:with (?:the )?name|under the name|use (?:(?:the|my) )?name(?: (?:is|of))?|my name is|the name is|call me)\s+"
+    boundary = (
+        r"\s+(?:and\s+)?(?:for|on|at)\b|,\s*"
+        r"|\s+and\s+(?=\d|(?:today|tomorrow|next|haircut|hair|beard|classic|combo|use|with|under)\b)"
+        r"|\s+(?=(?:today|tomorrow|yesterday|next)\b)"
+    )
+    names = set()
+    issue = None
+    for match in re.finditer(marker, original):
+        # A negated name instruction must never supply an affirmative value.
+        if re.search(r"\b(?:not|never|don't|do not)\b", clean[:match.start()]):
+            issue = "Which fictional customer name should I use instead?"
+            continue
+        remainder = original[match.end():]
+        separator = re.search(boundary, remainder)
+        end = match.end() + (separator.start() if separator else len(remainder))
+        value = customer_name("use name " + original[match.end():end], expecting_name=False)
+        if value:
+            names.add(value)
+            clean = clean[:match.start()] + " " * (end - match.start()) + clean[end:]
+        else:
+            issue = "Please give one fictional customer name, for example 'use the name Alex Example'."
+    if len(names) > 1:
+        issue = "I heard more than one name. Please give one fictional customer name."
+    return (next(iter(names)) if len(names) == 1 and not issue else None), clean, issue
+
+
 def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting_time: bool = False, expecting_date: bool = False) -> Extraction:
     result = Extraction()
     e, issues = result.entities, result.issues
-    t = normalize(text)
-    ref = re.search(r"\bnl[- ]?([a-z0-9]{8})\b", t)
+    e.name, clean, name_issue = explicit_name_clause(text)
+    if name_issue:
+        issues["name"] = name_issue
+    ref = re.search(r"\bnl[- ]?([a-z0-9]{8})\b", clean)
     if ref:
         e.reference = "NL-" + ref[1].upper()
     # References contain arbitrary letters/digits; never parse them as names/times.
-    clean = re.sub(r"\bnl[- ]?[a-z0-9]{8}\b", "", t)
+    clean = re.sub(r"\bnl[- ]?[a-z0-9]{8}\b", "", clean)
     # In an explicit directional change, the source is not a second requested
     # value. Alternatives without a direction still trigger ambiguity below.
     if re.search(r"\b(?:change|move|reschedule|switch)\b", clean):
@@ -213,8 +256,9 @@ def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting
     if re.search(r"\b(?:at|to)\s+\d{1,2}:\d{1}(?!\d)", time_text):
         issues["time"] = "Please give the complete time, for example 5:30 PM."
 
-    # Other slot values and corrections cannot accidentally become names.
-    if not (dates or candidates or e.service or e.reference or issues):
+    # Bare-name fallback requires a name context and no competing slot values.
+    # An explicit name clause above survives issues in any other field.
+    if e.name is None and not (dates or candidates or e.service or e.reference or issues):
         e.name = customer_name(text, expecting_name=expecting_name)
     for key in issues:
         setattr(e, key, None)

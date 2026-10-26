@@ -135,6 +135,13 @@ class Engine:
             reset()
             return finish("I haven't made any changes. What would you like to do next?", recognition.rule, "ask_intent", "Declined or negated the proposed action; nothing was written.")
 
+        if active and re.fullmatch(r"(?:i (?:just|already) told you (?:the|my) name|i already gave you my name)(?: bro)?", normalize(text)):
+            if c.entities.name:
+                reply = f"I have the name {c.entities.name} for this request. " + self.prompt(c)
+            else:
+                reply = "I don't have a name saved for this request. Please say 'use the name' followed by a fictional name."
+            return finish(reply, "context.name_reminder", "show_name", "Answered using only the current draft's stored name; did not guess, change the proposal or write a booking.")
+
         availability_result = c.current_intent == Intent.AVAILABILITY and c.state == State.COMPLETED and bool(c.available_slots)
         accept_offer = recognition.intent == Intent.CONFIRM and availability_result
         accept_with_details = recognition.rule == "confirmation.with_details" and bool(found or parsed.issues)
