@@ -1,83 +1,69 @@
-# Step-by-Step Guide: How to Fork, Clone, and Submit Your Assessment
+# Deterministic Automotive Service Voice Assistant
 
-**Repository:** https://github.com/savvpro/savvpro-test-voice-agent
+A production-style assessment demo that books a fictional automotive service appointment by voice or text. The Python brain is a deterministic finite-state workflow: it does not call an LLM.
 
----
+## What it demonstrates
 
-## Step 1: Fork the Repository
+- Push-to-talk speech input and browser text-to-speech
+- Text fallback for unsupported/denied microphone access
+- A visible decision panel with state, action, reason, accepted values, and draft
+- Corrections, bounded retries, relative dates, ambiguous-time clarification, alternatives, and explicit confirmation
+- Capacity-aware, single-process booking with idempotent turns and optimistic session versions
+- Fake, ephemeral data only
 
-1. Go to the repository: https://github.com/savvpro/savvpro-test-voice-agent
-2. Click the **Fork** button in the top-right corner.
-3. This will create a copy of the repository in your GitHub account.
+## Run locally
 
----
-
-## Step 2: Clone Your Fork
-
-1. Open your forked repository in your GitHub account.
-2. Click the green **Code** button and copy the URL.
-3. Run the following commands:
+Requirements: Python 3.12+, Node.js 20+, and Chrome or Edge for the voice demo.
 
 ```bash
-git clone https://github.com/your-username/savvpro-test-voice-agent.git
-cd savvpro-test-voice-agent
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+pip install -e ".[dev]"
+uvicorn app.main:app --app-dir backend --reload
 ```
 
----
-
-## Step 3: Read the Task
-
-Open and read **TASK.md** carefully before writing any code.
-
-- TASK.md URL: https://github.com/savvpro/savvpro-test-voice-agent/blob/main/TASK.md
-
----
-
-## Step 4: Create a New Branch
-
-Branch pattern: `candidate-<your-github-username>`
+In a second terminal:
 
 ```bash
-git checkout -b candidate-<your-github-username>
+cd frontend
+npm install
+npm run dev
 ```
 
-**Example:**
-```bash
-git checkout -b candidate-johndoe
-```
+Open `http://localhost:5173`. The UI proxies API calls to `http://localhost:8000`.
 
----
-
-## Step 5: Complete the Task
-
-Build the full application on your branch.
-
----
-
-## Step 6: Push Your Branch
+## Test and verify
 
 ```bash
-git add .
-git commit -m "feat: complete voice-agent assessment"
-git push origin candidate-<your-github-username>
+pytest
+ruff check backend
+cd frontend
+npm run lint
+npm run build
 ```
 
----
+Backend container smoke test:
 
-## Step 7: Create a Pull Request
+```bash
+docker build -t savvpro-voice-agent .
+docker run --rm -p 8000:8000 savvpro-voice-agent
+curl http://localhost:8000/health
+```
 
-1. Go to your **forked** repository on GitHub (`https://github.com/your-username/savvpro-test-voice-agent`).
-2. Click **Compare & pull request** (GitHub will show this banner after you push your branch).
-3. Ensure the following settings in the PR form:
-   - **Base repository:** `savvpro/savvpro-test-voice-agent` ← the original repo
-   - **Base branch:** `main`
-   - **Head repository:** `your-username/savvpro-test-voice-agent` ← your fork
-   - **Compare branch:** `candidate-<your-github-username>`
-4. Use the title: `feat: complete voice-agent assessment`
-5. Submit the pull request.
+## Demo script
 
-> 💡 **Tip:** If you don't see the banner, go to the original repo (`savvpro/savvpro-test-voice-agent`), click the **Pull requests** tab, then click **New pull request** → **compare across forks**.
+1. Start a session and say/type `Sara Khan`.
+2. Enter `555 123 4567`.
+3. Continue with `2021`, `Toyota Corolla`, and `oil change`.
+4. Say `tomorrow`, then `at 4` to see deterministic clarification.
+5. Enter `4 pm`; review the visible decision and summary.
+6. Say `yes`; retrying the same HTTP turn cannot create a second booking.
 
----
+Try `cancel the oil change, I want a tire rotation`, a taken slot, `start over`, or a bare `yes` at the wrong time.
 
-> ⚠️ **Important:** No submissions will be accepted after the deadline.
+## Explicit limits
+
+This is an assessment demo, not a production deployment. Storage is in memory, is lost on restart, and protects against double booking only inside one Python process. Run one backend worker. Browser STT availability varies and may use a browser vendor's network service; text input exercises the exact same brain.
+
+See [DESIGN.md](DESIGN.md), [PLAN.md](PLAN.md), and [AI_USAGE.md](AI_USAGE.md).
