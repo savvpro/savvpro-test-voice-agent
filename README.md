@@ -1,83 +1,44 @@
-# Step-by-Step Guide: How to Fork, Clone, and Submit Your Assessment
+# Savv Voice Agent — Restaurant Table Booking
 
-**Repository:** https://github.com/savvpro/savvpro-test-voice-agent
+A voice assistant that takes restaurant bookings over the phone.
+The backend uses a deterministic Python state machine — **no LLM is used for decision making**.
 
----
+## Architecture
 
-## Step 1: Fork the Repository
+Browser Mic → Web Speech API → Text
+  → FastAPI `/chat` → **Rule-based State Machine (Brain)** → Reply Text
+  → Web Speech API → Spoken Reply
 
-1. Go to the repository: https://github.com/savvpro/savvpro-test-voice-agent
-2. Click the **Fork** button in the top-right corner.
-3. This will create a copy of the repository in your GitHub account.
+## Setup Instructions
 
----
-
-## Step 2: Clone Your Fork
-
-1. Open your forked repository in your GitHub account.
-2. Click the green **Code** button and copy the URL.
-3. Run the following commands:
-
+### 1. Backend (Python)
 ```bash
-git clone https://github.com/your-username/savvpro-test-voice-agent.git
-cd savvpro-test-voice-agent
-```
+cd backend
+python -m venv .venv
+# Windows: .\.venv\Scripts\Activate.ps1 | Mac/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+2. Frontend (Next.js)
+bash
+cd frontend
+npm install
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
+npm run dev
+Open http://localhost:3000 in Chrome or Edge (required for Web Speech API).
 
----
+Running Tests
+bash
+cd backend
+pytest -v
+Try these Edge Cases
+Say "banana" when asked for a day → reprompted.
 
-## Step 3: Read the Task
+Ask for 12 people → redirected to events team.
 
-Open and read **TASK.md** carefully before writing any code.
+At the confirm step say "actually make it 8 pm" → time updates, re-confirms.
 
-- TASK.md URL: https://github.com/savvpro/savvpro-test-voice-agent/blob/main/TASK.md
+Say "cancel" at any time → cancels the booking.
 
----
+Ask "do you have coffee?" → politely answered, then steers back to the task.
 
-## Step 4: Create a New Branch
-
-Branch pattern: `candidate-<your-github-username>`
-
-```bash
-git checkout -b candidate-<your-github-username>
-```
-
-**Example:**
-```bash
-git checkout -b candidate-johndoe
-```
-
----
-
-## Step 5: Complete the Task
-
-Build the full application on your branch.
-
----
-
-## Step 6: Push Your Branch
-
-```bash
-git add .
-git commit -m "feat: complete voice-agent assessment"
-git push origin candidate-<your-github-username>
-```
-
----
-
-## Step 7: Create a Pull Request
-
-1. Go to your **forked** repository on GitHub (`https://github.com/your-username/savvpro-test-voice-agent`).
-2. Click **Compare & pull request** (GitHub will show this banner after you push your branch).
-3. Ensure the following settings in the PR form:
-   - **Base repository:** `savvpro/savvpro-test-voice-agent` ← the original repo
-   - **Base branch:** `main`
-   - **Head repository:** `your-username/savvpro-test-voice-agent` ← your fork
-   - **Compare branch:** `candidate-<your-github-username>`
-4. Use the title: `feat: complete voice-agent assessment`
-5. Submit the pull request.
-
-> 💡 **Tip:** If you don't see the banner, go to the original repo (`savvpro/savvpro-test-voice-agent`), click the **Pull requests** tab, then click **New pull request** → **compare across forks**.
-
----
-
-> ⚠️ **Important:** No submissions will be accepted after the deadline.
+See DESIGN.md for the full state machine and logic.
