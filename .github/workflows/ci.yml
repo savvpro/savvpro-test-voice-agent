@@ -1,0 +1,77 @@
+name: Verify
+on: [push, pull_request]
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: python -m venv .venv
+      - run: .venv/bin/python -m pip install -r backend/requirements-dev.lock
+      - run: .venv/bin/python -m pip install --no-deps --no-build-isolation -e backend
+      - working-directory: backend
+        run: |
+          ../.venv/bin/python -m ruff check .
+          ../.venv/bin/python -m ruff format --check .
+          ../.venv/bin/python -m mypy src
+          ../.venv/bin/python -m pytest --cov=lost_property --cov-branch --cov-report=json --cov-report=xml --cov-fail-under=85
+          ../.venv/bin/python scripts/check_domain_coverage.py --minimum 95
+          ../.venv/bin/python -m pip_audit -r requirements.lock
+          ../.venv/bin/python -m pip_audit -r requirements-dev.lock
+
+  frontend-and-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: python -m venv .venv
+      - run: .venv/bin/python -m pip install -r backend/requirements-dev.lock
+      - run: .venv/bin/python -m pip install --no-deps --no-build-isolation -e backend
+      - working-directory: frontend
+        run: |
+          npm ci --ignore-scripts
+          npm run lint
+          npm run typecheck
+          npm run test:coverage
+          npm run api:check
+          npm run build
+          npm run check:bundle
+          npm audit --audit-level=high
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t riverside-assessment .
+      - run: |
+          docker run -d --name riverside-ci -e DEMO_MODE=true -p 127.0.0.1:8080:8000 riverside-assessment
+          for attempt in $(seq 1 30); do
+            if curl --fail http://127.0.0.1:8080/health/ready; then exit 0; fi
+            sleep 2
+          done
+          docker logs riverside-ci
+          exit 1
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
