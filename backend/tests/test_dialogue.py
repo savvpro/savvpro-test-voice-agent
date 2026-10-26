@@ -347,3 +347,53 @@ def test_specialty_change_time_uses_any_gp(conn: sqlite3.Connection) -> None:
     )
     assert "Dr. Omar Khan" in turns[-2][0]
     assert turns[-1][1].action == "confirm_booking" and "Dr. Anita Patel" in turns[-1][0]
+
+
+# ---------- fix round 2: agreeing details at read-back are not corrections ----------
+
+KHAN = ("book with dr khan tomorrow at 11am my name is sara lee", "march 4 1990")
+
+
+def test_yes_with_agreeing_detail_books(conn: sqlite3.Connection) -> None:
+    turns = talk(conn, *KHAN, "yes it's just for a checkup")
+    assert turns[-1][1].action == "booked"
+    [a] = find_upcoming(conn, NOW, name="Sara Lee", dob=datetime(1990, 3, 4).date())
+    assert (a.doctor_id, a.start) == ("khan", datetime(2026, 10, 27, 11))
+    turns = talk(conn, "book with dr khan tomorrow at 10am my name is tom hill", "june 5 1970",
+                 "yes, morning is great")  # fmt: skip
+    assert turns[-1][1].action == "booked"
+    [a] = find_upcoming(conn, NOW, name="Tom Hill", dob=datetime(1970, 6, 5).date())
+    assert a.start == datetime(2026, 10, 27, 10)
+    turns = talk(conn, "book with dr patel tomorrow at 2pm my name is sam lee", "march 4 1990",
+                 "yes the afternoon works")  # fmt: skip
+    assert turns[-1][1].action == "booked"
+
+
+def test_conflicting_detail_is_a_correction(conn: sqlite3.Connection) -> None:
+    turns = talk(conn, *KHAN, "yes but in the afternoon")
+    assert turns[-1][1].action == "offer_slots"
+    turns = talk(conn, *KHAN, "yes it's for a skin rash")
+    assert turns[-1][1].action == "confirm_booking" and "Dr. Linh Nguyen" in turns[-1][0]
+
+
+def test_agreeing_specialty_keeps_doctor_while_collecting(conn: sqlite3.Connection) -> None:
+    turns = talk(conn, "book", "sara lee", "march 4 1990", "dr khan", "it's for a general checkup",
+                 "tomorrow at 11am")  # fmt: skip
+    assert "Dr. Omar Khan" in turns[-1][0]
+
+
+def test_actually_is_not_a_correction(conn: sqlite3.Connection) -> None:
+    turns = talk(conn, *BASE, "yes that's actually perfect")
+    assert turns[-1][1].action == "booked"
+
+
+def test_misses_reset_after_found(conn: sqlite3.Connection) -> None:
+    state, turns = run(conn, "cancel", "CLN-ZZZZ", "CLN-JC01")
+    assert turns[-1][1].action == "confirm_cancel" and state.misses == 0
+
+
+def test_repeating_taken_slot_while_offering_explains(conn: sqlite3.Connection) -> None:
+    taken = ("book with dr khan tomorrow at 3pm", "alex kim", "jan 2 1980", "tomorrow at 3pm")
+    state, turns = run(conn, *taken)
+    assert turns[-1][1].action == "offer_slots" and "taken" in turns[-1][0]
+    assert state.failures == 0

@@ -25,7 +25,7 @@ _FLOWS: dict[Intent, Flow] = {
 # A flow word ("yes, book it") only confirms with a plain yes and no negation anywhere.
 _YES = re.compile(r"\b(yes|yeah|yep|yup)\b")
 _NEG = re.compile(r"\b(no|not|don'?t|never)\b")
-_CORRECTION = re.compile(r"\b(but|instead|actually|rather|change|make it)\b")
+_CORRECTION = re.compile(r"\b(but|instead|rather|change|make it)\b")
 # ponytail: stop-list heuristic for "doctor <word>" that isn't a name; grow it as calls show misses
 _DR_WORD = re.compile(r"\b(?:dr\.?|doctor)\s+([a-z'-]+)")
 # fmt: off
@@ -201,6 +201,9 @@ def _merge(s: CallState, ent: Entities) -> set[str]:
     new = {k: v for k, v in ent.as_dict().items() if k in SLOT_KEYS}
     if ent.any_doctor and "doctor_id" not in new:
         new.setdefault("specialty", sl.get("specialty", "general practice"))
+    chosen = doctor_by_id(sl.get("doctor_id", ""))
+    if chosen and "doctor_id" not in new and new.get("specialty") == chosen.specialty:
+        del new["specialty"]  # "Dr Khan ... it's a checkup" agrees with the doctor
     if s.flow == "reschedule":  # a reschedule keeps the original doctor
         new.pop("doctor_id", None)
         new.pop("specialty", None)
@@ -392,6 +395,7 @@ def _lookup(s: CallState, conn: Conn, now: datetime) -> Reply:
             s.flow, s.step, s.misses = "book", "done", 0
             return _ask(s, "not_found", Slot.CONFIRM, failures=1)
         return _ask(s, "not_found", Slot.NAME, failures=0)
+    s.misses = 0
     if len(found) > 1:
         s.matches = [a.ref for a in found[:3]]
         s.step = "choosing"
@@ -432,11 +436,14 @@ def _on_offering(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -
             (k for k, (_, t) in enumerate(s.offers) if t[11:] == hhmm and day in (None, t[:10])),
             None,
         )
-    elif full.date or full.time or full.part_of_day:
-        return None  # a new day/time: re-run the slot check
-    elif p.intent == Intent.AFFIRM:
+    if idx is None and (full.date or full.time or full.part_of_day):
+        # a new day/time, or the taken one again: re-run the slot check (explains + re-offers)
+        _merge(s, full)
+        s.step, s.offers, s.failures = "collecting", [], 0
+        return _collect(s, conn, now)
+    if idx is None and p.intent == Intent.AFFIRM:
         idx = 0
-    elif p.intent == Intent.DENY:
+    elif idx is None and p.intent == Intent.DENY:
         s.step, s.offers, s.failures = "collecting", [], 0
         for k in ("date", "time", "part_of_day"):
             s.slots.pop(k, None)
@@ -452,9 +459,7 @@ def _on_offering(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -
 
 
 def _on_confirming(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -> Reply | None:
-    relevant = {"ref", "name", "dob"} if s.flow == "cancel" else set(SLOT_KEYS)
-    said = {k: v for k, v in p.entities.as_dict().items() if k in relevant}
-    if any(s.slots.get(k) != v for k, v in said.items()):
+    if _conflicts(s, p.entities):
         return None  # a correction ("no, make it 3:30"): merge it and read back again
     if p.intent == Intent.DENY or (p.intent in _FLOWS and _NEG.search(low)):
         s.failures = 0
@@ -469,6 +474,23 @@ def _on_confirming(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime)
         s.failures = 0
         return _execute(s, conn, now)
     return None
+
+
+def _conflicts(s: CallState, ent: Entities) -> bool:
+    """Does the turn contradict the read-back? Details that agree ("yes, mornings are great",
+    "yes, it's a checkup" for a GP) are not corrections."""
+    sl = s.slots
+    relevant = {"ref", "name", "dob"} if s.flow == "cancel" else set(SLOT_KEYS)
+    for k, v in ent.as_dict().items():
+        if k not in relevant or sl.get(k) == v:
+            continue
+        if k == "part_of_day" and "time" in sl and (sl["time"] < "12:00") == (v == "morning"):
+            continue  # "morning is great" for 11:00
+        doctor = doctor_by_id(sl.get("doctor_id", ""))
+        if k == "specialty" and doctor and doctor.specialty == v:
+            continue  # "it's a checkup" for a GP
+        return True
+    return False
 
 
 def _is_yes(p: Parsed, low: str) -> bool:
