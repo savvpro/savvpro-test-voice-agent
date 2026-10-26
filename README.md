@@ -24,7 +24,7 @@ Backend (Python 3.11):
 
 ```bash
 cd backend
-~/.pyenv/versions/3.11.16/bin/python -m venv .venv   # or: pyenv shell 3.11 && python -m venv .venv
+python3.11 -m venv .venv                             # pyenv users: pyenv shell 3.11 first
 .venv/bin/pip install -r requirements-dev.txt
 .venv/bin/uvicorn app.main:app --reload              # http://localhost:8000
 ```
@@ -88,8 +88,10 @@ Environment variables (see `.env.example`; no secrets):
 ## API
 
 - `GET /api/health`
-- `POST /api/calls` -> `{call_id, reply, decision}` (starts a call, returns the greeting)
-- `POST /api/calls/{call_id}/turns` with `{"text": "..."}` -> `{reply, decision, ended}`
+- `POST /api/calls` (starts a call, returns the greeting) -> `{call_id, reply, decision, ended}`
+- `POST /api/calls/{call_id}/turns` with `{"text": "..."}` -> `{call_id, reply, decision, ended}`
+
+`decision` is `{intent, entities, state, action, slots}`.
 
 Calls idle for 30 minutes expire (404).
 
