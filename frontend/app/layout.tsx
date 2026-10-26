@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VoxDesk — Northline Studio",
+  title: "VoxDesk",
   description:
     "An explainable voice receptionist. Every decision made by deterministic Python rules.",
 };

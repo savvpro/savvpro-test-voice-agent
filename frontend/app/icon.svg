@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>VoxDesk</title>
+  <rect width="32" height="32" rx="9" fill="#7fcba6" />
+  <g transform="translate(6 6) scale(.833333)" fill="none" stroke="#143c2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 10v3M6 6v11M10 3v18M14 8v7M18 5v13M22 10v3" />
+  </g>
+</svg>
