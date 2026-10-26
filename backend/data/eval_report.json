@@ -1,0 +1,131 @@
+{
+  "test_samples": 33,
+  "accuracy": 0.848,
+  "per_class": {
+    "current_expense": {
+      "support": 1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "expense_log": {
+      "support": 2,
+      "precision": 0.5,
+      "recall": 0.5,
+      "f1": 0.5
+    },
+    "follow_up": {
+      "support": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "history": {
+      "support": 1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "income_rejection": {
+      "support": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "log_update": {
+      "support": 1,
+      "precision": 0.25,
+      "recall": 1.0,
+      "f1": 0.4
+    },
+    "out_of_scope": {
+      "support": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "query_total": {
+      "support": 24,
+      "precision": 0.958,
+      "recall": 0.958,
+      "f1": 0.958
+    },
+    "small_talk": {
+      "support": 1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  },
+  "confusion": {
+    "expense_log": {
+      "log_update": 1,
+      "expense_log": 1
+    },
+    "query_total": {
+      "query_total": 23,
+      "log_update": 1
+    },
+    "follow_up": {
+      "expense_log": 1
+    },
+    "history": {
+      "history": 1
+    },
+    "current_expense": {
+      "current_expense": 1
+    },
+    "log_update": {
+      "log_update": 1
+    },
+    "income_rejection": {
+      "query_total": 1
+    },
+    "out_of_scope": {
+      "log_update": 1
+    },
+    "small_talk": {
+      "small_talk": 1
+    }
+  },
+  "mean_confidence_correct": 0.885,
+  "mean_confidence_wrong": 0.241,
+  "confident_share": 0.697,
+  "accuracy_when_confident": 1.0,
+  "misses": [
+    {
+      "text": "Add a new expense",
+      "expected": "expense_log",
+      "got": "log_update",
+      "confidence": 0.1466
+    },
+    {
+      "text": "Same for last month",
+      "expected": "follow_up",
+      "got": "expense_log",
+      "confidence": 0.1765
+    },
+    {
+      "text": "Give me an expense summary",
+      "expected": "query_total",
+      "got": "log_update",
+      "confidence": 0.3061
+    },
+    {
+      "text": "I earned money today",
+      "expected": "income_rejection",
+      "got": "query_total",
+      "confidence": 0.3081
+    },
+    {
+      "text": "Help me write an email",
+      "expected": "out_of_scope",
+      "got": "log_update",
+      "confidence": 0.2696
+    }
+  ],
+  "brier": 0.0626,
+  "temperature": 1.0,
+  "train_samples": 124,
+  "corrections_used": 1
+}

@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "default_currency": "USD",
+  "hours": {},
+  "intents": [
+    {
+      "name": "expense_log",
+      "slots": ["amount", "currency", "category", "date", "description"],
+      "reply_template": "I'll confirm the expense details before saving.",
+      "examples": [
+        "I spent 12 dollars on lunch",
+        "Log 40 USD for clothes",
+        "I bought coffee",
+        "Add a new expense",
+        "Spent four fifty on dinner",
+        "Record $8 for snacks",
+        "Put 15 on transport",
+        "I paid 7.25 for parking"
+      ]
+    },
+    {
+      "name": "query_total",
+      "slots": ["period", "category"],
+      "reply_template": "I'll calculate spending for the requested period and category.",
+      "templates": {
+        "openers": ["what is my", "how much is my", "tell me my", "can you tell me my", "show me my"],
+        "subjects": ["total expense", "total spending", "spend", "expenses", "total cost"],
+        "periods": ["", "today", "yesterday", "this week", "this month", "for today", "of today"]
+      },
+      "examples": [
+        "What is my total spending of today",
+        "How much did I spend on food Monday",
+        "What is my total expense",
+        "What did I spend money on today",
+        "Show me my spending this month",
+        "How much did I spend last week"
+      ]
+    },
+    {
+      "name": "follow_up",
+      "slots": ["period", "category", "amount"],
+      "reply_template": "I'll carry forward the previous intent and update its slots.",
+      "examples": [
+        "And yesterday",
+        "What about food",
+        "How about this week",
+        "Same for last month",
+        "Make that last week",
+        "Only on dining"
+      ]
+    },
+    {
+      "name": "spending_summary",
+      "slots": [],
+      "reply_template": "I'll calculate your saved spending total.",
+      "examples": [
+        "What is my total spending",
+        "How much have I spent",
+        "What are my total expenses",
+        "Give me an expense summary",
+        "How much money did I spend overall",
+        "Summarize my spending",
+        "Show total of all expenses"
+      ]
+    },
+    {
+      "name": "today_report",
+      "slots": ["date"],
+      "reply_template": "I'll summarize today's expenses and items.",
+      "examples": [
+        "How much did I spend today",
+        "What did I spend money on today",
+        "Show today's spending breakdown",
+        "How many expenses do I have today",
+        "Which things did I spend on today"
+      ]
+    },
+    {
+      "name": "spending_breakdown",
+      "slots": ["category"],
+      "reply_template": "I'll group your expenses by category.",
+      "examples": [
+        "What are the things I spend money on",
+        "Where do I spend money",
+        "What do I spend money on",
+        "Show spending by category",
+        "What things do I buy"
+      ]
+    },
+    {
+      "name": "history",
+      "slots": [],
+      "reply_template": "I'll list the saved expenses in this session.",
+      "examples": [
+        "What are these expenses",
+        "Show my expense history",
+        "What are these two logged expenses",
+        "List my saved expenses",
+        "Why are there two logged expenses",
+        "Show my saved entries",
+        "Display my expense history"
+      ]
+    },
+    {
+      "name": "current_expense",
+      "slots": [],
+      "reply_template": "I'll show the latest saved expense.",
+      "examples": [
+        "What is my current expense",
+        "What was my latest expense",
+        "Show my most recent expense",
+        "What was the last expense"
+      ]
+    },
+    {
+      "name": "log_update",
+      "slots": ["amount", "category", "description"],
+      "reply_template": "I can add, edit, or remove a saved expense.",
+      "examples": [
+        "Can you help me update this log",
+        "Edit an expense entry",
+        "Change a record in my expense log",
+        "Remove an expense",
+        "Can I fix my spending record",
+        "Change food from $5 to $7",
+        "Update that entry to 12 dollars"
+      ]
+    },
+    {
+      "name": "income_rejection",
+      "slots": ["amount", "currency"],
+      "reply_template": "I log spending, not income.",
+      "examples": [
+        "I got paid 5000",
+        "I received my salary",
+        "This is income",
+        "I earned money today",
+        "My paycheck arrived",
+        "I received a deposit",
+        "Salary payment"
+      ]
+    },
+    {
+      "name": "out_of_scope",
+      "slots": [],
+      "reply_template": "I can help with expense tracking, but not that request.",
+      "examples": [
+        "What is the weather",
+        "Tell me a joke",
+        "Who won the game",
+        "Help me write an email",
+        "What time is it",
+        "Book me a flight",
+        "Translate this"
+      ]
+    },
+    {
+      "name": "small_talk",
+      "slots": [],
+      "reply_template": "I'm Penny, your expense assistant.",
+      "examples": [
+        "How are you",
+        "Where do you live",
+        "Who are you",
+        "Why would I tell you something",
+        "Hello"
+      ]
+    }
+  ]
+}
