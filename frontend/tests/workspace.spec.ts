@@ -17,6 +17,55 @@ async function open(page: Page) {
   if (await mute.isEnabled()) await mute.click();
 }
 
+for (const { width, suggestion, expectedReply } of [
+  {
+    width: 390,
+    suggestion: "Explore availability",
+    expectedReply: "Available starts:",
+  },
+  { width: 1440, suggestion: "Services & pricing", expectedReply: "PKR" },
+]) {
+  test(`first-turn suggestions sit above the composer and stay dismissed at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page);
+    const suggestions = page.getByRole("region", {
+      name: "Conversation suggestions",
+    });
+    const input = page.getByRole("textbox", { name: "Your message" });
+    await expect(suggestions).toBeVisible();
+    await expect(suggestions.getByRole("button")).toHaveCount(2);
+    await expect(page.locator(".inspector-toggle")).toHaveText(
+      "Decision inspector",
+    );
+    await expect(page.locator(".inspector-toggle span")).toBeVisible();
+    const choices = (await suggestions.boundingBox())!;
+    const composer = (await page.locator(".composer").boundingBox())!;
+    expect(choices.y + choices.height).toBeLessThanOrEqual(composer.y);
+    expect(
+      Math.abs(choices.x + choices.width / 2 - composer.x - composer.width / 2),
+    ).toBeLessThan(2);
+    await input.fill("An unsent draft");
+    await expect(suggestions).toBeVisible();
+    await suggestions
+      .getByRole("button", { name: suggestion, exact: true })
+      .click();
+    await expect(input).toBeEnabled();
+    await expect(page.getByRole("log")).toContainText(expectedReply);
+    await expect(suggestions).toHaveCount(0);
+    await page.reload();
+    await expect(input).toBeEnabled();
+    await expect(suggestions).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "New session", exact: true })
+      .click();
+    await expect(suggestions).toBeVisible();
+    await message(page, "What are your hours?");
+    await expect(suggestions).toHaveCount(0);
+  });
+}
+
 test("navigation and inspector resize independently without losing a draft", async ({
   page,
 }) => {

@@ -439,6 +439,7 @@ export default function Home() {
               aria-controls="decision-inspector-panel"
               onClick={toggleInspector}
             >
+              <span>Decision inspector</span>
               <ChevronRight size={19} className="inspector-arrow" />
             </button>
           </section>
@@ -634,6 +635,31 @@ export default function Home() {
               )}
 
               <div className="composer-wrap">
+                {conversation?.revision === 0 && !pending && (
+                  <section
+                    className="quick-start"
+                    aria-label="Conversation suggestions"
+                  >
+                    {[
+                      "Check beard trim availability Friday",
+                      "What are your services and prices?",
+                    ].map((text, i) => (
+                      <button
+                        key={text}
+                        disabled={disabled}
+                        onClick={() => void submit(text)}
+                      >
+                        {i === 0 ? (
+                          <Clock3 size={13} />
+                        ) : (
+                          <CircleHelp size={13} />
+                        )}
+                        {["Explore availability", "Services & pricing"][i]}
+                        <ArrowRight size={12} />
+                      </button>
+                    ))}
+                  </section>
+                )}
                 {waiting && !disabled && (
                   <div className="confirmation-actions">
                     <span>Ready when you are</span>
@@ -944,22 +970,6 @@ export default function Home() {
               </p>
             </div>
           </section>
-          <div className="quick-start" hidden={activeView !== "voice"}>
-            {[
-              "Check beard trim availability Friday",
-              "What are your services and prices?",
-            ].map((text, i) => (
-              <button
-                key={text}
-                disabled={disabled}
-                onClick={() => void submit(text)}
-              >
-                {i === 0 ? <Clock3 size={13} /> : <CircleHelp size={13} />}
-                {["Explore availability", "Services & pricing"][i]}
-                <ArrowRight size={12} />
-              </button>
-            ))}
-          </div>
           <footer>
             <span>
               <span className="synthetic-tag">

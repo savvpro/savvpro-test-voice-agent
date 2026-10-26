@@ -366,10 +366,6 @@ main {
 .with-inspector .page-heading {
   padding-right: 376px;
 }
-.with-inspector .quick-start {
-  width: calc(100% - 376px);
-  margin-left: 0;
-}
 h1 {
   font-size: clamp(24px, 2.2vw, 29px);
   font-weight: 600;
@@ -386,6 +382,14 @@ h1 {
   line-height: 1.6;
 }
 .inspector-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: nowrap;
   position: absolute;
   top: 24px;
   right: 0;
@@ -1297,11 +1301,11 @@ h1 {
 .quick-start {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 7px;
   flex-shrink: 0;
-  width: min(100%, 800px);
-  margin: 12px auto 0;
+  width: 100%;
+  margin: 0 auto 14px;
 }
 .quick-start button {
   display: flex;
@@ -1402,9 +1406,6 @@ footer button {
   .with-inspector .page-heading {
     padding-right: 328px;
   }
-  .with-inspector .quick-start {
-    width: calc(100% - 328px);
-  }
   .version {
     display: none;
   }
@@ -1423,10 +1424,6 @@ footer button {
 @media (max-width: 850px) {
   .with-inspector .page-heading {
     padding-right: 0;
-  }
-  .with-inspector .quick-start {
-    width: min(100%, 800px);
-    margin-left: auto;
   }
   .app-shell {
     --rail-width: 64px;
@@ -1602,7 +1599,7 @@ footer button {
     padding: 22px 0 16px;
   }
   .page-heading > div {
-    padding-right: 46px;
+    padding-right: 0;
   }
   h1 {
     font-size: 23px;
@@ -1611,7 +1608,10 @@ footer button {
     font-size: 11px;
   }
   .inspector-toggle {
-    top: 17px;
+    position: static;
+    display: flex;
+    width: max-content;
+    margin: 12px 0 0 auto;
   }
   .messages {
     padding: 10px 0 4px;
@@ -1685,7 +1685,6 @@ footer button {
     padding: 8px 10px;
   }
   .quick-start {
-    margin-top: 10px;
     gap: 6px;
   }
   .quick-start button {
@@ -1736,7 +1735,7 @@ footer button {
     top: 10px;
   }
   .quick-start {
-    margin-top: 6px;
+    margin-bottom: 8px;
   }
   .message {
     margin-bottom: 18px;
