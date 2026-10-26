@@ -50,6 +50,13 @@ def confirms_action(text: str, intent: Intent) -> bool:
     return bool(re.fullmatch(rf"{AFFIRMATIVE}(?: please)? {verb} {target}(?: please)?", intent_text(text)))
 
 
+def confirmation_target(text: str) -> Intent | None:
+    """Action-specific confirmations must match the proposal they authorize."""
+    return {"confirm booking": Intent.CREATE,
+            "confirm cancellation": Intent.CANCEL,
+            "confirm reschedule": Intent.RESCHEDULE}.get(intent_text(text))
+
+
 @dataclass
 class Recognition:
     intent: Intent

@@ -3,7 +3,10 @@ import re
 from datetime import date, datetime
 from typing import Protocol
 
-from app.brain.language import Recognition, confirms_action, extract, intent_text, normalize, recognize, schedule_change_field
+from app.brain.language import (
+    Recognition, confirmation_target, confirms_action, extract, intent_text,
+    normalize, recognize, schedule_change_field,
+)
 from app.catalog import ADDRESS_INFO, BUSINESS_INFO, HOURS_INFO, SERVICE_INFO, SERVICES
 from app.schemas import AppointmentView, Decision, Entities, Intent, Message, SessionView, State
 
@@ -176,6 +179,13 @@ class Engine:
         if recognition.intent == Intent.CONFIRM and not found and not parsed.issues:
             if c.state != State.CONFIRMING or not c.proposed_action:
                 return finish("There is no action ready to confirm. " + self.prompt(c), "confirmation.no_proposal", "clarify", "Confirmation is valid only after a complete proposal.", clarify=True)
+            named_target = confirmation_target(text)
+            if named_target is not None and named_target != c.current_intent:
+                c.proposed_action = None
+                c.state = {Intent.CREATE: State.COLLECTING,
+                           Intent.RESCHEDULE: State.RESCHEDULING,
+                           Intent.CANCEL: State.CANCELLING}[c.current_intent]
+                return finish("That confirmation names a different action. Nothing was changed. Please restate whether you want to book, reschedule, or cancel.", "confirmation.target_mismatch", "clarify_intent", "An action-specific confirmation did not match the pending proposal. Cleared authorization without changing the calendar.", clarify=True)
             try:
                 if c.current_intent == Intent.CREATE:
                     c.appointment = self.bookings.create(c.entities)
