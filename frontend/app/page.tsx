@@ -31,6 +31,7 @@ import type { Business, Conversation, PendingTurn } from "@/lib/types";
 import { useVoice } from "@/lib/use-voice";
 import { createSessionCache } from "@/lib/session-cache";
 import { AppointmentCard } from "@/components/appointment-card";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const labels: Record<string, string> = {
   haircut: "Classic Haircut",
@@ -55,6 +56,10 @@ export default function Home() {
   const [speechLanguage, setSpeechLanguage] = useState("en-US");
   const [traceOpen, setTraceOpen] = useState(false);
   const [showServices, setShowServices] = useState(false);
+  const [activeView, setActiveView] = useState<"voice" | "appointment">(
+    "voice",
+  );
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const messageList = useRef<HTMLDivElement>(null);
   const messageInput = useRef<HTMLInputElement>(null);
   const restoreInputFocus = useRef(false);
@@ -238,47 +243,122 @@ export default function Home() {
     ? Object.entries(entities).filter(([, value]) => value)
     : [];
 
+  const showingInspector = activeView === "voice" && inspectorOpen;
+  function toggleInspector() {
+    setActiveView("voice");
+    setInspectorOpen(!showingInspector);
+  }
+
   return (
     <div className="app-shell">
       <aside className="rail" aria-label="Application">
         <a className="brand-symbol" href="/" aria-label="VoxDesk home">
-          <AudioLines size={23} />
+          <span className="brand-icon">
+            <AudioLines size={23} />
+          </span>
+          <span className="brand-copy">
+            voxdesk<small>WORKSPACE</small>
+          </span>
         </a>
         <div className="rail-rule" />
-        <span className="rail-active" title="Receptionist">
-          <Headphones size={20} />
-        </span>
+        <span className="rail-label">WORKSPACE</span>
+        <button
+          className={activeView === "voice" ? "rail-active" : "rail-button"}
+          title="Voice receptionist"
+          aria-label="Voice receptionist"
+          aria-current={activeView === "voice" ? "page" : undefined}
+          onClick={() => setActiveView("voice")}
+        >
+          <Headphones size={18} />
+          <span>Voice receptionist</span>
+        </button>
+        <button
+          className={
+            activeView === "appointment" ? "rail-active" : "rail-button"
+          }
+          title="Your appointment"
+          aria-label="View appointment"
+          aria-current={activeView === "appointment" ? "page" : undefined}
+          onClick={() => setActiveView("appointment")}
+        >
+          <CalendarDays size={18} />
+          <span>Appointment</span>
+        </button>
         <button
           className="rail-button"
           onClick={() => setShowServices(!showServices)}
           aria-label="View studio services"
+          aria-expanded={showServices}
         >
-          <Scissors size={20} />
+          <Scissors size={18} />
+          <span>Studio services</span>
         </button>
         <div className="rail-bottom">
           <span className="avatar-small">NL</span>
+          <span className="studio-copy">
+            Northline Studio<small>YOUR FRONT DESK</small>
+          </span>
         </div>
       </aside>
       <div className="workspace">
         <header className="topbar">
           <div className="wordmark">
-            voxdesk<span className="version">WORKSPACE</span>
+            Northline Studio<span className="version">VOICE WORKSPACE</span>
           </div>
           <div className="topbar-right">
-            <span className="desktop-only">
+            <span className="connection-status">
               <span
                 className={`status-dot ${connection === "online" ? "" : "offline"}`}
               />
-              {connection === "online"
-                ? "Backend connected"
-                : connection === "connecting"
-                  ? "Connecting to backend"
-                  : "Backend unavailable"}
+              <span className="connection-copy">
+                {connection === "online"
+                  ? "Backend connected"
+                  : connection === "connecting"
+                    ? "Connecting to backend"
+                    : "Backend unavailable"}
+              </span>
             </span>
             <span className="topbar-divider" />
-            <span className="synthetic-tag">
-              <ShieldCheck size={13} /> Synthetic demo
+            <span
+              className="synthetic-tag"
+              aria-label="Synthetic demo"
+              title="Synthetic demo"
+            >
+              <ShieldCheck size={13} /> <span>Synthetic demo</span>
             </span>
+            <button
+              className="icon-button mobile-view-toggle"
+              aria-label={
+                activeView === "voice"
+                  ? "View appointment"
+                  : "Voice receptionist"
+              }
+              title={
+                activeView === "voice"
+                  ? "View appointment"
+                  : "Voice receptionist"
+              }
+              onClick={() =>
+                setActiveView(activeView === "voice" ? "appointment" : "voice")
+              }
+            >
+              {activeView === "voice" ? (
+                <CalendarDays size={18} />
+              ) : (
+                <Headphones size={18} />
+              )}
+            </button>
+            <ThemeToggle />
+            <button
+              className="button secondary new-session"
+              aria-label="New session"
+              title="Start a new session"
+              disabled={busy || Boolean(pending)}
+              onClick={() => void initialize(true)}
+            >
+              <RotateCcw size={14} />
+              <span>New session</span>
+            </button>
           </div>
         </header>
         <main>
@@ -288,23 +368,43 @@ export default function Home() {
                 NORTHLINE STUDIO <ChevronRight size={12} /> VOICE WORKSPACE
               </div>
               <h1>
-                A good conversation.
-                <br className="mobile-only" /> A clear decision.
+                {activeView === "voice" ? (
+                  <>
+                    A good conversation.
+                    <br className="mobile-only" /> A clear decision.
+                  </>
+                ) : (
+                  "Your appointment"
+                )}
               </h1>
-              <p>Your front desk, ready to listen. Every step explained.</p>
+              <p>
+                {activeView === "voice"
+                  ? "Your front desk, ready to listen. Every step explained."
+                  : "The details collected in your conversation, in one place."}
+              </p>
             </div>
             <button
-              className="button secondary new-session"
-              disabled={busy || Boolean(pending)}
-              onClick={() => void initialize(true)}
+              className="icon-button inspector-toggle"
+              aria-label={
+                showingInspector
+                  ? "Collapse decision inspector"
+                  : "Expand decision inspector"
+              }
+              title={
+                showingInspector
+                  ? "Collapse decision inspector"
+                  : "Expand decision inspector"
+              }
+              aria-expanded={showingInspector}
+              aria-controls="decision-inspector-panel"
+              onClick={toggleInspector}
             >
-              <RotateCcw size={14} />
-              New session
+              <ChevronRight size={19} className="inspector-arrow" />
             </button>
           </section>
 
           {showServices && (
-            <section className="service-banner">
+            <section className="service-banner" aria-label="Studio services">
               <div>
                 <strong>Northline Studio</strong>
                 <p>
@@ -331,14 +431,19 @@ export default function Home() {
             </section>
           )}
 
-          <div className="main-grid">
+          <div
+            className={`main-grid ${inspectorOpen ? "inspector-expanded" : "inspector-collapsed"}`}
+            hidden={activeView !== "voice"}
+          >
             <section
               className="conversation-panel panel"
               aria-label="Voice conversation"
             >
               <div className="panel-top">
-                <div className="section-label">
-                  <Headphones size={15} /> LIVE RECEPTIONIST
+                <div className="conversation-heading">
+                  <div className="section-label">
+                    <Headphones size={15} /> LIVE RECEPTIONIST
+                  </div>
                 </div>
                 <span className="pill">
                   <span
@@ -347,114 +452,6 @@ export default function Home() {
                   {status}
                 </span>
               </div>
-              <div className="assistant-stage">
-                <div
-                  className={`orb-wrap ${voice.listening || voice.speaking ? "active" : ""}`}
-                >
-                  <div className="orb-ring ring-one" />
-                  <div className="orb-ring ring-two" />
-                  <div className="orb">
-                    <AudioLines strokeWidth={1.25} size={42} />
-                  </div>
-                  <span className="orb-badge">
-                    <Scissors size={11} />
-                  </span>
-                </div>
-                <h2>Meet your new front desk.</h2>
-                <p>Appointments, handled with a human touch.</p>
-                <div
-                  className={`waveform ${voice.listening || voice.speaking ? "moving" : ""}`}
-                  aria-hidden="true"
-                >
-                  {Array.from({ length: 37 }, (_, i) => (
-                    <i
-                      key={i}
-                      style={{
-                        height: `${5 + Math.round(Math.sin(i * 1.7) ** 2 * (16 - Math.abs(18 - i) / 2))}px`,
-                        animationDelay: `${i * 47}ms`,
-                      }}
-                    />
-                  ))}
-                </div>
-                <button
-                  className={`mic-button ${voice.listening ? "listening" : ""}`}
-                  aria-label={
-                    voice.listening ? "Stop microphone" : "Start microphone"
-                  }
-                  disabled={disabled || voice.speaking || !voice.supported}
-                  onClick={() =>
-                    voice.listening
-                      ? voice.stopListening()
-                      : voice.startListening()
-                  }
-                >
-                  {voice.listening ? (
-                    <Square size={20} fill="currentColor" />
-                  ) : (
-                    <Mic size={23} />
-                  )}
-                </button>
-                <span className="mic-hint">
-                  {voice.listening
-                    ? "Listening… tap to stop"
-                    : voice.speaking
-                      ? "Speaking… microphone paused"
-                      : voice.supported
-                        ? "Tap to speak · one turn at a time"
-                        : "Use typed input · voice unavailable"}
-                </span>
-                <div className="voice-settings">
-                  <button
-                    onClick={() => {
-                      setVoiceEnabled(!voiceEnabled);
-                      voice.stopSpeaking();
-                    }}
-                    aria-pressed={voiceEnabled}
-                    aria-label={`Spoken replies ${voiceEnabled ? "on" : "off"}`}
-                    disabled={!voice.canSpeak}
-                  >
-                    {voiceEnabled ? (
-                      <Volume2 size={13} />
-                    ) : (
-                      <VolumeX size={13} />
-                    )}
-                    <span className="desktop-only">Spoken </span>replies{" "}
-                    {voiceEnabled ? "on" : "off"}
-                  </button>
-                  <button
-                    disabled={
-                      !voice.canSpeak || busy || !conversation || voice.speaking
-                    }
-                    onClick={() =>
-                      conversation && voice.speak(conversation.reply)
-                    }
-                  >
-                    <Volume2 size={15} /> Listen again
-                  </button>
-                  <label className="language-setting">
-                    <span className="sr-only">Speech language</span>
-                    <select
-                      aria-label="Speech language"
-                      value={speechLanguage}
-                      disabled={busy || voice.listening || voice.speaking}
-                      onChange={(event) =>
-                        setSpeechLanguage(event.target.value)
-                      }
-                    >
-                      <option value="en-US">English (US)</option>
-                      <option value="en-GB">English (UK)</option>
-                      <option value="en-PK">English (Pakistan)</option>
-                    </select>
-                  </label>
-                  {voice.speaking && (
-                    <button onClick={voice.stopSpeaking}>
-                      <Square size={11} />
-                      Stop audio
-                    </button>
-                  )}
-                </div>
-              </div>
-
               <div className="conversation-divider">
                 <span>CONVERSATION</span>
                 <span>
@@ -507,6 +504,31 @@ export default function Home() {
                     <Mic size={13} />
                     {voice.interim}
                   </div>
+                )}
+                {Boolean(conversation?.available_slots.length) && (
+                  <section className="panel availability-card">
+                    <div className="mini-label">
+                      AVAILABLE STARTS · {entities?.date}
+                    </div>
+                    <div className="slot-list">
+                      {conversation?.available_slots.map((slot) => (
+                        <button
+                          key={slot}
+                          disabled={disabled}
+                          aria-label={`Book at ${slot}`}
+                          onClick={() => {
+                            const [hour, minute] = slot.split(":").map(Number);
+                            void submit(
+                              `book it at ${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}`,
+                            );
+                          }}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                    <p>Availability can change until a booking is confirmed.</p>
+                  </section>
                 )}
               </div>
 
@@ -572,6 +594,65 @@ export default function Home() {
                     onChange={(e) => setDraft(e.target.value)}
                     disabled={disabled}
                   />
+                  <div className="composer-tools">
+                    <button
+                      type="button"
+                      className="composer-tool"
+                      onClick={() => {
+                        setVoiceEnabled(!voiceEnabled);
+                        voice.stopSpeaking();
+                      }}
+                      aria-pressed={voiceEnabled}
+                      aria-label={`Spoken replies ${voiceEnabled ? "on" : "off"}`}
+                      title={`Spoken replies ${voiceEnabled ? "on" : "off"}`}
+                      disabled={!voice.canSpeak}
+                    >
+                      {voiceEnabled ? (
+                        <Volume2 size={19} />
+                      ) : (
+                        <VolumeX size={19} />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className="composer-tool"
+                      aria-label="Listen again"
+                      title="Listen again"
+                      disabled={
+                        !voice.canSpeak ||
+                        busy ||
+                        !conversation ||
+                        voice.speaking
+                      }
+                      onClick={() =>
+                        conversation && voice.speak(conversation.reply)
+                      }
+                    >
+                      <AudioLines size={19} />
+                    </button>
+                    <button
+                      type="button"
+                      className={`mic-button ${voice.listening ? "listening" : ""}`}
+                      aria-label={
+                        voice.listening ? "Stop microphone" : "Start microphone"
+                      }
+                      title={
+                        voice.listening ? "Stop microphone" : "Start microphone"
+                      }
+                      disabled={disabled || voice.speaking || !voice.supported}
+                      onClick={() =>
+                        voice.listening
+                          ? voice.stopListening()
+                          : voice.startListening()
+                      }
+                    >
+                      {voice.listening ? (
+                        <Square size={18} fill="currentColor" />
+                      ) : (
+                        <Mic size={21} />
+                      )}
+                    </button>
+                  </div>
                   <button
                     type="submit"
                     aria-label="Send message"
@@ -583,6 +664,41 @@ export default function Home() {
                       <ArrowRight size={18} />
                     )}
                   </button>
+                  <div className="composer-options">
+                    <span className="mic-hint">
+                      {voice.listening
+                        ? "Listening… tap to stop"
+                        : voice.speaking
+                          ? "Speaking… microphone paused"
+                          : voice.supported
+                            ? "Tap to speak · one turn at a time"
+                            : "Use typed input · voice unavailable"}
+                    </span>
+                    <label className="language-setting">
+                      <span className="sr-only">Speech language</span>
+                      <select
+                        aria-label="Speech language"
+                        value={speechLanguage}
+                        disabled={busy || voice.listening || voice.speaking}
+                        onChange={(event) =>
+                          setSpeechLanguage(event.target.value)
+                        }
+                      >
+                        <option value="en-US">English (US)</option>
+                        <option value="en-GB">English (UK)</option>
+                        <option value="en-PK">English (Pakistan)</option>
+                      </select>
+                    </label>
+                    {voice.speaking && (
+                      <button
+                        type="button"
+                        className="stop-audio"
+                        onClick={voice.stopSpeaking}
+                      >
+                        <Square size={12} /> Stop audio
+                      </button>
+                    )}
+                  </div>
                 </form>
                 <div className="composer-foot">
                   <span>
@@ -595,7 +711,13 @@ export default function Home() {
               </div>
             </section>
 
-            <aside className="inspector-column" aria-label="Decision inspector">
+            <aside
+              id="decision-inspector-panel"
+              className="inspector-column"
+              aria-label="Decision inspector"
+              aria-hidden={!inspectorOpen}
+              inert={!inspectorOpen}
+            >
               <section className="panel inspector">
                 <div className="panel-top">
                   <div className="section-label">
@@ -714,50 +836,42 @@ export default function Home() {
                   </pre>
                 )}
               </section>
-
-              <AppointmentCard
-                conversation={conversation}
-                business={business}
-              />
-
-              {Boolean(conversation?.available_slots.length) && (
-                <section className="panel availability-card">
-                  <div className="mini-label">
-                    AVAILABLE STARTS · {entities?.date}
-                  </div>
-                  <div className="slot-list">
-                    {conversation?.available_slots.map((slot) => (
-                      <button
-                        key={slot}
-                        disabled={disabled}
-                        aria-label={`Book at ${slot}`}
-                        onClick={() => {
-                          const [hour, minute] = slot.split(":").map(Number);
-                          void submit(
-                            `book it at ${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}`,
-                          );
-                        }}
-                      >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
-                  <p>Availability can change until a booking is confirmed.</p>
-                </section>
-              )}
-              <div className="rules-note">
-                <ShieldCheck size={16} />
-                <p>
-                  <strong>Code makes the call.</strong>Deterministic Python
-                  rules. No LLM decisions. No API keys.
-                </p>
-              </div>
             </aside>
           </div>
-          <div className="quick-start">
+          <section
+            className="appointment-view"
+            aria-label="Appointment workspace"
+            hidden={activeView !== "appointment"}
+          >
+            <div className="appointment-view-intro">
+              <div>
+                <span className="eyebrow">APPOINTMENT DETAILS</span>
+                <h2>Everything for your next visit.</h2>
+                <p>
+                  Review your draft or saved receipt here. Confirmations and
+                  changes happen in the conversation.
+                </p>
+              </div>
+              <button
+                className="button secondary"
+                onClick={() => setActiveView("voice")}
+              >
+                <Headphones size={16} /> Back to conversation
+              </button>
+            </div>
+            <AppointmentCard conversation={conversation} business={business} />
+
+            <div className="rules-note">
+              <ShieldCheck size={16} />
+              <p>
+                <strong>Code makes the call.</strong>Deterministic Python rules.
+                No LLM decisions. No API keys.
+              </p>
+            </div>
+          </section>
+          <div className="quick-start" hidden={activeView !== "voice"}>
             <span>TRY A CONVERSATION</span>
             {[
-              "Book a haircut tomorrow at 3 PM",
               "Check beard trim availability Friday",
               "What are your services and prices?",
             ].map((text, i) => (
@@ -766,20 +880,8 @@ export default function Home() {
                 disabled={disabled}
                 onClick={() => void submit(text)}
               >
-                {i === 0 ? (
-                  <CalendarDays size={13} />
-                ) : i === 1 ? (
-                  <Clock3 size={13} />
-                ) : (
-                  <CircleHelp size={13} />
-                )}
-                {
-                  [
-                    "Book an appointment",
-                    "Explore availability",
-                    "Services & pricing",
-                  ][i]
-                }
+                {i === 0 ? <Clock3 size={13} /> : <CircleHelp size={13} />}
+                {["Explore availability", "Services & pricing"][i]}
                 <ArrowRight size={12} />
               </button>
             ))}
