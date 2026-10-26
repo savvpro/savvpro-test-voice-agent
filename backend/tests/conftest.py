@@ -1,0 +1,18 @@
+import sqlite3
+from collections.abc import Iterator
+from datetime import datetime
+
+import pytest
+
+NOW = datetime(2026, 10, 26, 10, 0)
+TODAY = NOW.date()
+
+
+@pytest.fixture
+def conn() -> Iterator[sqlite3.Connection]:
+    from app import db  # lands in a later task
+
+    c = db.connect(":memory:")
+    db.init_db(c)
+    yield c
+    c.close()
