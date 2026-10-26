@@ -14,7 +14,7 @@ const sp = vi.hoisted(() => {
     speak: vi.fn().mockResolvedValue(undefined),
   }
 })
-vi.mock('./useSpeech', () => ({ useSpeech: () => ({ supported: true, listening: false, ...sp }) }))
+vi.mock('./useSpeech', () => ({ useSpeech: () => ({ supported: true, listening: false, voices: [], setVoiceName: vi.fn(), ...sp }) }))
 vi.mock('./api', async (orig) => ({ ...(await orig<typeof api>()), startCall: vi.fn(), sendTurn: vi.fn() }))
 
 const dec = { intent: 'x', entities: {}, state: 's', action: 'greet', slots: {} }

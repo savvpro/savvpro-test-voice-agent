@@ -11,6 +11,8 @@ vi.mock('./useSpeech', () => ({
     listen: vi.fn(),
     stop: vi.fn(),
     speak: vi.fn().mockResolvedValue(undefined),
+    voices: [],
+    setVoiceName: vi.fn(),
   }),
 }))
 vi.mock('./api', async (orig) => ({ ...(await orig<typeof api>()), startCall: vi.fn(), sendTurn: vi.fn() }))

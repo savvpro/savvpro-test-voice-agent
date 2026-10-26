@@ -40,6 +40,8 @@ nvm use stable && npm install && npm run dev         # http://localhost:5173
 
 Voice needs **Chrome or Edge** (Web Speech API) and microphone permission; `localhost` counts as a secure context. Other browsers get the text box, which works the same way.
 
+The assistant's voice is picked automatically: the most natural en-US voice the browser has (Edge "Natural" voices > macOS Premium/Enhanced > "Google US English"). You can change it with the **Voice** dropdown; the choice is remembered. On macOS, better voices are a free download: System Settings → Accessibility → Spoken Content → System voice → Manage Voices → English (US) → e.g. *Ava (Premium)* or *Zoe (Premium)*, then reload the page.
+
 ## Demo script
 
 The database is seeded on first start with fake patients. Seed dates are relative to the day the server first starts: "day 1" is the first weekday after that day, "day 2" the weekday after that. Examples below assume you say real weekdays/dates; "tomorrow" works if day 1 is tomorrow.

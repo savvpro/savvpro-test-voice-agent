@@ -198,6 +198,18 @@ export default function App() {
                   </label>
                 </div>
               )}
+              {speech.voices.length > 1 && (
+                <label className="voice-pick">
+                  Voice
+                  <select value={speech.voice?.name ?? ''} onChange={(e) => speech.setVoiceName(e.target.value)}>
+                    {speech.voices.map((v) => (
+                      <option key={v.name} value={v.name}>
+                        {v.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <form onSubmit={send} className="text">
                 <label htmlFor="msg">Type a message</label>
                 <input
