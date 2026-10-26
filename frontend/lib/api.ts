@@ -28,7 +28,15 @@ export async function api<T>(path: string, body?: unknown): Promise<T> {
       0,
     );
   }
-  const result = await response.json();
+  let result;
+  try {
+    result = await response.json();
+  } catch {
+    throw new ApiError(
+      "The backend returned an unreadable response. Retry the same message to verify its outcome safely.",
+      response.ok ? 502 : response.status,
+    );
+  }
   if (!response.ok) {
     const detail =
       typeof result.detail === "string"

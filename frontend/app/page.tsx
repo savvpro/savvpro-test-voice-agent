@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   ArrowRight,
   AudioLines,
   CalendarDays,
   Check,
-  CheckCheck,
   ChevronRight,
   CircleHelp,
   Clock3,
@@ -30,6 +29,8 @@ import {
 import { api, ApiError } from "@/lib/api";
 import type { Business, Conversation, PendingTurn } from "@/lib/types";
 import { useVoice } from "@/lib/use-voice";
+import { createSessionCache } from "@/lib/session-cache";
+import { AppointmentCard } from "@/components/appointment-card";
 
 const labels: Record<string, string> = {
   haircut: "Classic Haircut",
@@ -37,8 +38,6 @@ const labels: Record<string, string> = {
   combo: "Haircut + Beard",
 };
 const human = (value: string) => value.toLowerCase().replaceAll("_", " ");
-const SESSION_KEY = "voxdesk.session";
-const PENDING_KEY = "voxdesk.pending";
 
 export default function Home() {
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -46,6 +45,11 @@ export default function Home() {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
+  const [storageWarning, setStorageWarning] = useState("");
+  const [connection, setConnection] = useState<
+    "connecting" | "online" | "unavailable"
+  >("connecting");
+  const cache = useMemo(() => createSessionCache(setStorageWarning), []);
   const [pending, setPending] = useState<PendingTurn | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [traceOpen, setTraceOpen] = useState(false);
@@ -56,11 +60,15 @@ export default function Home() {
   const sendRef = useRef<(text: string) => void>(() => {});
   const voice = useVoice((text) => sendRef.current(text));
 
-  const accept = useCallback((result: Conversation) => {
-    latest.current = result;
-    setConversation(result);
-    sessionStorage.setItem(SESSION_KEY, result.id);
-  }, []);
+  const accept = useCallback(
+    (result: Conversation) => {
+      latest.current = result;
+      setConversation(result);
+      cache.rememberSession(result.id);
+      setConnection("online");
+    },
+    [cache],
+  );
 
   const initialize = useCallback(
     async (fresh = false) => {
@@ -70,40 +78,37 @@ export default function Home() {
       }
       locked.current = true;
       setBusy(true);
+      setConnection("connecting");
       setError("");
       try {
         const info = await api<Business>("/business");
         setBusiness(info);
-        const previous = fresh ? null : sessionStorage.getItem(SESSION_KEY);
+        const previous = fresh ? null : cache.session();
         let result: Conversation;
         if (previous) {
           try {
-            result = await api<Conversation>(`/sessions/${previous}`);
+            result = await api<Conversation>(
+              `/sessions/${encodeURIComponent(previous)}`,
+            );
           } catch (e) {
             if (!(e instanceof ApiError) || e.status !== 404) throw e;
-            sessionStorage.removeItem(PENDING_KEY);
+            cache.clearPending();
             result = await api<Conversation>("/sessions", {});
           }
         } else {
           result = await api<Conversation>("/sessions", {});
         }
         accept(result);
-        const saved = fresh ? null : sessionStorage.getItem(PENDING_KEY);
-        if (saved) {
-          try {
-            setPending(JSON.parse(saved) as PendingTurn);
-            setError(
-              "A previous message has an unverified outcome. Retry it to retrieve its result safely.",
-            );
-          } catch {
-            sessionStorage.removeItem(PENDING_KEY);
-          }
-        } else {
-          setPending(null);
-          sessionStorage.removeItem(PENDING_KEY);
-        }
+        const saved = fresh ? null : cache.pending(result.id);
+        setPending(saved);
+        if (saved)
+          setError(
+            "A previous message has an unverified outcome. Retry it to retrieve its result safely.",
+          );
+        else cache.clearPending();
         if (fresh) setDraft("");
       } catch (e) {
+        setConnection("unavailable");
         setError(
           e instanceof Error ? e.message : "Could not start the conversation.",
         );
@@ -112,7 +117,7 @@ export default function Home() {
         setBusy(false);
       }
     },
-    [accept, voice.stopListening, voice.stopSpeaking],
+    [accept, cache, voice.stopListening, voice.stopSpeaking],
   );
 
   useEffect(() => {
@@ -139,7 +144,7 @@ export default function Home() {
       setBusy(true);
       setError("");
       setPending(request);
-      sessionStorage.setItem(PENDING_KEY, JSON.stringify(request));
+      cache.rememberPending(current.id, request);
       try {
         const result = await api<Conversation>(
           `/sessions/${current.id}/turns`,
@@ -148,9 +153,14 @@ export default function Home() {
         accept(result);
         setDraft("");
         setPending(null);
-        sessionStorage.removeItem(PENDING_KEY);
+        cache.clearPending();
         if (voiceEnabled) voice.speak(result.reply);
       } catch (e) {
+        setConnection(
+          e instanceof ApiError && e.status > 0 && e.status < 500
+            ? "online"
+            : "unavailable",
+        );
         setError(
           e instanceof Error ? e.message : "The message could not be sent.",
         );
@@ -160,11 +170,11 @@ export default function Home() {
         ) {
           // A rejected request has no uncertain write to replay. Refresh before the next turn.
           setPending(null);
-          sessionStorage.removeItem(PENDING_KEY);
+          cache.clearPending();
           try {
             accept(await api<Conversation>(`/sessions/${current.id}`));
           } catch {
-            /* Preserve the visible error. */
+            setConnection("unavailable");
           }
         }
       } finally {
@@ -174,6 +184,7 @@ export default function Home() {
     },
     [
       accept,
+      cache,
       pending,
       voice.stopListening,
       voice.stopSpeaking,
@@ -193,14 +204,18 @@ export default function Home() {
   );
   const waiting = conversation?.state === "AWAITING_CONFIRMATION";
   const status = busy
-    ? "Connecting"
+    ? conversation
+      ? "Processing"
+      : "Connecting"
     : voice.listening
       ? "Listening"
       : voice.speaking
         ? "Speaking"
-        : conversation
-          ? "Ready to help"
-          : "Offline";
+        : connection === "unavailable"
+          ? "Connection interrupted"
+          : conversation
+            ? "Ready to help"
+            : "Offline";
   const filled = entities
     ? Object.entries(entities).filter(([, value]) => value)
     : [];
@@ -233,8 +248,14 @@ export default function Home() {
           </div>
           <div className="topbar-right">
             <span className="desktop-only">
-              <span className={`status-dot ${conversation ? "" : "offline"}`} />
-              {conversation ? "Backend connected" : "Connecting to backend"}
+              <span
+                className={`status-dot ${connection === "online" ? "" : "offline"}`}
+              />
+              {connection === "online"
+                ? "Backend connected"
+                : connection === "connecting"
+                  ? "Connecting to backend"
+                  : "Backend unavailable"}
             </span>
             <span className="topbar-divider" />
             <span className="synthetic-tag">
@@ -444,6 +465,11 @@ export default function Home() {
                 )}
               </div>
 
+              {storageWarning && (
+                <p className="storage-warning" role="status">
+                  {storageWarning}
+                </p>
+              )}
               {(error || voice.error) && (
                 <div className="error-box" role="alert">
                   <span>{error || voice.error}</span>
@@ -643,70 +669,10 @@ export default function Home() {
                 )}
               </section>
 
-              <section
-                className={`panel booking-card ${complete ? "success-card" : ""}`}
-              >
-                <div className="booking-heading">
-                  <span className="booking-icon">
-                    {complete ? (
-                      <CheckCheck size={17} />
-                    ) : (
-                      <CalendarDays size={17} />
-                    )}
-                  </span>
-                  <div>
-                    <h3>
-                      {complete
-                        ? conversation?.appointment?.status === "cancelled"
-                          ? "Appointment cancelled"
-                          : "Appointment confirmed"
-                        : "Your appointment"}
-                    </h3>
-                    <p>
-                      {complete
-                        ? "Saved to the studio's calendar"
-                        : waiting
-                          ? "Review details before confirming"
-                          : "Comes together as you talk"}
-                    </p>
-                  </div>
-                </div>
-                {entities?.service ? (
-                  <div className="booking-detail">
-                    <strong>{labels[entities.service]}</strong>
-                    <span>
-                      {entities.date || "Date needed"} ·{" "}
-                      {entities.time || "Time needed"}
-                    </span>
-                    <span>{entities.name || "Customer name needed"}</span>
-                    {conversation?.appointment?.reference && (
-                      <code>{conversation.appointment.reference}</code>
-                    )}
-                    <div
-                      className={`booking-status ${complete ? "confirmed" : ""}`}
-                    >
-                      <span className="status-dot" />
-                      {complete
-                        ? conversation?.appointment?.status
-                        : waiting
-                          ? "Needs explicit confirmation"
-                          : "Draft · not booked"}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="booking-empty">
-                    <CalendarDays size={23} strokeWidth={1} />
-                    <p>No appointment details yet</p>
-                    <span>Try “Book a haircut tomorrow at 3 PM”</span>
-                  </div>
-                )}
-                {business && (
-                  <div className="timezone">
-                    <Clock3 size={11} />
-                    All times in {business.timezone}
-                  </div>
-                )}
-              </section>
+              <AppointmentCard
+                conversation={conversation}
+                business={business}
+              />
 
               {Boolean(conversation?.available_slots.length) && (
                 <section className="panel availability-card">

@@ -56,7 +56,7 @@ test("existing appointment can be rescheduled and cancelled through the UI", asy
   await message(page, "yes");
   const reference = (await page.locator(".booking-detail code").textContent())!;
   await message(page, `reschedule ${reference} Friday at 4 PM`);
-  await expect(page.locator(".booking-status")).toHaveText(
+  await expect(page.locator(".proposal-status")).toHaveText(
     "Needs explicit confirmation",
   );
   await message(page, "yes");
@@ -237,9 +237,9 @@ test("microphone permission failure gives an actionable typed fallback", async (
   });
   await open(page);
   await page.getByRole("button", { name: "Start microphone" }).click();
-  await expect(page.getByRole("region", { name: "Voice conversation" }).getByRole("alert")).toContainText(
-    "Microphone permission was denied",
-  );
+  await expect(
+    page.getByRole("region", { name: "Voice conversation" }).getByRole("alert"),
+  ).toContainText("Microphone permission was denied");
   await message(page, "What are your prices?");
   await expect(page.getByRole("log")).toContainText("PKR 1,800");
 });

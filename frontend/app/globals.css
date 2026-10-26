@@ -1335,3 +1335,35 @@ footer button {
     transition: none !important;
   }
 }
+
+.storage-warning {
+  padding: 10px 20px;
+  color: #e7d5b5;
+  background: #30291f;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.proposed-change {
+  border: 1px solid #806f48;
+  border-radius: 7px;
+  padding: 14px;
+  margin: 14px 0;
+  background: #29271f;
+}
+.proposed-change > strong {
+  font-size: 14px;
+  color: #e8dbb9;
+}
+.proposed-change p {
+  font-size: 13px;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+.proposed-change small {
+  font-size: 12px;
+  color: #d8cbae;
+  line-height: 1.6;
+}
+.proposal-status {
+  color: #e4d5aa;
+}
