@@ -11,7 +11,8 @@
     "start": "next start --hostname 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "format": "prettier --write app lib tests *.ts *.json *.mjs"
+    "format": "prettier --write app components lib tests *.ts *.json *.mjs",
+    "format:check": "prettier --check app components lib tests *.ts *.json *.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
