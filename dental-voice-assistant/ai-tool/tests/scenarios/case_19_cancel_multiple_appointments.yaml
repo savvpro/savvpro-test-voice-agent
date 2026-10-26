@@ -1,0 +1,25 @@
+description: 'Case 19: Cancel flow with multiple appointments asks which one'
+today: '2026-10-27'
+existing_appointments:
+- phone: '03001234567'
+  id: appt-1
+  date: '2026-10-29'
+  start: '11:00'
+  end: '11:30'
+- phone: '03001234567'
+  id: appt-2
+  date: '2026-10-30'
+  start: '14:00'
+  end: '14:30'
+turns:
+- user: Cancel appointment
+  expected_state: CANCEL_LOOKUP_PHONE
+- user: '03001234567'
+  expected_state: CANCEL_SELECT_APPT
+  expected_reply_contains: Which one would you like to cancel
+- user: the first one
+  expected_state: CANCEL_CONFIRM
+  expected_reply_contains: '2026-10-29'
+- user: 'yes'
+  expected_state: CANCELLED
+  expected_end_call: true

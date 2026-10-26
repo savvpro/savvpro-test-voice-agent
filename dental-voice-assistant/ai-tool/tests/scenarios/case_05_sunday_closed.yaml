@@ -1,0 +1,9 @@
+description: "Case 5: Requested Sunday date explains clinic is closed on Sunday"
+today: "2026-10-27"
+initial_slots: []
+turns:
+  - user: "I want a filling"
+    expected_state: "COLLECT_DATE"
+  - user: "Sunday"
+    expected_state: "COLLECT_DATE"
+    expected_reply_contains: "closed on Sundays"

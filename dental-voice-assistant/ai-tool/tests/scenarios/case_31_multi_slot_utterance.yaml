@@ -1,0 +1,12 @@
+description: 'Case 31: Single utterance with service and date advances multiple states'
+today: '2026-10-27'
+initial_slots:
+- date: '2026-10-28'
+  start: '10:00'
+  end: '10:30'
+turns:
+- user: I want a checkup tomorrow
+  expected_state: COLLECT_TIME
+  expected_reply_contains: What time works best
+- user: 10 am
+  expected_state: COLLECT_NAME

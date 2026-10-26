@@ -1,0 +1,18 @@
+description: 'Case 18: Cancel flow with single appointment lookup and confirmation'
+today: '2026-10-27'
+existing_appointments:
+- phone: '03001234567'
+  id: appt-1
+  date: '2026-10-29'
+  start: '11:00'
+  end: '11:30'
+turns:
+- user: I need to cancel my appointment
+  expected_state: CANCEL_LOOKUP_PHONE
+- user: '03001234567'
+  expected_state: CANCEL_CONFIRM
+  expected_reply_contains: '2026-10-29'
+- user: 'yes'
+  expected_state: CANCELLED
+  expected_end_call: true
+  expected_action: appointment_cancelled
