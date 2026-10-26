@@ -3,7 +3,7 @@ import re
 from datetime import date, datetime
 from typing import Protocol
 
-from app.brain.language import Recognition, confirms_action, extract, intent_text, normalize, recognize
+from app.brain.language import Recognition, confirms_action, extract, intent_text, normalize, recognize, schedule_change_field
 from app.catalog import ADDRESS_INFO, BUSINESS_INFO, HOURS_INFO, SERVICE_INFO, SERVICES
 from app.schemas import AppointmentView, Decision, Entities, Intent, Message, SessionView, State
 
@@ -39,7 +39,8 @@ class Engine:
         parsed = extract(text, self.now,
                          expecting_name=active and c.missing_information == ["name"] and recognition.intent == Intent.UNKNOWN,
                          expecting_time=active and "time" in c.missing_information,
-                         expecting_date=active and "date" in c.missing_information)
+                         expecting_date=active and "date" in c.missing_information,
+                         rescheduling=recognition.intent == Intent.RESCHEDULE or (active and c.current_intent == Intent.RESCHEDULE))
         found = parsed.entities.model_dump(exclude_none=True)
         used_context_reference = False
         c.history.append(Message(role="user", text=text))
@@ -275,9 +276,23 @@ class Engine:
                 c.target_version = appointment.version
                 c.proposed_action = None
             if c.current_intent == Intent.RESCHEDULE:
-                if c.entities.time and not c.entities.date and "date" not in parsed.issues and "date" not in c.rejected_fields and "date" not in c.missing_information:
+                if recognition.rule == "action.reschedule" and not parsed.issues and not any(key in found for key in ("date", "time", "period", "service", "name")):
+                    # An explicit request without a destination opens collection;
+                    # it must not re-propose values from an earlier ready change.
+                    c.proposed_action = None
+                    c.entities.date = None
+                    c.entities.time = None
+                    c.entities.period = None
+                    focus = schedule_change_field(text)
+                    c.missing_information = [focus] if focus else ["date", "time"]
+                    if focus == "time" and "date" not in c.rejected_fields:
+                        c.entities.date = appointment.starts_at[:10]
+                    elif focus == "date" and "time" not in c.rejected_fields:
+                        c.entities.time = appointment.starts_at[11:16]
+                open_schedule_question = c.missing_information == ["date", "time"] and not c.rejected_fields
+                if c.entities.time and not c.entities.date and "date" not in parsed.issues and "date" not in c.rejected_fields and ("date" not in c.missing_information or open_schedule_question):
                     c.entities.date = appointment.starts_at[:10]
-                elif c.entities.date and not c.entities.time and not c.entities.period and "time" not in parsed.issues and "time" not in c.rejected_fields and "time" not in c.missing_information:
+                elif c.entities.date and not c.entities.time and not c.entities.period and "time" not in parsed.issues and "time" not in c.rejected_fields and ("time" not in c.missing_information or open_schedule_question):
                     c.entities.time = appointment.starts_at[11:16]
             if c.current_intent == Intent.CANCEL:
                 c.entities.service = appointment.service
@@ -345,7 +360,7 @@ class Engine:
     def business_reply(text: str) -> str:
         """Select brief catalog answers instead of reading every business fact."""
         t = normalize(text)
-        if re.search(r"\bhow (?:(?:do|can) i |to )(?:cancel|reschedule)\b", t):
+        if re.search(r"\bhow (?:(?:do|can|could) i |to )(?:cancel|reschedule|change|adjust|update|shift)\b", t):
             return "Tell me to reschedule or cancel your appointment. I can use the booking we discussed here; for another booking, give its NL reference. I'll ask you to confirm the change first."
         if re.search(r"\bhow (?:(?:do|can) i |to )(?:book|make)\b", t):
             return "Tell me which service, day, and time you want. I'll check the slot, ask your name, and have you confirm before booking."
@@ -384,6 +399,8 @@ class Engine:
 
     @staticmethod
     def prompt(c: SessionView) -> str:
+        if c.current_intent == Intent.RESCHEDULE and c.missing_information == ["date", "time"] and not c.rejected_fields:
+            return "What new date or time would you like? Say a date, a full time such as 5 PM, or both; I'll keep the other saved detail."
         prompts = {"service": "Would you like a Classic Haircut, Beard Trim, or Haircut + Beard?",
                    "date": "Which date? You can say tomorrow, next Monday, or a calendar date such as October 28 2026.",
                    "time": "What time, including AM or PM?", "name": "What fictional name should I use?",

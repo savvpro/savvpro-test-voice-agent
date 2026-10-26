@@ -27,6 +27,16 @@ def intent_text(text: str) -> str:
 AFFIRMATIVE = r"(?:yes|yeah|yep|sure|okay|ok)"
 BOOKING_OBJECT = r"(?:(?:a|an|my|the)\s+)?(?:(?:new|another)\s+)?(?:booking|appointment|reservation)"
 NAME_PREPOSITION = r"(?:with|for) (?:the )?name"
+EXISTING_OBJECT = r"(?:(?:my|the|an|a|this|that|our)\s+)?(?:appointment|booking|reservation)"
+SCHEDULE_FIELD = r"(?:time|timing|date|day)"
+
+
+def schedule_change_field(text: str) -> str | None:
+    """A field-only request asks for a value; it cannot reuse a ready proposal."""
+    t = intent_text(text)
+    time = bool(re.search(r"\b(?:time|timing)\b", t))
+    day = bool(re.search(r"\b(?:date|day)\b", t))
+    return ("time" if time else "date") if time != day else None
 
 
 def confirms_action(text: str, intent: Intent) -> bool:
@@ -58,18 +68,22 @@ def recognize(text: str, active: bool = False) -> Recognition:
     for intent, rule, pattern in rules:
         if re.fullmatch(pattern, t):
             return Recognition(intent, rule)
-    if re.search(rf"\b(?:do not|don't|never)\s+(?:want (?:you )?to\s+)?(?:cancel|book|reserve|schedule|reschedule|move|change\s+(?:(?:my|the|this|that)\s+)?(?:booking|appointment)|(?:make|arrange)\s+{BOOKING_OBJECT})\b|\b(?:do not|don't) want (?:a|an) (?:haircut|beard trim|appointment)\b", t):
+    if re.search(rf"\b(?:do not|don't|never)\s+(?:want (?:you )?to\s+)?(?:cancel|book|reserve|schedule|reschedule|move|(?:change|adjust|update|shift)\s+(?:(?:my|the|this|that)\s+)?(?:booking|appointment|time|timing|date|day)|(?:make|arrange)\s+{BOOKING_OBJECT})\b|\b(?:do not|don't) want (?:a|an) (?:haircut|beard trim|appointment)\b", t):
         return Recognition(Intent.DENY, "action.negated")
     if re.search(r"\breference\b", t) and re.search(r"\b(?:where|find|what|don't know|do not know|cannot see|can't see|don't have)\b", t):
         return Recognition(Intent.INFO, "booking.reference_help")
     if re.search(r"\b(?:have you (?:booked|scheduled|reserved|cancelled|canceled|rescheduled)|did you (?:book|schedule|reserve|cancel|reschedule)|is (?:my|the|that) (?:booking|appointment) (?:confirmed|booked|cancelled|canceled)|booking status)\b", t):
         return Recognition(Intent.INFO, "booking.status_question")
-    if re.search(r"\b(?:hours|prices?|cost|how much|services|address|where are you|when do you open|what time do you (?:open|close)|what do you offer)\b", t) or re.search(rf"\bhow (?:(?:do|can) i |to )(?:cancel|book|reschedule|(?:make|arrange)\s+{BOOKING_OBJECT})\b", t):
+    if re.search(r"\b(?:hours|prices?|cost|how much|services|address|where are you|when do you open|what time do you (?:open|close)|what do you offer)\b", t) or re.search(rf"\bhow (?:(?:do|can|could) i |to )(?:cancel|book|reschedule|change|adjust|update|shift|(?:make|arrange)\s+{BOOKING_OBJECT})\b", t):
         return Recognition(Intent.INFO, "business.question")
     actions = []
     if re.search(r"\b(?:cancel|remove|delete)\s+(?:(?:my|the|an|this|that|a)\s+)?(?:(?:new|existing|confirmed|original|previous)\s+)?(?:appointment|booking|reservation|it|that|nl[- ]?[a-z0-9]{8})\b|^cancel$", t):
         actions.append(Intent.CANCEL)
-    if re.search(r"\b(?:reschedule|move)\b|\bchange\s+(?:my|the|an)\s+(?:appointment|booking)\b", t):
+    schedule_request = rf"\b(?:change|adjust|update|shift)\s+(?:{EXISTING_OBJECT}\b|(?:(?:my|the|this|that)\s+)?{SCHEDULE_FIELD}\s+(?:of|for|on)\s+{EXISTING_OBJECT}\b)"
+    # A bounded command-shaped transcript may use a past-tense spelling.
+    # Reports such as 'they rescheduled' are not turned into new commands.
+    repaired_command = rf"^(?:(?:and|please)\s+)*(?:rescheduled|re schedule)\s+(?:{EXISTING_OBJECT}|it)\b"
+    if re.search(r"\b(?:reschedule|move)\b", t) or re.search(schedule_request, t) or re.search(repaired_command, t):
         actions.append(Intent.RESCHEDULE)
     if re.search(r"\b(?:availability|available|openings?|free slots?)\b", t):
         actions.append(Intent.AVAILABILITY)
@@ -169,7 +183,7 @@ def explicit_name_clause(text: str) -> tuple[str | None, str, str | None]:
     return (next(iter(names)) if len(names) == 1 and not issue else None), clean, issue
 
 
-def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting_time: bool = False, expecting_date: bool = False) -> Extraction:
+def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting_time: bool = False, expecting_date: bool = False, rescheduling: bool = False) -> Extraction:
     result = Extraction()
     e, issues = result.entities, result.issues
     e.name, clean, name_issue = explicit_name_clause(text)
@@ -182,7 +196,7 @@ def extract(text: str, now: datetime, *, expecting_name: bool = False, expecting
     clean = re.sub(r"\bnl[- ]?[a-z0-9]{8}\b", "", clean)
     # In an explicit directional change, the source is not a second requested
     # value. Alternatives without a direction still trigger ambiguity below.
-    if re.search(r"\b(?:change|move|reschedule|switch)\b", clean):
+    if rescheduling or re.search(r"\b(?:change|move|reschedule|switch)\b", clean):
         clean = re.sub(r"\bfrom\s+.+?\s+to\s+", "to ", clean, count=1)
     e.service, service_issue = extract_service(clean)
     if service_issue:
