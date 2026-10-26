@@ -22,7 +22,10 @@ _FLOWS: dict[Intent, Flow] = {
     Intent.RESCHEDULE: "reschedule",
     Intent.CANCEL: "cancel",
 }
-_YES = re.compile(r"\b(yes|yeah|yep|sure|ok|okay|please)\b")
+# A flow word ("yes, book it") only confirms with a plain yes and no negation anywhere.
+_YES = re.compile(r"\b(yes|yeah|yep|yup)\b")
+_NEG = re.compile(r"\b(no|not|don'?t|never)\b")
+_CORRECTION = re.compile(r"\b(but|instead|actually|rather|change|make it)\b")
 # ponytail: stop-list heuristic for "doctor <word>" that isn't a name; grow it as calls show misses
 _DR_WORD = re.compile(r"\b(?:dr\.?|doctor)\s+([a-z'-]+)")
 # fmt: off
@@ -44,6 +47,7 @@ class CallState:
     matches: list[str] = field(default_factory=list)
     last_reply: str = ""
     failures: int = 0
+    misses: int = 0  # failed appointment lookups; separate from reprompt failures
     ended: bool = False
 
     def to_json(self) -> str:
@@ -135,7 +139,7 @@ def _turn(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -> Reply
         return "goodbye", render("goodbye")
     if i == Intent.REPEAT:
         return "repeat", s.last_reply or render("greet")
-    if i == Intent.HELP:
+    if i == Intent.HELP and not ent.as_dict():  # "help me book with Dr Patel..." is a request
         return "help", render("help") + " " + _prompt(s, conn, now)[1]
 
     m = _DR_WORD.search(low)
@@ -144,7 +148,7 @@ def _turn(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -> Reply
     if flow is None and s.flow is None:
         bookish = ent.doctor_id or ent.specialty or ent.date or ent.time or ent.part_of_day
         flow = "book" if bookish or ent.any_doctor or unknown_dr else None
-    yes_at_readback = s.step == "confirming" and bool(_YES.search(low))  # "yes, book it"
+    yes_at_readback = s.step == "confirming" and _is_yes(p, low)  # "yes, book it"
     started = bool(
         flow and not yes_at_readback and (flow != s.flow or s.step in ("greeting", "done"))
     )
@@ -160,12 +164,18 @@ def _turn(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -> Reply
         }.get(s.step)
         if handler and (r := handler(s, p, low, conn, now)):
             return r
+        if s.step == "offering":  # CHOICE parsing hides dates: read it again as a plain request
+            ent = parse(low, now.date()).entities
 
     cleared = not started and _clear_requested(s, low)
     new = _merge(s, ent)
-    if (new or started or cleared) and s.step != "lookup":  # lookup counts its own misses
+    if new or started or cleared:
         s.failures = 0
-    if unknown_dr and s.flow != "cancel":
+    if unknown_dr and s.flow == "book":
+        s.failures += 1
+        if s.failures >= 3:
+            s.ended = True
+            return "give_up", render("give_up")
         s.expecting = Slot.DOCTOR.value
         return "unknown_doctor", render("unknown_doctor", doctors=_doctor_list())
     if not (new or started or cleared):
@@ -176,19 +186,30 @@ def _turn(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -> Reply
 
 
 def _begin(s: CallState, flow: Flow) -> None:
+    keep = {"name", "dob"}
+    if flow != "book" and s.flow in ("cancel", "reschedule"):
+        keep.add("ref")  # "actually, reschedule it instead"
     s.flow = flow
     s.step = "collecting" if flow == "book" else "lookup"
-    s.slots = {k: v for k, v in s.slots.items() if k in ("name", "dob")}
-    s.offers, s.matches, s.failures = [], [], 0
+    s.slots = {k: v for k, v in s.slots.items() if k in keep}
+    s.offers, s.matches, s.failures, s.misses = [], [], 0, 0
 
 
 def _merge(s: CallState, ent: Entities) -> set[str]:
-    """Copy parsed entities into slots; return the slot keys the caller supplied."""
+    """Copy parsed entities into slots; return the slot keys whose value changed."""
     sl = s.slots
     new = {k: v for k, v in ent.as_dict().items() if k in SLOT_KEYS}
     if ent.any_doctor and "doctor_id" not in new:
         new.setdefault("specialty", sl.get("specialty", "general practice"))
+    if s.flow == "reschedule":  # a reschedule keeps the original doctor
+        new.pop("doctor_id", None)
+        new.pop("specialty", None)
+    if s.step == "choosing":  # a day/time here only identifies which appointment
+        for k in ("date", "time", "part_of_day"):
+            new.pop(k, None)
     before = dict(sl)
+    if s.step == "offering" and "date" in new and "time" not in new:
+        sl.pop("time", None)  # "anything on Friday?" asks about the day, not the old time
     for key, other in [("doctor_id", "specialty"), ("time", "part_of_day")]:
         if key in new:
             sl.pop(other, None)
@@ -201,22 +222,29 @@ def _merge(s: CallState, ent: Entities) -> set[str]:
         if "ref" not in changed:
             sl.pop("ref", None)
         s.step, s.matches, s.offers = "lookup", [], []
-    elif changed and s.step in ("offering", "confirming"):
+    elif changed and s.step in ("offering", "confirming") and s.flow != "cancel":
         s.step, s.offers = "collecting", []
-    return set(new)
+    return changed
+
+
+def _complete(s: CallState) -> bool:
+    """Everything needed for a read-back is present."""
+    need = ["date", "time"] if s.flow == "reschedule" else ["name", "dob", "date", "time"]
+    has_doctor = "doctor_id" in s.slots or "specialty" in s.slots
+    return all(k in s.slots for k in need) and has_doctor
 
 
 def _clear_requested(s: CallState, low: str) -> bool:
-    """After ask_what_to_change (the only collecting prompt with expecting=None), forget the
-    slot the caller names ("the time", "the doctor") so it gets asked again."""
-    if s.step != "collecting" or s.expecting is not None:
+    """After ask_what_to_change (collecting with every slot filled), forget the slot the caller
+    names ("the time", "the doctor") so it gets asked again."""
+    if s.step != "collecting" or not _complete(s):
         return False
     keys = []
     if re.search(r"\btime\b", low):
         keys.append("time")
     if re.search(r"\b(day|date)\b", low):
         keys.append("date")
-    if re.search(r"\b(doctor|dr)\b", low):
+    if s.flow == "book" and re.search(r"\b(doctor|dr)\b", low):
         keys += ["doctor_id", "specialty"]
     for k in keys:
         s.slots.pop(k, None)
@@ -267,10 +295,10 @@ def _collect(s: CallState, conn: Conn, now: datetime) -> Reply:
             return _ask(s, "ask_dob", Slot.DOB)
         if "doctor_id" not in sl and "specialty" not in sl:
             return _ask(s, "ask_doctor", Slot.DOCTOR, doctors=_doctor_list())
-    if "doctor_id" in sl:
-        doctors = [sl["doctor_id"]]
+    if "specialty" in sl:  # any doctor of that specialty, even if one was picked earlier
+        doctors = [d.id for d in doctors_for(sl["specialty"])]
     else:
-        doctors = [d.id for d in doctors_for(sl.get("specialty", "general practice"))]
+        doctors = [sl["doctor_id"]]
     day = date.fromisoformat(sl["date"]) if "date" in sl else None
     t = time.fromisoformat(sl["time"]) if "time" in sl else None
 
@@ -315,7 +343,7 @@ def _offer(
     lead: str = "",
 ) -> Reply:
     found = sch.nearest_free(conn, doctors, near, now)
-    if not found and len(doctors) == 1 and (d := doctor_by_id(doctors[0])):
+    if not found and s.flow == "book" and len(doctors) == 1 and (d := doctor_by_id(doctors[0])):
         found = sch.nearest_free(conn, [x.id for x in doctors_for(d.specialty)], near, now)
     if not found:
         s.step = "collecting"
@@ -352,17 +380,18 @@ def _lookup(s: CallState, conn: Conn, now: datetime) -> Reply:
         found = sch.find_upcoming(conn, now, name=sl["name"], dob=date.fromisoformat(sl["dob"]))
     elif "name" in sl:
         return _ask(s, "ask_dob", Slot.DOB)
+    elif "dob" in sl:
+        return "ask_name", _ask(s, "ask_lookup_name", Slot.NAME)[1]
     else:
         return _ask(s, "ask_lookup", Slot.NAME)
     if not found:
         for k in ("ref", "name", "dob"):
             sl.pop(k, None)
-        s.failures += 1
-        if s.failures >= 2:  # second miss: offer a new booking instead
-            s.flow, s.step, s.failures = "book", "done", 0
+        s.misses += 1
+        if s.misses >= 2:  # second miss: offer a new booking instead
+            s.flow, s.step, s.misses = "book", "done", 0
             return _ask(s, "not_found", Slot.CONFIRM, failures=1)
         return _ask(s, "not_found", Slot.NAME, failures=0)
-    s.failures = 0
     if len(found) > 1:
         s.matches = [a.ref for a in found[:3]]
         s.step = "choosing"
@@ -392,16 +421,19 @@ def _use_match(s: CallState, a: sch.Appointment, conn: Conn, now: datetime) -> R
 
 def _on_offering(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -> Reply | None:
     ent, n = p.entities, len(s.offers)
+    full = parse(low, now.date()).entities  # with dates, which CHOICE parsing skips
     idx: int | None = None
     if ent.choice is not None:
         idx = ent.choice - 1 if ent.choice > 0 else n - 1
     elif ent.time is not None:
         hhmm = ent.time.strftime("%H:%M")
-        day = ent.date and ent.date.isoformat()
+        day = full.date and full.date.isoformat()
         idx = next(
             (k for k, (_, t) in enumerate(s.offers) if t[11:] == hhmm and day in (None, t[:10])),
             None,
         )
+    elif full.date or full.time or full.part_of_day:
+        return None  # a new day/time: re-run the slot check
     elif p.intent == Intent.AFFIRM:
         idx = 0
     elif p.intent == Intent.DENY:
@@ -420,28 +452,53 @@ def _on_offering(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -
 
 
 def _on_confirming(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -> Reply | None:
-    if p.intent == Intent.AFFIRM or (p.intent in _FLOWS and _YES.search(low)):
-        s.failures = 0
-        return _execute(s, conn, now)
-    if p.intent == Intent.DENY:
+    relevant = {"ref", "name", "dob"} if s.flow == "cancel" else set(SLOT_KEYS)
+    said = {k: v for k, v in p.entities.as_dict().items() if k in relevant}
+    if any(s.slots.get(k) != v for k, v in said.items()):
+        return None  # a correction ("no, make it 3:30"): merge it and read back again
+    if p.intent == Intent.DENY or (p.intent in _FLOWS and _NEG.search(low)):
         s.failures = 0
         if s.flow == "cancel":
             _finish(s)
             return "ask_intent", render("kept")
-        s.step = "collecting"
-        return _ask(s, "ask_what_to_change", None)
+        return _what_to_change(s)
+    if _is_yes(p, low) and _CORRECTION.search(low) and s.flow != "cancel":
+        s.failures = 0
+        return _what_to_change(s)  # "sure, but make it 11" with nothing we could parse
+    if _is_yes(p, low):
+        s.failures = 0
+        return _execute(s, conn, now)
     return None
 
 
+def _is_yes(p: Parsed, low: str) -> bool:
+    if _NEG.search(low):
+        return False
+    return p.intent == Intent.AFFIRM or (p.intent in _FLOWS and bool(_YES.search(low)))
+
+
+def _what_to_change(s: CallState) -> Reply:
+    s.step = "collecting"
+    key = "ask_what_to_change" if s.flow == "book" else "ask_new_time"
+    return "ask_what_to_change", _ask(s, key, Slot.TIME)[1]
+
+
 def _on_choosing(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -> Reply | None:
-    c, n = p.entities.choice, len(s.matches)
-    if c is None or not 0 <= (idx := c - 1 if c > 0 else n - 1) < n:
-        return None
-    found = sch.find_upcoming(conn, now, ref=s.matches[idx])
-    if not found:
+    appts = [a for ref in s.matches for a in sch.find_upcoming(conn, now, ref=ref)]
+    c, full = p.entities.choice, parse(low, now.date()).entities
+    picked: list[sch.Appointment] = []
+    if c is not None:
+        picked = appts[c - 1 : c] if c > 0 else appts[-1:]
+    elif full.date or full.time:  # "the Tuesday one", "the 2 pm one"
+        picked = [
+            a
+            for a in appts
+            if full.date in (None, a.start.date()) and full.time in (None, a.start.time())
+        ]
+    if len(picked) != 1:
         return None
     s.failures = 0
-    return _use_match(s, found[0], conn, now)
+    return _use_match(s, picked[0], conn, now)
 
 
 def _on_done(s: CallState, p: Parsed, low: str, conn: Conn, now: datetime) -> Reply | None:

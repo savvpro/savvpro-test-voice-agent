@@ -103,7 +103,7 @@ _INTENTS: list[tuple[Intent, re.Pattern[str]]] = [
     ),
 ]
 
-_FILLER = re.compile(r"^\W*(?:(?:uh|um|er|erm|well|oh|hi|hello|hey)\b\W*)+", re.IGNORECASE)
+_FILLER = re.compile(r"^\W*(?:(?:uh+|um+|hm+|er+|erm|well|oh|hi|hello|hey)\b\W*)+", re.IGNORECASE)
 _CLN = re.compile(r"\bC\s?L\s?N[\s-]?([A-Z0-9])\s?([A-Z0-9])\s?([A-Z0-9])\s?([A-Z0-9])\b")
 _DR = re.compile(r"\b(?:dr\.?|doctor)\s+([a-z'-]+)")
 _ANY = re.compile(r"\bany ?(doctor|one|body)\b|\bfirst available\b|\bdoesn'?t matter\b")

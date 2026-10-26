@@ -241,3 +241,109 @@ def test_decision_as_dict(conn: sqlite3.Connection) -> None:
         "action": "ask_name",
         "slots": {"doctor_id": "patel"},
     }
+
+
+# ---------- fix round 1: read-back safety and multi-turn corrections ----------
+
+BASE = ("book an appointment", "sara lee", "march 4 1990", "dr patel", "tomorrow", "2pm")
+
+
+def test_negated_please_never_books_or_cancels(conn: sqlite3.Connection) -> None:
+    before = count(conn)
+    turns = talk(conn, *BASE, "no please don't book it")
+    assert turns[-1][1].action == "ask_what_to_change"
+    assert count(conn) == before
+    turns = talk(conn, "cancel my appointment", "CLN-JC01", "no please don't cancel it")
+    assert turns[-1][1].action == "ask_intent"
+    assert find_upcoming(conn, NOW, ref="CLN-JC01") != []
+
+
+def test_yes_with_correction_rereads(conn: sqlite3.Connection) -> None:
+    before = count(conn)
+    turns = talk(conn, *BASE, "okay but can you make it 3:30 instead")
+    assert turns[-1][1].action == "confirm_booking" and "3:30 PM" in turns[-1][0]
+    assert count(conn) == before
+    turns = talk(conn, "reschedule", "CLN-JC01", "friday at 10am", "sure but please make it 11")
+    assert turns[-1][1].action == "ask_what_to_change"
+    assert find_upcoming(conn, NOW, ref="CLN-JC01")[0].start == datetime(2026, 10, 27, 10)
+    turns = talk(conn, "reschedule", "CLN-JC01", "friday at 10am", "sure but make it 11", "11")
+    assert turns[-1][1].action == "confirm_reschedule" and "11:00 AM" in turns[-1][0]
+
+
+def test_no_with_correction_rereads(conn: sqlite3.Connection) -> None:
+    turns = talk(conn, *BASE, "no make it 3:30")
+    assert turns[-1][1].action == "confirm_booking" and "3:30 PM" in turns[-1][0]
+
+
+def test_new_day_while_offering(conn: sqlite3.Connection) -> None:
+    taken = ("book with dr khan tomorrow at 3pm", "alex kim", "jan 2 1980")
+    turns = talk(conn, *taken, "do you have anything on friday")
+    assert turns[-1][1].action == "ask_time" and "Friday, October 30" in turns[-1][0]
+    turns = talk(conn, *taken, "friday at 10am")
+    assert turns[-1][1].action == "confirm_booking"
+    assert "Friday, October 30 at 10:00 AM" in turns[-1][0]
+
+
+def test_time_while_choosing_only_picks(conn: sqlite3.Connection) -> None:
+    state, turns = run(conn, "reschedule", "emily stone", "february 29 1992", "the 2 pm one")
+    assert turns[-1][1].action == "ask_date"
+    assert state.slots["ref"] == "CLN-ES01" and "time" not in state.slots
+    turns = talk(conn, "reschedule", "emily stone", "february 29 1992", "the 2 pm one", "friday")
+    assert turns[-1][1].action == "ask_time"
+    turns = talk(conn, "cancel", "emily stone", "february 29 1992", "the tuesday one")
+    assert turns[-1][1].action == "confirm_cancel" and "CLN-ES01" in turns[-1][0]
+
+
+def test_reschedule_keeps_doctor(conn: sqlite3.Connection) -> None:
+    state, turns = run(conn, "reschedule", "CLN-ES01", "friday at 10am", "no", "the doctor")
+    assert state.slots["doctor_id"] == "nguyen"
+    assert "Patel" not in turns[-1][0]
+    state, _ = run(conn, "reschedule", "CLN-ES01", "friday at 10am with dr patel")
+    assert state.slots["doctor_id"] == "nguyen"
+
+
+def test_date_at_cancel_confirm_reconfirms(conn: sqlite3.Connection) -> None:
+    turns = talk(conn, "cancel", "CLN-JC01", "is that the one on tuesday")
+    assert turns[-1][1].action == "confirm_cancel"
+
+
+def test_no_progress_turns_give_up(conn: sqlite3.Connection) -> None:
+    same = "john carter july 12 1985"
+    state, turns = run(conn, "cancel", same, same, same, same)
+    assert [d.action for _, d in turns[1:]] == ["ask_name", "reprompt", "reprompt", "give_up"]
+    assert state.ended
+    turns = talk(conn, "cancel", same, "john carter")
+    assert turns[-1][1].action == "confirm_cancel"
+    state, turns = run(conn, "book", "sara lee", "march 4 1990", "dr smith", "dr smith", "dr smith")
+    assert [d.action for _, d in turns[-3:]] == ["unknown_doctor", "unknown_doctor", "give_up"]
+
+
+def test_switch_cancel_to_reschedule_keeps_ref(conn: sqlite3.Connection) -> None:
+    state, turns = run(conn, "cancel", "CLN-JC01", "actually i want to reschedule it")
+    assert state.flow == "reschedule" and state.slots["ref"] == "CLN-JC01"
+    assert turns[-1][1].action == "ask_date"
+
+
+def test_filler_is_not_a_name(conn: sqlite3.Connection) -> None:
+    for filler in ("uh", "uhh", "umm", "hmm", "er"):
+        state, turns = run(conn, "book", filler)
+        assert turns[-1][1].action == "reprompt" and "name" not in state.slots
+
+
+def test_reprompt_does_not_use_up_lookup_retry(conn: sqlite3.Connection) -> None:
+    state, turns = run(conn, "cancel", "...", "CLN-ZZZZ")
+    assert turns[-1][1].action == "not_found"
+    assert state.flow == "cancel" and state.step == "lookup"  # still the retry, not the offer
+
+
+def test_help_with_a_request_books(conn: sqlite3.Connection) -> None:
+    turns = talk(conn, "can you help me book with dr patel tomorrow at 2pm")
+    assert turns[-1][1].action == "ask_name"
+
+
+def test_specialty_change_time_uses_any_gp(conn: sqlite3.Connection) -> None:
+    turns = talk(
+        conn, "book", "sara lee", "march 4 1990", "any doctor", "tomorrow at 10am", "make it 3pm"
+    )
+    assert "Dr. Omar Khan" in turns[-2][0]
+    assert turns[-1][1].action == "confirm_booking" and "Dr. Anita Patel" in turns[-1][0]
