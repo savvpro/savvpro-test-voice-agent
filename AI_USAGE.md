@@ -59,6 +59,25 @@ The fifth transcript exposed names embedded in booking requests being dropped wh
 
 The sixth transcript exposed a missing "for the name" variant; the name was never captured before a slot conflict. The initial 10-case targeted run reproduced 8 failures with 2 already passing. A shared preposition rule now supports "for [the] name" and "with [the] name" in inline requests and separate answers. API/database regressions cover the exact conversation, repeated slot conflicts, retained transcribed spelling, explicit name correction and the unchanged conflicting booking. The full backend suite passed 274 tests. No spelling guess, database rewrite or browser/audio verification was performed.
 
+## Strict-audit fixes and second usage snapshot
+
+The later strict review found defects beyond the transcripts: cancellation could select the wrong operation, repairing one invalid field could restore another rejected value, service exclusions and partial clock expressions could be misread, and the browser lacked robust storage failure handling. Saved appointment details could also appear replaced by an abandoned proposal. Mobile labels/controls, keyboard focus, selectable slots and speech replay needed improvement.
+
+Five focused implementation commits (`259149e` through `f893f5b`) address these findings. They add 17 operation/repair regressions, 49 language contrast cases and 14 browser recovery/interaction cases. Initial targeted runs reproduced 14 operation failures and 39 language failures. Final executed checks passed **340 backend tests, 20 browser tests, production build, typecheck and frontend formatting**. CI is configured, with remote execution still pending publication. The tests were authored by the same coding agent; neither independent human validation nor physical voice quality is claimed. See [the progress log](docs/PROGRESS.md) and [conversation test matrix](docs/CONVERSATION_TEST_MATRIX.md).
+
+Verification also encountered Windows temporary-directory permissions that blocked Node, and a browser output directory that overlapped the separate build. Both test setup issues were corrected before the final passing browser run. The candidate's running application and demo database were preserved; tests used a separate build, ports 3011/8011 and a disposable database.
+
+**Second snapshot recorded: 2026-10-26 19:03:04 PKT.** The latest token event before this cutoff is 19:02:37 PKT. The original 17:36 snapshot and screenshot above remain unchanged. [The second filtered usage log](docs/evidence/codex-usage-audit-2026-10-26.json) records the counters and commit scope:
+
+| Primary Codex / gpt-6.1-sol session | Input tokens | Output tokens | Total tokens |
+| --- | ---: | ---: | ---: |
+| Cumulative at second cutoff | 30,899,359 | 270,358 | **31,169,717** |
+| Increase since first snapshot | 16,059,270 | 94,730 | **16,154,000** |
+
+Cumulative input includes **30,461,952 cached tokens**; output includes **106,502 reasoning tokens**. As above, do not add these subsets to the total. The increase includes evaluation, discussion, implementation, testing and documentation since the first cutoff, rather than measuring the fixes alone. Automatic approval-review sessions and work after this cutoff are excluded. These are repeated-context session counters, not unique source-code tokens, an efficiency benchmark or a billing statement.
+
+There are **26 project commits at this cutoff**: the original 20, one usage-evidence documentation commit and five audit implementation commits. The later documentation commit containing this snapshot is excluded. All audit commits are local. The candidate explicitly requested **“dont submit yet”**; no push, PR or deployment was performed.
+
 Sandbox socket and Node write restrictions required approved command retries. Those environment errors were not reported as successful installs/checks. No test results, token counts, screenshots or physical voice verification were invented.
 
 Executed checks and remaining verification limits are documented in [docs/PROGRESS.md](docs/PROGRESS.md). Browser UI screenshots under ignored test artifacts demonstrate UI rendering only, not AI token usage or physical speech verification.

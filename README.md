@@ -93,17 +93,25 @@ Tap the microphone for **each** spoken turn, or type:
 
 Choose a Monday–Saturday date within 180 days. If tomorrow is Sunday or a slot is taken, choose another day/time. Also try “Check beard trim availability Friday afternoon”, “What are your prices?”, “Repeat”, “Start over”, and “Order a pizza”.
 
-Everyday requests such as “All right, make a booking for 4 PM”, “Can I get a haircut?”, and “Yeah, book it” are supported. A booking and an availability check retain the same collected service/day/time when switching between them. After availability, “yes” begins collecting booking details; the final proposal still requires another explicit confirmation. Unclear speech gets a question about the slot already discussed rather than losing that context.
+The brain supports a bounded English grammar. Unclear details trigger a specific question; they do not authorize a booking. Useful examples:
 
-Within the same session, “change the booking time from 4 PM to 5 PM”, “move it to 5 PM”, or “cancel it” uses the last verified booking, with availability/version checks and a new confirmation. Time-only changes retain the existing date. An explicit reference selects another booking; new sessions still require a reference. Ask “Where can I find the booking reference?” for help or “Have you booked it?” for the actual status. Pending-draft corrections/cancellation affect the draft, even when an older confirmed booking exists.
+| Caller intent | Supported behavior |
+| --- | --- |
+| Start a booking | “Make a new booking”, “Can you fit me in for a haircut?”, “I need a hair and beard appointment” |
+| Choose a service | “Haircut plus beard” selects the combination; “haircut without a beard trim” selects only the haircut. Alternatives and unsupported positive choices need clarification. |
+| Accept availability | “Yes, do it at 4:30 PM” retains the service/date and supplies the time. Clickable available starts also begin a draft. The complete proposal needs a separate confirmation. |
+| Repair details | “I already told you, 5 30 PM” or “change from 4 PM to 5 PM” updates the time and retains other fields. Invalid fields stay rejected until individually repaired. |
+| Give a name | Use a fictional name alone when asked, or “Use the name Alex Example”. Mark an inline name with “with/for the name …”; instruction words are removed. Names survive other field errors and occupied slots. |
+| Change a saved booking | “Move it to Friday at 5 PM” uses the session's last verified booking. A new session needs its reference. Unchanged fields are retained unless explicitly rejected. |
+| Discard a change | “Cancel that change” discards the proposal. During a new-booking draft, “cancel it” discards that draft. During rescheduling, “cancel it” asks which target you mean. |
+| Cancel a saved booking | “Cancel my confirmed appointment” or “Cancel NL-XXXXXXXX” selects the stored appointment and requires confirmation. |
+| Ask for help/status | “Have you booked it?”, “Where can I find the booking reference?”, “Repeat”, “Start over” and “End the conversation” |
 
-Spoken repair prefixes (“I said…”, “I already told you…”) are understood. “Yes, do it at 4:30 PM” both starts a booking from availability and supplies the chosen time. A time supplied after an availability result is retained and rechecked; it is not discarded while asking whether to book. Space-separated “5 30 PM” is parsed as 5:30 PM. “Make a new booking” starts a fresh draft after a completed or cancelled appointment. Malformed times such as “around 40” prompt clarification instead of silently searching the whole day. “Yes, book it” can confirm a complete proposal; changing its details still requires fresh confirmation.
+Dates support relative days, weekdays, bounded “in two days”, `YYYY-MM-DD`, “28th of October 2026”, “October twenty-eighth 2026”, “2026 October 28”, and numeric `2026 10 28`, `2026 1028`, `20261028`. A named date without a year uses the current business year, with past-date validation. A bare weekday includes today; “next Monday” is strictly upcoming. Incomplete years, invalid dates, weekday/date mismatches and ambiguous numeric ordering need clarification. Years spoken entirely as words remain unsupported.
 
-Time expressions such as “at five”, “five thirty”, and “half past four” require AM/PM clarification. Reply with the **full** time, for example “five thirty PM”. Dates support relative days, weekdays, `YYYY-MM-DD`, “28th of October 2026”, “October twenty-eighth 2026”, “2026 October 28”, and year-first numeric forms `2026 10 28`, `2026 1028`, and `20261028`. A named month/day without a year uses the current business year and still undergoes past-date validation; it never silently rolls to the next year. A bare weekday is the nearest match including today; “next Monday” is the upcoming Monday strictly after today. Incomplete years, malformed date fragments, conflicting dates, weekday/date mismatches and ambiguous numeric date ordering are clarified. Supply a fictional name separately or mark it explicitly in a booking request, for example "book a haircut with the name Alex Example on October 28 2026 at 4 PM". Unrestricted English and years spoken entirely as words remain outside this small grammar.
+Times support AM/PM, unambiguous 24-hour values, noon/midnight, “five thirty PM”, “half past four PM”, “quarter past four PM” and “quarter to five PM” (16:45). Bare 1–12 hours require AM/PM. Supply the full time when clarifying. Unsupported offsets/ranges (“twenty to five”, “between four and five”), malformed values (“around 40”), and negated times need an exact replacement. Negated dates also require clarification. The assistant does not guess what a garbled transcript meant; review the displayed interpretation before confirming.
 
-When asked for a name, reply with a fictional name alone or a phrase such as “Use name Taha”, “Please use the name Alex Example”, or “Put it under Alex Example”. The instruction words are removed before showing the confirmation and saving the name. Missing names or alternatives such as “Taha or John” require clarification. An explicit name correction to a pending proposal requires a fresh confirmation.
-
-Explicit names supplied with booking details are retained while an invalid date or time is clarified. "You should use Muhammad" also supplies or corrects a name. If you say "I just told you the name", the assistant reports the name saved in the current draft or asks for one if none was captured. New bookings collect their own names. The phrases "for the name Alex Example", "for name Alex Example", "with the name Alex Example", and "with name Alex Example" work both inside booking requests and as separate name answers. A slot conflict retains the collected name while asking for another time.
+The appointment card separates the **saved appointment** from a **proposed change**. Discarding a proposal keeps the saved details visible. Keyboard focus returns to the message field after typed turns. **Listen again** replays the current reply; **Speech language** selects English (US, UK or Pakistan), subject to browser support. Tap the mic again for each turn. A storage warning means the live tab remains usable, but recovery after closing/reloading it may be unavailable.
 
 Northline Studio opens **Monday–Saturday 10:00–19:00**, with one chair:
 
@@ -128,10 +136,11 @@ Frontend:
 ```bash
 cd frontend
 npm run typecheck
+npm run format:check
 npm run build
 ```
 
-Browser tests start their own production UI and fixed-clock backend. **Stop servers on ports 3000/8000 first** and build with the default API URL. Install a Playwright browser once:
+Browser tests start their own production UI and fixed-clock backend with a disposable database. **Stop the dev server and free ports 3000/8000 first.** Build with the default API URL (`http://localhost:8000` or `http://127.0.0.1:8000`). The runner checks the build's API target before starting; it refuses a different backend to protect unrelated demo data. Install a Playwright browser once:
 
 ```bash
 cd frontend
@@ -147,7 +156,11 @@ $env:PLAYWRIGHT_CHANNEL = 'msedge'
 npm run test:e2e
 ```
 
-Browser tests use the real backend for booking/corrections, rescheduling/cancellation, a lost response after commit, unsupported voice fallback, mobile overflow, and voice sequencing. Only the speech adapter test mocks browser speech. Actual microphone access, recognition quality and audible output need the [manual checklist](docs/DEMO_CHECKLIST.md). Executed results and remaining limits are in [progress](docs/PROGRESS.md).
+For alternate ports, set `NEXT_PUBLIC_API_URL=http://127.0.0.1:8011` **before building**, then set `E2E_FRONTEND_PORT=3011` and `E2E_BACKEND_PORT=8011` before running tests. `E2E_FRONTEND_DIR` can point to a separate frontend copy built with that API URL, preserving a running development build. These are environment variables; use `$env:NAME = 'value'` in PowerShell. The suite refuses to reuse existing servers.
+
+Browser tests cover connected booking workflows, lost commit responses/retries, storage failures, saved/proposed details, network errors, keyboard focus, selectable slots, 360/390/768-pixel layouts and speech sequencing/replay/failure. Speech APIs and explicit failure scenarios are mocked; normal workflows use the real backend. Actual microphone access, recognition quality and audible output need the [manual checklist](docs/DEMO_CHECKLIST.md). [The conversation test matrix](docs/CONVERSATION_TEST_MATRIX.md) explains coverage and held-out manual checks; executed results are in [progress](docs/PROGRESS.md).
+
+[GitHub Actions](.github/workflows/ci.yml) is configured to run backend tests on Python 3.11/3.13 and frontend format/type/build/audit/browser checks on Node 22. The workflow has not run remotely while publication is on hold.
 
 ## REST API
 
@@ -178,12 +191,14 @@ Use a new request ID and the current revision for each utterance. **Retries reus
 - Recognition is aborted before synthesis; the mic stays disabled while speaking. There is no automatic restart or full-duplex streaming. See [MDN recognition stop](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition/stop) and [synthesis cancel](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis/cancel).
 - Local assessment demo: no authentication, customer identity verification, privacy governance, notifications, payments, holidays, staff selection or multiple chairs. Bind to localhost. References are identifiers, not secure credentials.
 - Availability suggestions use a ten-minute grid; an exact valid start may use another minute. Availability is never a hold and is rechecked at confirmation.
-- Sessions/receipts persist without expiry; history is bounded to 100 messages. New session discards the proposal, not stored appointments. Replayed receipts are historical responses; GET returns current state.
+- Sessions/receipts persist without expiry; history is bounded to 100 messages. New session discards the proposal, not stored appointments. Replayed receipts are historical responses; GET returns current state. Tab-storage failure limits reload recovery; a visible warning explains this, and same-tab retries retain the original request ID in memory.
 - SQLite serializes writes; lock waits time out after ten seconds and can be retried. Existing schema changes would need migrations before real deployment.
 
 ## Assessment submission workflow
 
 Original assessment: [TASK.md](TASK.md). Upstream: https://github.com/savvpro/savvpro-test-voice-agent.
+
+**Publication is on hold at the candidate's request. All audit fixes remain in local commits; no push or submission PR has been made by the coding agent.**
 
 1. Fork upstream and clone **your fork**.
 2. Read `TASK.md`. Work on `candidate-<your-github-username>`; this checkout already uses **`candidate-TUAHASHAIKH`**.
