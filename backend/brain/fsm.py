@@ -39,7 +39,10 @@ from .slots   import (
     extract_slots, extract_name, extract_doctor,
     extract_date, extract_time, is_past_date, is_valid_doctor,
 )
-from .availability import is_available, find_alternatives
+from .availability import (
+    is_available, find_alternatives, book_slot,
+    cancel_appointment, get_appointment,
+)
 from . import responses as r
 
 
@@ -272,6 +275,16 @@ def _handle_confirm(
 ) -> tuple[str, ConversationState]:
     if intent == Intent.CONFIRM:
         state.fsm_state = FSMState.END
+        # If this was a reschedule, release the old appointment slot first
+        name = state.slots.get("name", "")
+        if state.action == "reschedule" and name:
+            cancel_appointment(name)
+        # Commit the new booking
+        doctor = state.slots.get("doctor", "any")
+        date_str = state.slots.get("date", "")
+        time_str = state.slots.get("time", "")
+        reason = state.slots.get("reason", "")
+        book_slot(name=name, doctor=doctor, date_str=date_str, time_str=time_str, reason=reason)
         reply = r.booking_confirmed(state.slots)
 
     elif intent == Intent.DENY:
@@ -300,7 +313,16 @@ def _reschedule_lookup(text: str, state: ConversationState) -> tuple[str, Conver
     name = extract_name(text)
     if name:
         state.slots["name"] = name
-        state.fsm_state     = FSMState.RESCHEDULE_COLLECT_DATE
+        appt = get_appointment(name)
+        if appt and appt.get("status") == "cancelled":
+            state.fsm_state = FSMState.END
+            reply = f"I found a record for {name}, but your appointment has already been cancelled. If you'd like to book a new appointment, please give us a call back!"
+            state.last_reply = reply
+            return reply, state
+        
+        state.fsm_state = FSMState.RESCHEDULE_COLLECT_DATE
+        if appt and appt.get("doctor"):
+            state.slots["doctor"] = appt["doctor"]
         reply = f"I found your booking, {name}. What new date would you like?"
     else:
         reply = "I didn't catch your name. Could you say it clearly?"
@@ -312,7 +334,14 @@ def _cancel_lookup(text: str, state: ConversationState) -> tuple[str, Conversati
     name = extract_name(text)
     if name:
         state.slots["name"] = name
-        state.fsm_state     = FSMState.CANCEL_CONFIRM
+        appt = get_appointment(name)
+        if appt and appt.get("status") == "cancelled":
+            state.fsm_state = FSMState.END
+            reply = f"Your appointment under the name {name} has already been cancelled."
+            state.last_reply = reply
+            return reply, state
+        
+        state.fsm_state = FSMState.CANCEL_CONFIRM
         reply = f"I found an appointment for {name}. Can you confirm you'd like to cancel it?"
     else:
         reply = "I didn't catch your name. Could you say it again?"
@@ -321,9 +350,11 @@ def _cancel_lookup(text: str, state: ConversationState) -> tuple[str, Conversati
 
 
 def _cancel_confirm(intent: Intent, state: ConversationState) -> tuple[str, ConversationState]:
+    name = state.slots.get("name", "there")
     if intent in (Intent.CONFIRM, Intent.CANCEL):
         state.fsm_state = FSMState.END
-        reply = r.cancel_confirmed(state.slots.get("name", "there"))
+        cancel_appointment(name)
+        reply = r.cancel_confirmed(name)
     else:
         state.fsm_state = FSMState.END
         reply = "No problem, your appointment has been kept. Have a great day!"
@@ -440,6 +471,17 @@ def _next_question(state: ConversationState) -> str:
     if "time" not in slots:
         state.fsm_state = FSMState.COLLECT_TIME
         return r.ask_time()
+
+    # Check slot availability as soon as date and time are provided
+    date_str = slots.get("date", "")
+    time_str = slots.get("time", "")
+    doctor   = slots.get("doctor", "any")
+    if not is_available(date_str, time_str, doctor):
+        alts = find_alternatives(doctor)
+        state.fsm_state = FSMState.COLLECT_DATE
+        slots.pop("time", None)  # let caller pick a new date/time
+        return r.slot_unavailable(alts)
+
     if "reason" not in slots:
         state.fsm_state = FSMState.COLLECT_REASON
         return r.ask_reason()
