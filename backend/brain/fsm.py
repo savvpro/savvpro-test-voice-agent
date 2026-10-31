@@ -260,9 +260,17 @@ def _collect_time(text: str, state: ConversationState) -> tuple[str, Conversatio
 
 def _collect_reason(text: str, state: ConversationState) -> tuple[str, ConversationState]:
     # Reason is optional — any response accepted; we also check for "skip"
-    extracted = extract_slots(text)
+    t = text.strip()
+    extracted = extract_slots(t)
     if "reason" in extracted:
         state.slots["reason"] = extracted["reason"]
+    elif not re.search(r"\b(skip|no|none|nothing|don'?t|prefer\s+not|pass)\b", t, re.IGNORECASE):
+        # The user provided a custom description like "jaw discomfort" or "regular check"
+        # Clean filler words if any
+        cleaned = re.sub(r"^(?:for|it'?s|i\s+have|i\s+got|just|because\s+of)\s+", "", t, flags=re.IGNORECASE).strip()
+        if len(cleaned) >= 2:
+            state.slots["reason"] = cleaned
+
     reply = _check_availability(state)
     state.last_reply = reply
     return reply, state
