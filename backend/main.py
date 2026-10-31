@@ -42,6 +42,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from brain.fsm import ConversationState, handle_utterance, initial_state
 from brain.stt import stt_engine
+from brain.tts import tts_engine
 
 logging.basicConfig(
     level=logging.INFO,
@@ -75,6 +76,21 @@ async def transcribe_audio_file(file: UploadFile = File(...)):
             suffix = f".{ext}"
     text = stt_engine.transcribe_bytes(contents, suffix=suffix)
     return {"text": text}
+
+
+@app.post("/api/tts")
+async def synthesize_speech(data: dict):
+    """Synthesize speech from text using local Piper TTS."""
+    text = data.get("text", "").strip()
+    if not text:
+        return {"error": "Missing 'text' field", "audio": ""}
+    wav_bytes = tts_engine.synthesize_wav_bytes(text)
+    audio_b64 = base64.b64encode(wav_bytes).decode("ascii")
+    return {
+        "text": text,
+        "format": "wav",
+        "audio": audio_b64,
+    }
 
 
 @app.websocket("/ws")
@@ -146,6 +162,7 @@ async def _send(
     reply: str,
     state: ConversationState,
     transcription: Optional[str] = None,
+    include_audio: bool = True,
 ) -> None:
     payload = {
         "reply": reply,
@@ -154,6 +171,15 @@ async def _send(
     }
     if transcription:
         payload["transcription"] = transcription
+
+    if include_audio and reply:
+        try:
+            wav_bytes = tts_engine.synthesize_wav_bytes(reply)
+            payload["audio"] = base64.b64encode(wav_bytes).decode("ascii")
+            payload["audio_format"] = "wav"
+        except Exception as exc:
+            logger.warning("TTS generation skipped: %s", exc)
+
     await ws.send_text(json.dumps(payload))
 
 

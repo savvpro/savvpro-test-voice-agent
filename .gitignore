@@ -9,4 +9,7 @@ node_modules/
 .next/
 dist/
 build/
+backend/models/*.onnx
+!backend/models/*.json
+
 
