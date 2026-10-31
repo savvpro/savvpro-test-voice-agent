@@ -22,6 +22,18 @@ def is_valid_doctor(doctor: str) -> bool:
     """Return True if doctor is 'any' or in our clinic registry."""
     return doctor == "any" or doctor in CLINIC_DOCTORS
 
+
+def is_time_too_soon(date_str: str, time_str: str) -> bool:
+    """Return True if date is today AND the appointment time is less than 1 hour from now."""
+    try:
+        appt_date = date.fromisoformat(date_str)
+        if appt_date != date.today():
+            return False
+        appt_dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        return appt_dt < datetime.now() + timedelta(hours=1)
+    except Exception:
+        return False
+
 # Doctor aliases requiring "dr" or "doctor"
 _DOCTOR_ALIASES: dict[str, str] = {
     "dr khan":      "Dr. Khan",

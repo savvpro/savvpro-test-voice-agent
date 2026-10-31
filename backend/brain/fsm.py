@@ -37,7 +37,7 @@ from typing import Optional
 from .intents import Intent, classify, CORRECTION_INTENTS, CORRECTION_TO_SLOT
 from .slots   import (
     extract_slots, extract_name, extract_doctor,
-    extract_date, extract_time, is_past_date, is_valid_doctor,
+    extract_date, extract_time, is_past_date, is_valid_doctor, is_time_too_soon,
 )
 from .availability import (
     is_available, find_alternatives, book_slot,
@@ -251,7 +251,14 @@ def _collect_time(text: str, state: ConversationState) -> tuple[str, Conversatio
     extracted = extract_slots(text)
     if "time" in extracted:
         state.slots.update(extracted)
-        reply = _next_question(state)
+        # If date is already known and is today, validate the time is at least 1 hour away
+        date_str = state.slots.get("date", "")
+        time_str = state.slots.get("time", "")
+        if date_str and is_time_too_soon(date_str, time_str):
+            state.slots.pop("time", None)  # reject the too-soon time
+            reply = r.past_time()
+        else:
+            reply = _next_question(state)
     else:
         reply = r.invalid_time() if _looks_like_time(text) else r.ask_time()
     state.last_reply = reply

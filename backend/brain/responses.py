@@ -157,3 +157,11 @@ def past_date() -> str:
 def invalid_time() -> str:
     return "Sorry, I didn't catch a valid time. Could you say something like '3pm' or 'morning'?"
 
+
+def past_time() -> str:
+    return (
+        "That time has already passed or is too soon. "
+        "We need at least 1 hour's notice. "
+        "Could you pick a later time today, or would you prefer a different date?"
+    )
+
