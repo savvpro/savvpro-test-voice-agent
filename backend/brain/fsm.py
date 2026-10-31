@@ -316,7 +316,7 @@ def _cancel_lookup(text: str, state: ConversationState) -> tuple[str, Conversati
 
 
 def _cancel_confirm(intent: Intent, state: ConversationState) -> tuple[str, ConversationState]:
-    if intent == Intent.CONFIRM:
+    if intent in (Intent.CONFIRM, Intent.CANCEL):
         state.fsm_state = FSMState.END
         reply = r.cancel_confirmed(state.slots.get("name", "there"))
     else:
@@ -366,6 +366,13 @@ def _handle_correction(
 
     state.slots[slot_key] = new_value
 
+    # Also opportunistically update other slots if present in the utterance
+    # (e.g. "Actually make it Monday at 10am instead")
+    other_slots = extract_slots(text)
+    for k, v in other_slots.items():
+        if k != "reason":
+            state.slots[k] = v
+
     if state.fsm_state == FSMState.CONFIRM:
         # Stay in CONFIRM with the updated summary
         reply = r.correction_acknowledged() + " " + r.confirm_summary(state.slots)
@@ -401,6 +408,15 @@ def _next_question(state: ConversationState) -> str:
     (handles multi-slot utterances like "Tuesday at 5pm with Dr. Khan").
     """
     slots = state.slots
+
+    if state.action == "reschedule":
+        if "date" not in slots:
+            state.fsm_state = FSMState.RESCHEDULE_COLLECT_DATE
+            return r.ask_date()
+        if "time" not in slots:
+            state.fsm_state = FSMState.RESCHEDULE_COLLECT_TIME
+            return r.ask_time()
+        return _check_availability(state)
 
     if "name" not in slots:
         state.fsm_state = FSMState.COLLECT_NAME

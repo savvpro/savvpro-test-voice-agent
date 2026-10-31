@@ -96,10 +96,8 @@ _PATTERNS: list[tuple[Intent, list[str]]] = [
     # ─────────────────────────────────────────────────────────────────────────
 
     (Intent.CONFIRM, [
-        r"^(yes|yep|yeah|yup|correct|right|that'?s?\s+right|sounds\s+good|perfect|okay|ok|"
-        r"sure|absolutely|definitely|confirmed|great|good|exactly|affirmative)\s*[.,!]*$",
-        r"^yes\s+(please|that'?s?\s+(right|correct))\s*[.,!]*$",
-        r"^that'?s?\s+(correct|right|perfect|great)\s*[.,!]*$",
+        r"\b(yes|yep|yeah|yup|correct|that'?s?\s+right|sounds\s+good|perfect|sure|absolutely|definitely|confirmed|confirm\s+it)\b",
+        r"^(okay|ok|great|good|right|exactly|affirmative)\s*[.,!]*$",
     ]),
 
     (Intent.DENY, [

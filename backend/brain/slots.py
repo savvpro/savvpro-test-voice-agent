@@ -78,20 +78,31 @@ _NAME_FILLER  = {"the", "a", "an", "is", "its", "it", "my", "me", "yes",
 # ── Name ─────────────────────────────────────────────────────────────────────
 
 def extract_name(text: str) -> Optional[str]:
-    # Strip common leading fillers like "um", "uh" first
-    cleaned_input = re.sub(r"^(?:um|uh|er|ah|well)\s+", "", text.strip(), flags=re.IGNORECASE)
+    # Strip common leading fillers and corrections
+    cleaned_input = re.sub(r"^(?:um|uh|er|ah|well|sorry|oops)[,\s]+", "", text.strip(), flags=re.IGNORECASE)
 
     patterns = [
-        r"(?:my\s+name\s+is|i'?m|it'?s|name'?s|call\s+me)\s+([A-Za-z]+(?:\s+[A-Za-z]+)*)",
+        r"(?:my\s+name\s+is(?:\s+actually)?|i'?m(?:\s+actually)?|it'?s(?:\s+actually)?|name'?s(?:\s+actually)?|call\s+me|appointment\s+for|booking\s+for)\s+([A-Za-z]+(?:\s+[A-Za-z]+)*)",
     ]
     for pattern in patterns:
         m = re.search(pattern, cleaned_input, re.IGNORECASE)
         if m:
-            return _clean_name(m.group(1))
+            raw_match = m.group(1).strip()
+            first_part = re.split(r"\s+(?:with|on|at|for|about)\s+", raw_match, flags=re.IGNORECASE)[0]
+            cleaned = _clean_name(first_part)
+            if cleaned and not any(w.lower() in _NAME_FILLER for w in cleaned.split()):
+                return cleaned
 
     # Fallback: 1–3 plain words that look like a proper name
     words = cleaned_input.split()
     if 1 <= len(words) <= 3 and all(re.fullmatch(r"[A-Za-z]+", w) for w in words):
+        # Exclude obvious keyboard mash / vowelless gibberish
+        for w in words:
+            if re.fullmatch(r"(?:asdfghjkl|qwertyuiop|zxcvbnm|xyzzy|blerf|foobar)", w, re.IGNORECASE):
+                return None
+            if len(w) >= 5 and not re.search(r"[aeiouy]", w, re.IGNORECASE):
+                return None
+
         if not any(w.lower() in _NAME_FILLER for w in words):
             return _clean_name(" ".join(words))
 
