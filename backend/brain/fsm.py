@@ -241,6 +241,11 @@ def _collect_date(text: str, state: ConversationState) -> tuple[str, Conversatio
     if "date" in extracted:
         state.slots.update(extracted)
         reply = _next_question(state)
+    elif "time" in extracted and "date" not in extracted:
+        # User typed a time (e.g. "1pm") while we're still waiting for a date.
+        # Store the time opportunistically and re-ask for the date.
+        state.slots["time"] = extracted["time"]
+        reply = "Thanks, I've noted that time. What date works best for you?"
     else:
         reply = r.past_date() if _looks_like_date(text) else r.ask_date()
     state.last_reply = reply
@@ -534,6 +539,10 @@ def _re_ask_current(state: ConversationState) -> str:
 
 
 def _looks_like_date(text: str) -> bool:
+    # Exclude bare time expressions like "1pm", "3:30am", "10 am", "5 pm"
+    # so that typing a time in COLLECT_DATE state doesn't trigger the past-date error
+    if re.fullmatch(r'\d{1,2}(?::\d{2})?\s*(?:am|pm)', text.strip(), re.IGNORECASE):
+        return False
     if is_past_date(text):
         return True
     return bool(re.search(
