@@ -37,7 +37,7 @@ from typing import Optional
 from .intents import Intent, classify, CORRECTION_INTENTS, CORRECTION_TO_SLOT
 from .slots   import (
     extract_slots, extract_name, extract_doctor,
-    extract_date, extract_time,
+    extract_date, extract_time, is_past_date,
 )
 from .availability import is_available, find_alternatives
 from . import responses as r
@@ -467,10 +467,14 @@ def _re_ask_current(state: ConversationState) -> str:
 
 
 def _looks_like_date(text: str) -> bool:
+    if is_past_date(text):
+        return True
     return bool(re.search(
         r"\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|"
         r"january|february|march|april|may|june|july|august|september|"
         r"october|november|december|today|tomorrow|yesterday|"
+        r"last\s+(?:week|month|year|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|"
+        r"\d{1,4}[/\.-]\d{1,2}[/\.-]\d{1,4}|"
         r"\d+(?:st|nd|rd|th)?)\b",
         text, re.IGNORECASE,
     ))

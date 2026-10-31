@@ -140,29 +140,103 @@ def extract_doctor(text: str) -> Optional[str]:
 
 # ── Date ──────────────────────────────────────────────────────────────────────
 
+def is_past_date(text: str) -> bool:
+    """Check if the text refers to a date in the past."""
+    t = text.lower().strip()
+    base = date.today()
+
+    # Check numeric dates like DD/MM/YYYY or MM/DD/YYYY
+    m = re.search(r"\b(\d{1,2})[/\.-](\d{1,2})[/\.-](\d{2,4})\b", t)
+    if m:
+        n1, n2, yr = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if yr < 100:
+            yr += 2000
+        dates = []
+        for mo, day in [(n1, n2), (n2, n1)]:
+            try:
+                dates.append(date(yr, mo, day))
+            except ValueError:
+                pass
+        # If any valid interpretation is today or in the future, it's not strictly past
+        if dates and any(d >= base for d in dates):
+            return False
+        if dates and all(d < base for d in dates):
+            return True
+
+    # Relative past markers
+    if re.search(r"\b(yesterday|last\s+(?:week|month|year|monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b", t):
+        return True
+
+    if _DATEPARSER_OK:
+        res = _dp.parse(text)
+        if res and res.date() < base:
+            return True
+
+    return False
+
+
 def extract_date(text: str) -> Optional[str]:
     """
     Parse a date from *text*.
-    Returns an ISO-8601 string (YYYY-MM-DD) for future dates,
+    Returns an ISO-8601 string (YYYY-MM-DD) for future dates (or today),
     None if unparseable or the date is in the past.
+    Supports formats like 11/2/26 (Nov 2, 2026), 2/11/2026 (Nov 2, 2026),
+    weekday names, relative dates, and ISO dates.
     """
+    t = text.lower().strip()
+    base = date.today()
+
+    # 1. Numeric date handling with smart slash/dot/dash support
+    m = re.search(r"\b(\d{1,2})[/\.-](\d{1,2})[/\.-](\d{2,4})\b", t)
+    if m:
+        n1, n2, yr = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if yr < 100:
+            yr += 2000
+        candidates = []
+        for mo, day in [(n1, n2), (n2, n1)]:
+            try:
+                d = date(yr, mo, day)
+                if d >= base:
+                    candidates.append(d)
+            except ValueError:
+                pass
+        if candidates:
+            candidates.sort()
+            return candidates[0].strftime("%Y-%m-%d")
+        return None
+
     # Check fallback weekday names / relative keywords first if present
     weekday_fallback = _extract_date_fallback(text)
     if weekday_fallback:
         return weekday_fallback
 
-    if _DATEPARSER_OK:
+    # Avoid parsing bare times like "3pm" as today's date
+    has_date_token = bool(
+        re.search(
+            r"\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|"
+            r"january|february|march|april|may|june|july|august|september|"
+            r"october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\b",
+            t,
+        )
+        or re.search(r"\b\d{1,4}[/\.-]\d{1,2}[/\.-]\d{1,4}\b", t)
+        or re.search(r"\b\d{1,2}(st|nd|rd|th)\b", t)
+    )
+
+    if _DATEPARSER_OK and has_date_token:
+        # First try exact parse
+        res = _dp.parse(text)
+        if res and res.date() >= base:
+            return res.date().strftime("%Y-%m-%d")
+
+        # Then try with future preference within 1 year
         settings = {
             "PREFER_DATES_FROM": "future",
             "RELATIVE_BASE": datetime.now(),
             "RETURN_AS_TIMEZONE_AWARE": False,
         }
         result = _dp.parse(text, settings=settings)
-        if result:
-            parsed = result.date()
-            if parsed < date.today():
-                return None
-            return parsed.strftime("%Y-%m-%d")
+        if result and base <= result.date() <= base + timedelta(days=365):
+            return result.date().strftime("%Y-%m-%d")
 
     return None
 
