@@ -53,6 +53,14 @@ def ask_doctor() -> str:
     )
 
 
+def doctor_not_found(doctor: str) -> str:
+    return (
+        f"I'm sorry, {doctor} is not at our clinic. "
+        "We have Dr. Khan, Dr. Smith, Dr. Patel, and Dr. Ali, or I can book with anyone available. "
+        "Which would you prefer?"
+    )
+
+
 def ask_date() -> str:
     return "What date works best for you?"
 

@@ -16,7 +16,11 @@ except ImportError:
     _DATEPARSER_OK = False
 
 
-# ── Doctor registry ───────────────────────────────────────────────────────────
+CLINIC_DOCTORS: set[str] = {"Dr. Khan", "Dr. Smith", "Dr. Patel", "Dr. Ali"}
+
+def is_valid_doctor(doctor: str) -> bool:
+    """Return True if doctor is 'any' or in our clinic registry."""
+    return doctor == "any" or doctor in CLINIC_DOCTORS
 
 # Doctor aliases requiring "dr" or "doctor"
 _DOCTOR_ALIASES: dict[str, str] = {

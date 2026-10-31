@@ -37,7 +37,7 @@ from typing import Optional
 from .intents import Intent, classify, CORRECTION_INTENTS, CORRECTION_TO_SLOT
 from .slots   import (
     extract_slots, extract_name, extract_doctor,
-    extract_date, extract_time, is_past_date,
+    extract_date, extract_time, is_past_date, is_valid_doctor,
 )
 from .availability import is_available, find_alternatives
 from . import responses as r
@@ -220,6 +220,11 @@ def _collect_name(text: str, state: ConversationState) -> tuple[str, Conversatio
 def _collect_doctor(text: str, state: ConversationState) -> tuple[str, ConversationState]:
     extracted = extract_slots(text)
     if "doctor" in extracted:
+        doc = extracted["doctor"]
+        if not is_valid_doctor(doc):
+            reply = r.doctor_not_found(doc)
+            state.last_reply = reply
+            return reply, state
         state.slots.update(extracted)
         reply = _next_question(state)
     else:
@@ -361,6 +366,11 @@ def _handle_correction(
             "time":   "What time would you prefer?",
         }
         reply = r.correction_acknowledged() + " " + _prompts[slot_key]
+        state.last_reply = reply
+        return reply, state
+
+    if slot_key == "doctor" and not is_valid_doctor(new_value):
+        reply = r.doctor_not_found(new_value)
         state.last_reply = reply
         return reply, state
 
