@@ -120,6 +120,11 @@ class TestExtractDate:
         # "yesterday" is always in the past
         assert extract_date("yesterday") is None
 
+    def test_slash_numeric_formats(self):
+        # Formats like 11/2/26 and 2/11/2026 should parse to valid future date
+        assert extract_date("11/2/26") == "2026-11-02"
+        assert extract_date("2/11/2026") == "2026-11-02"
+
 
 class TestExtractReason:
     def test_toothache(self):
