@@ -1,83 +1,87 @@
-# Step-by-Step Guide: How to Fork, Clone, and Submit Your Assessment
+# Voice Agent — Clinic Appointment Booking Assistant
 
-**Repository:** https://github.com/savvpro/savvpro-test-voice-agent
-
----
-
-## Step 1: Fork the Repository
-
-1. Go to the repository: https://github.com/savvpro/savvpro-test-voice-agent
-2. Click the **Fork** button in the top-right corner.
-3. This will create a copy of the repository in your GitHub account.
+> **Local-only build. No cloud API keys required. No deployment.**
 
 ---
 
-## Step 2: Clone Your Fork
+## Project Overview
 
-1. Open your forked repository in your GitHub account.
-2. Click the green **Code** button and copy the URL.
-3. Run the following commands:
+A fully local voice assistant for booking, rescheduling, and cancelling clinic/dentist appointments. Built as an assessment submission for SAVV Pro Solutions.
 
-```bash
-git clone https://github.com/your-username/savvpro-test-voice-agent.git
-cd savvpro-test-voice-agent
+**Tech Stack:**
+
+| Component | Technology |
+|---|---|
+| Frontend | Next.js + TailwindCSS |
+| Backend | Python FastAPI (WebSocket) |
+| STT | faster-whisper (local) |
+| Brain | Custom rule-based: regex intent matcher + FSM |
+| TTS | Piper (local) |
+
+---
+
+## Local Development — No Keys Needed
+
+This project is **fully local**. There are no cloud services, no API keys, and no `.env` secrets required. Everything runs on your machine.
+
+---
+
+## Project Structure
+
+```
+savvpro-test-voice-agent/
+├── frontend/          # Next.js app — mic capture, WebSocket client, UI
+├── backend/           # Python FastAPI — STT → brain → TTS pipeline
+├── docs/
+│   ├── DESIGN.md      # Brain FSM design, intent/slot definitions
+│   └── AI_USAGE.md    # AI tool usage log
+├── PLAN.md            # Build plan / phases
+└── README.md          # This file
 ```
 
 ---
 
-## Step 3: Read the Task
+## Setup & Run Instructions
 
-Open and read **TASK.md** carefully before writing any code.
+_(To be filled in — Phase 8)_
 
-- TASK.md URL: https://github.com/savvpro/savvpro-test-voice-agent/blob/main/TASK.md
+### Prerequisites
 
----
+- Python 3.10+
+- Node.js 18+
+- [faster-whisper](https://github.com/guillaumekyn/faster-whisper)
+- [Piper TTS](https://github.com/rhasspy/piper)
 
-## Step 4: Create a New Branch
-
-Branch pattern: `candidate-<your-github-username>`
+### Backend
 
 ```bash
-git checkout -b candidate-<your-github-username>
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
 ```
 
-**Example:**
-```bash
-git checkout -b candidate-johndoe
-```
-
----
-
-## Step 5: Complete the Task
-
-Build the full application on your branch.
-
----
-
-## Step 6: Push Your Branch
+### Frontend
 
 ```bash
-git add .
-git commit -m "feat: complete voice-agent assessment"
-git push origin candidate-<your-github-username>
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
 
-## Step 7: Create a Pull Request
+## Design
 
-1. Go to your **forked** repository on GitHub (`https://github.com/your-username/savvpro-test-voice-agent`).
-2. Click **Compare & pull request** (GitHub will show this banner after you push your branch).
-3. Ensure the following settings in the PR form:
-   - **Base repository:** `savvpro/savvpro-test-voice-agent` ← the original repo
-   - **Base branch:** `main`
-   - **Head repository:** `your-username/savvpro-test-voice-agent` ← your fork
-   - **Compare branch:** `candidate-<your-github-username>`
-4. Use the title: `feat: complete voice-agent assessment`
-5. Submit the pull request.
-
-> 💡 **Tip:** If you don't see the banner, go to the original repo (`savvpro/savvpro-test-voice-agent`), click the **Pull requests** tab, then click **New pull request** → **compare across forks**.
+See [`docs/DESIGN.md`](docs/DESIGN.md) for the full FSM design, intents, slots, and correction-handling logic.
 
 ---
 
-> ⚠️ **Important:** No submissions will be accepted after the deadline.
+## AI Usage
+
+See [`docs/AI_USAGE.md`](docs/AI_USAGE.md) for a full log of AI tool usage, what was helpful, and where corrections were needed.
+
+---
+
+## Assessment Submission Instructions
+
+See the original submission guide: [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
