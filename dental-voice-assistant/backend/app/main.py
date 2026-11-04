@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from voice_agent.stt.fake_stt import FakeSTT
 from voice_agent.tts.fake_tts import FakeTTS
 
-from app.api import appointments, clinic, health, ws_calls
+from app.api import appointments, clinic, health, ws_calls, test_reset
 from app.config import settings
 from app.db.engine import engine
 from app.db.models import Base
@@ -105,6 +105,7 @@ def create_app() -> FastAPI:
     app.include_router(clinic.router)
     app.include_router(appointments.router)
     app.include_router(ws_calls.router)
+    app.include_router(test_reset.router)
 
     return app
 
