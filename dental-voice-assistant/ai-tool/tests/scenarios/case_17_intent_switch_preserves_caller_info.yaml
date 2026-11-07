@@ -1,0 +1,26 @@
+description: 'Case 17: Intent switch from book to cancel preserves caller phone'
+today: '2026-10-27'
+initial_slots:
+- date: '2026-10-28'
+  start: '10:00'
+  end: '10:30'
+existing_appointments:
+- phone: '03001234567'
+  id: appt-1
+  date: '2026-10-29'
+  start: '14:00'
+  end: '14:30'
+turns:
+- user: I want cleaning
+  expected_state: COLLECT_DATE
+- user: tomorrow
+  expected_state: COLLECT_TIME
+- user: 10 am
+  expected_state: COLLECT_NAME
+- user: Sara Khan
+  expected_state: COLLECT_PHONE
+- user: '03001234567'
+  expected_state: CONFIRM_PHONE
+- user: Wait cancel my existing appointment instead
+  expected_state: CANCEL_CONFIRM
+  expected_reply_contains: '2026-10-29'

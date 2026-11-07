@@ -1,0 +1,12 @@
+description: 'Case 16: Intent switch mid-flow from book to cancel'
+today: '2026-10-27'
+initial_slots:
+- date: '2026-10-28'
+  start: '10:00'
+  end: '10:30'
+turns:
+- user: I want a cleaning
+  expected_state: COLLECT_DATE
+- user: Actually I want to cancel my appointment
+  expected_state: CANCEL_LOOKUP_PHONE
+  expected_reply_contains: provide your phone number

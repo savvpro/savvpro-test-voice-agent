@@ -1,0 +1,5 @@
+description: 'Case 27: Off topic query redirects to dental services'
+today: '2026-10-27'
+turns:
+- user: What is the weather outside?
+  expected_reply_contains: only help with booking, rescheduling, or cancelling

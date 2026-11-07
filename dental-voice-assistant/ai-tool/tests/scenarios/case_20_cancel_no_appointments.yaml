@@ -1,0 +1,9 @@
+description: 'Case 20: Cancel flow when phone has no upcoming appointments'
+today: '2026-10-27'
+existing_appointments: []
+turns:
+- user: I want to cancel
+  expected_state: CANCEL_LOOKUP_PHONE
+- user: '03001234567'
+  expected_state: END
+  expected_reply_contains: couldn't find any upcoming appointments

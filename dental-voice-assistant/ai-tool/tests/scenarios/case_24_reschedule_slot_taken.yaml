@@ -1,0 +1,28 @@
+description: 'Case 24: Reschedule when requested new slot is taken offers alternatives'
+today: '2026-10-27'
+initial_slots:
+- date: '2026-10-30'
+  start: '14:00'
+  end: '14:30'
+- date: '2026-10-30'
+  start: '16:00'
+  end: '16:30'
+existing_appointments:
+- phone: '03001234567'
+  id: appt-1
+  date: '2026-10-28'
+  start: '10:00'
+  end: '10:30'
+turns:
+- user: reschedule
+  expected_state: RESCHEDULE_LOOKUP_PHONE
+- user: '03001234567'
+  expected_state: RESCHEDULE_COLLECT_NEW_SLOT
+- user: Friday at 3 pm
+  expected_state: RESCHEDULE_OFFER_ALTERNATIVES
+  expected_reply_contains: not available
+- user: the first one
+  expected_state: RESCHEDULE_CONFIRM
+- user: 'yes'
+  expected_state: RESCHEDULED
+  expected_end_call: true

@@ -1,0 +1,11 @@
+description: 'Case 29: Successful slot fill resets fail count'
+today: '2026-10-27'
+turns:
+- user: ''
+  expected_reply_contains: didn't quite catch that
+- user: What is the weather?
+  expected_reply_contains: only help with booking
+- user: I want a cleaning
+  expected_state: COLLECT_DATE
+- user: ''
+  expected_reply_contains: didn't quite catch that

@@ -1,0 +1,11 @@
+description: 'Case 28: Three consecutive failures trigger HANDOFF'
+today: '2026-10-27'
+turns:
+- user: ''
+  expected_reply_contains: didn't quite catch that
+- user: What is the weather?
+  expected_reply_contains: only help with booking
+- user: ''
+  expected_state: HANDOFF
+  expected_end_call: true
+  expected_action: handoff_operator

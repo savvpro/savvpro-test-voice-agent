@@ -1,0 +1,32 @@
+description: 'Case 11: Race condition at booking -> slot taken, re-offers alternatives'
+today: '2026-10-27'
+initial_slots:
+- date: '2026-10-28'
+  start: '10:00'
+  end: '10:30'
+- date: '2026-10-28'
+  start: '10:30'
+  end: '11:00'
+- date: '2026-10-28'
+  start: '11:00'
+  end: '11:30'
+race_on_slot:
+  date: '2026-10-28'
+  start: '10:00'
+  end: '10:30'
+turns:
+- user: I want a checkup
+  expected_state: COLLECT_DATE
+- user: tomorrow
+  expected_state: COLLECT_TIME
+- user: 10 am
+  expected_state: COLLECT_NAME
+- user: Sara Khan
+  expected_state: COLLECT_PHONE
+- user: '03001234567'
+  expected_state: CONFIRM_PHONE
+- user: 'yes'
+  expected_state: CONFIRM_BOOKING
+- user: 'yes'
+  expected_state: OFFER_ALTERNATIVES
+  expected_reply_contains: taken by another caller

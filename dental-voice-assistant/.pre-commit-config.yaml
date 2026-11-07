@@ -1,0 +1,1 @@
+repos:\n  - repo: https://github.com/psf/black\n    rev: 23.3.0\n    hooks:\n      - id: black\n  - repo: https://github.com/charliermarsh/ruff-pre-commit\n    rev: v0.1.5\n    hooks:\n      - id: ruff\n  - repo: https://github.com/Yelp/detect-secrets\n    rev: v1.4.0\n    hooks:\n      - id: detect-secrets

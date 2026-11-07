@@ -1,0 +1,11 @@
+description: 'Case 10: Entire day has no slots -> offers to check another day'
+today: '2026-10-27'
+initial_slots: []
+turns:
+- user: I want a cleaning
+  expected_state: COLLECT_DATE
+- user: tomorrow
+  expected_state: COLLECT_TIME
+- user: 10 am
+  expected_state: COLLECT_DATE
+  expected_reply_contains: no available appointments

@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: dental
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'user']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user:password@db:5432/dental
+      STT_PROVIDER: ${STT_PROVIDER:-fake}
+      TTS_PROVIDER: ${TTS_PROVIDER:-fake}
+      APP_ENV: ${APP_ENV:-development}
+    command: sh -c "alembic upgrade head && python seed_fake_data.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - '8000:8000'
+    volumes:
+      - model_cache:/app/model_cache
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_BACKEND_URL: http://backend:8000
+    ports:
+      - '5173:5173'
+    command: npm run dev
+
+volumes:
+  db_data:
+  model_cache:

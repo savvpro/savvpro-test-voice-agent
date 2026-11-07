@@ -1,0 +1,20 @@
+description: 'Case 13: Invalid short phone number prompts caller to repeat'
+today: '2026-10-27'
+initial_slots:
+- date: '2026-10-28'
+  start: '10:00'
+  end: '10:30'
+turns:
+- user: checkup
+  expected_state: COLLECT_DATE
+- user: tomorrow
+  expected_state: COLLECT_TIME
+- user: 10 am
+  expected_state: COLLECT_NAME
+- user: Ali Ahmed
+  expected_state: COLLECT_PHONE
+- user: '12345'
+  expected_state: COLLECT_PHONE
+  expected_reply_contains: valid phone number with 7 to 15 digits
+- user: '03001234567'
+  expected_state: CONFIRM_PHONE
